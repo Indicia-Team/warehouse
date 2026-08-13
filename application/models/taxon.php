@@ -50,6 +50,20 @@ class Taxon_Model extends ORM {
   private $prefExternalKeyChangedForTaxonMeaningIds = [];
 
   /**
+   * Taxon meaning IDs whose preferred organism key has changed.
+   *
+   * @var array
+   */
+  private $prefOrganismKeyChangedForTaxonMeaningIds = [];
+
+  /**
+   * Taxon meaning IDs whose preferred conservation flags should be synced.
+   *
+   * @var array
+   */
+  private $prefFlagsChangedForTaxonMeaningIds = [];
+
+  /**
    * Does an update change fields which are in the occurrences cache tables?
    *
    * @var bool
@@ -66,18 +80,38 @@ class Taxon_Model extends ORM {
         }
       }
     }
+    if (isset($this->submission['fields']['organism_key'])) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        if ($ttl->preferred && $this->organism_key !== $this->submission['fields']['organism_key']['value']) {
+          $this->prefOrganismKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+        }
+      }
+    }
+    $flagFields = ['marine_flag', 'freshwater_flag', 'terrestrial_flag', 'non_native_flag'];
+    if (array_intersect($flagFields, array_keys($this->submission['fields']))) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        if ($ttl->preferred) {
+          $this->prefFlagsChangedForTaxonMeaningIds[$ttl->taxon_meaning_id] = TRUE;
+        }
+      }
+    }
     $array->pre_filter('trim');
     $array->add_rules('taxon', 'required');
     $array->add_rules('language_id', 'required');
     $array->add_rules('taxon_group_id', 'required');
+    $array->add_rules('external_key', 'length[0,50]');
+    $array->add_rules('search_code', 'length[0,20]');
+
+    if (isset($array['name_form'])) {
+      $array['name_form'] = strtoupper($array['name_form']);
+    }
+    $array->add_rules('name_form', 'length[0,1]', 'regex[/^[A-Z]?$/]');
 
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'attribute',
-      'external_key',
       'authority',
       'deleted',
-      'search_code',
       'description',
       'taxon_rank_id',
       'marine_flag',
@@ -88,7 +122,6 @@ class Taxon_Model extends ORM {
       'scientific',
       'organism_deprecated',
       'name_deprecated',
-      'name_form',
     ];
     return parent::validate($array, $save);
   }
@@ -172,6 +205,41 @@ WHERE ttl.taxon_meaning_id=?
 AND t.id=ttl.taxon_id
 SQL;
         $this->db->query($updateExtKeyQuery, [$this->external_key, $userId, $taxonMeaningId]);
+      }
+    }
+    if (!empty($this->prefOrganismKeyChangedForTaxonMeaningIds)) {
+      // Apply organism key changes to synonyms/vernaculars.
+      $userId = $this->getUserId();
+      foreach ($this->prefOrganismKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
+        $updateOrganismKeyQuery = <<<SQL
+UPDATE taxa t
+SET organism_key=?, updated_on=now(), updated_by_id=?
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=?
+AND t.id=ttl.taxon_id
+SQL;
+        $this->db->query($updateOrganismKeyQuery, [$this->organism_key, $userId, $taxonMeaningId]);
+      }
+    }
+    if (!empty($this->prefFlagsChangedForTaxonMeaningIds)) {
+      // Apply preferred conservation flags to synonyms/vernaculars.
+      $userId = $this->getUserId();
+      foreach (array_keys($this->prefFlagsChangedForTaxonMeaningIds) as $taxonMeaningId) {
+        $updateFlagsQuery = <<<SQL
+UPDATE taxa t
+SET marine_flag=?, freshwater_flag=?, terrestrial_flag=?, non_native_flag=?, updated_on=now(), updated_by_id=?
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=?
+AND t.id=ttl.taxon_id
+SQL;
+        $this->db->query($updateFlagsQuery, [
+          $this->marine_flag,
+          $this->freshwater_flag,
+          $this->terrestrial_flag,
+          $this->non_native_flag,
+          $userId,
+          $taxonMeaningId,
+        ]);
       }
     }
     return TRUE;

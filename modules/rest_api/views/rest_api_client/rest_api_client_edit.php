@@ -126,7 +126,7 @@ $id = html::initial_value($values, 'rest_api_client:id');
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'rest_api_client:id') != NULL);
-  data_entry_helper::enable_validation('entry_form');
+  data_entry_helper::enableValidation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

@@ -34,6 +34,22 @@ class Sample_Attribute_Value_Model extends Attribute_Value_ORM {
   }
 
   protected function get_survey_specific_rules($values) {
+    // If identifiers are available, then we can use a faster query to get the
+    // rules. Otherwise we have to join through the samples table to get the
+    // survey.
+    if (!empty($this->identifiers['website_id']) && !empty($this->identifiers['survey_id'])) {
+      return $this->db
+        ->from('sample_attributes_websites as saw')
+        ->join('sample_attributes as sa', 'sa.id', 'saw.sample_attribute_id')
+        ->select('saw.validation_rules, sa.allow_ranges')
+        ->where([
+          'saw.website_id' => $this->identifiers['website_id'],
+          'saw.restrict_to_survey_id' => $this->identifiers['survey_id'],
+          'saw.sample_attribute_id' => $values['sample_attribute_id'],
+        ])
+        ->limit(1)
+        ->get();
+    }
     return $this->db
             ->from('sample_attributes_websites as saw')
             ->join('samples as s', 's.survey_id', 'saw.restrict_to_survey_id')

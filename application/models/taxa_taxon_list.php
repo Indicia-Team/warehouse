@@ -212,20 +212,22 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     if ($this->submission['fields']['preferred']['value'] == 't' && array_key_exists('metaFields', $this->submission)
         && (array_key_exists('commonNames', $this->submission['metaFields']) || array_key_exists('synonyms', $this->submission['metaFields']))) {
       if (array_key_exists('commonNames', $this->submission['metaFields'])) {
-        $arrCommonNames = $this->parseRelatedNames(
-            $this->submission['metaFields']['commonNames']['value'],
-            'setCommonNameSubArray'
-        );
+        $commonNames = $this->submission['metaFields']['commonNames']['value'];
+        $structuredCommonNames = json_decode($commonNames, TRUE);
+        $arrCommonNames = is_array($structuredCommonNames)
+          ? $this->parseStructuredRelatedNames($structuredCommonNames, FALSE)
+          : $this->parseRelatedNames($commonNames, 'setCommonNameSubArray');
       }
       else {
         $arrCommonNames = [];
       }
       Kohana::log("debug", "Number of common names is: " . count($arrCommonNames));
       if (array_key_exists('synonyms', $this->submission['metaFields'])) {
-        $arrSyn = $this->parseRelatedNames(
-          $this->submission['metaFields']['synonyms']['value'],
-          'setSynonymSubArray'
-        );
+        $synonyms = $this->submission['metaFields']['synonyms']['value'];
+        $structuredSynonyms = json_decode($synonyms, TRUE);
+        $arrSyn = is_array($structuredSynonyms)
+          ? $this->parseStructuredRelatedNames($structuredSynonyms, TRUE)
+          : $this->parseRelatedNames($synonyms, 'setSynonymSubArray');
       }
       else {
         $arrSyn = [];
@@ -265,11 +267,32 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           unset($arrSyn[$key]);
         }
       }
+      if ($this->common_taxon_id == NULL) {
+        $replacement = $this->db->select('ttl.taxon_id')
+          ->from('taxa_taxon_lists AS ttl')
+          ->join('taxa AS t', 't.id', 'ttl.taxon_id')
+          ->join('languages AS l', 'l.id', 't.language_id')
+          ->where([
+            'ttl.taxon_meaning_id' => $this->taxon_meaning_id,
+            'ttl.taxon_list_id' => $this->taxon_list_id,
+            'ttl.preferred' => 'f',
+            'ttl.deleted' => 'f',
+            't.deleted' => 'f',
+          ])
+          ->where('l.iso !=', 'lat')
+          ->orderby(['ttl.id' => 'ASC'])
+          ->limit(1)
+          ->get()->current();
+        if ($replacement) {
+          $this->common_taxon_id = $replacement->taxon_id;
+        }
+      }
 
       // $arraySyn should now be left only with those synonyms we wish to add
       // to the database.
       Kohana::log("debug", "Number of synonyms remaining to add: " . count($arrSyn));
       $sm = ORM::factory('taxa_taxon_list');
+      $selectedCommonTaxonId = NULL;
       foreach ($arrSyn as $key => $syn) {
         $sm->clear();
         $taxon = $syn['taxon'];
@@ -300,6 +323,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
             $this->copySharedFieldsFromSubmission('taxon', $supermodel['model']['fields'], [
               'description',
               'external_key',
+              'organism_key',
+              'marine_flag',
+              'freshwater_flag',
+              'terrestrial_flag',
+              'non_native_flag',
               'search_code',
               'taxon_group_id',
               'taxon_rank_id',
@@ -314,6 +342,32 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
         $syn['taxa_taxon_list:preferred'] = 'f';
+        if (isset($syn['related:allow_data_entry'])) {
+          $syn['taxa_taxon_list:allow_data_entry'] = $syn['related:allow_data_entry'];
+        }
+        if (isset($syn['related:manually_entered'])) {
+          $syn['taxa_taxon_list:manually_entered'] = $syn['related:manually_entered'];
+        }
+        if (isset($syn['related:name_deprecated'])) {
+          $syn['taxon:name_deprecated'] = $syn['related:name_deprecated'];
+        }
+        if (isset($syn['related:attribute'])) {
+          $syn['taxon:attribute'] = $syn['related:attribute'];
+        }
+        if (isset($syn['related:search_code'])) {
+          $syn['taxon:search_code'] = $syn['related:search_code'];
+        }
+        if (isset($syn['related:name_form'])) {
+          $syn['taxon:name_form'] = $syn['related:name_form'];
+        }
+        if (isset($syn['related:taxon_rank_id']) && $syn['related:taxon_rank_id'] !== '') {
+          $syn['taxon:taxon_rank_id'] = $syn['related:taxon_rank_id'];
+        }
+        $isSelectedCommonName = !empty($syn['related:is_default']) && $lang !== 'lat';
+        foreach (['allow_data_entry', 'manually_entered', 'name_deprecated', 'attribute', 'search_code', 'name_form', 'taxon_rank_id'] as $field) {
+          unset($syn["related:$field"]);
+        }
+        unset($syn['related:is_default']);
         // Taxon meaning Id cannot be copied from the submission, since for new
         // data it is generated when saved.
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
@@ -338,7 +392,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           if ($this->common_taxon_id == NULL && $syn['taxon:language_id'] != 2) {
             $this->common_taxon_id = $sm->taxon->id;
           }
+          if ($isSelectedCommonName) {
+            $selectedCommonTaxonId = $sm->taxon->id;
+          }
         }
+      }
+      if ($selectedCommonTaxonId !== NULL) {
+        $this->common_taxon_id = $selectedCommonTaxonId;
       }
       if ($result && array_key_exists('codes', $this->submission['metaFields'])) {
         $result = $this->saveCodeMetafields($this->submission['metaFields']['codes']);
@@ -523,6 +583,40 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'lang' => 'lat',
       'auth' => $auth,
     ];
+  }
+
+  /**
+   * Parse structured related names submitted by the taxon editor.
+   *
+   * @param array $names
+   *   Related names and their per-name metadata.
+   * @param bool $synonym
+   *   TRUE for synonyms, FALSE for common names.
+   *
+   * @return array
+   *   Related names keyed in the same format as the legacy parser.
+   */
+  protected function parseStructuredRelatedNames(array $names, $synonym) {
+    $result = [];
+    foreach ($names as $name) {
+      if (empty($name['taxon'])) {
+        continue;
+      }
+      $lang = $synonym ? 'lat' : (!empty($name['language_iso']) ? $name['language_iso'] : kohana::config('indicia.default_lang'));
+      $authority = $synonym && isset($name['authority']) ? trim($name['authority']) : '';
+      $key = str_replace('|', '', $name['taxon']) . '|' . $lang . '|' . $authority;
+      $result[$key] = [
+        'taxon' => trim($name['taxon']),
+        'lang' => $lang,
+        'auth' => $authority,
+      ];
+      foreach (['allow_data_entry', 'manually_entered', 'name_deprecated', 'attribute', 'search_code', 'name_form', 'taxon_rank_id', 'is_default'] as $field) {
+        if (array_key_exists($field, $name)) {
+          $result[$key]["related:$field"] = $name[$field];
+        }
+      }
+    }
+    return $result;
   }
 
   /**

@@ -59,6 +59,15 @@ class SpreadsheetReadFilterSignatureTest extends TestCase {
     }
   }
 
+  public function testRangeFilterSupportsMultiLetterColumns(): void {
+    $filter = new IndiciaImportRangeReadFilter(2, 1, [26, 27]);
+
+    $this->assertTrue($filter->readCell('AA', 2));
+    $this->assertTrue($filter->readCell('AB', 2));
+    $this->assertFalse($filter->readCell('Z', 2));
+    $this->assertFalse($filter->readCell('AA', 3));
+  }
+
   public function testCsvCanBeReadWithFirstRowAndRangeFilters(): void {
     $file = DOCROOT . 'import/test-filter-' . uniqid() . '.csv';
     $this->filesToDelete[] = $file;

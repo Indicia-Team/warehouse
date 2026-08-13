@@ -207,7 +207,7 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
 
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('uksi-operation-edit');
+  data_entry_helper::enableValidation('uksi-operation-edit');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

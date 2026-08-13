@@ -82,6 +82,6 @@ $id = html::initial_value($values, 'taxon_association:id');
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL);
-  data_entry_helper::enable_validation('taxon_association-edit');
+  data_entry_helper::enableValidation('taxon_association-edit');
   ?>
 </form>

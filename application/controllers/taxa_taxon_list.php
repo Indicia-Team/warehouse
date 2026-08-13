@@ -48,6 +48,41 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
     $this->internal_index($taxon_list_id, $taxonList);
   }
 
+  /**
+   * Ensure the edit form is only loaded for the preferred name in a taxon list.
+   *
+   * Synonyms and common names share the taxon meaning with the preferred name,
+   * but the edit form submits the preferred flag as true. Redirecting here
+   * prevents a non-preferred name from being promoted if the form is saved.
+   *
+   * @param int $id
+   *   The taxa_taxon_list id to edit.
+   */
+  public function edit($id) {
+    $id = (int) $id;
+    if (!$this->record_authorised($id)) {
+      $this->access_denied();
+      return;
+    }
+
+    $taxa = ORM::factory('taxa_taxon_list', $id);
+    if ($taxa->deleted !== 't' && $taxa->preferred !== 't') {
+      $preferred = ORM::factory('taxa_taxon_list')->where([
+        'taxon_list_id' => $taxa->taxon_list_id,
+        'taxon_meaning_id' => $taxa->taxon_meaning_id,
+        'preferred' => 't',
+        'deleted' => 'f',
+      ])->find();
+      if ($preferred->loaded) {
+        $query = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
+        url::redirect("taxa_taxon_list/edit/$preferred->id$query");
+        return;
+      }
+    }
+
+    parent::edit($id);
+  }
+
   public function children($id) {
     $parentTtl = ORM::factory('taxa_taxon_list', $id);
     $this->base_filter['parent_id'] = $id;
@@ -105,12 +140,6 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
   protected function getModelValues() {
     $r = parent::getModelValues();
     $this->loadAttributes($r, ['taxon_list_id' => [$this->model->taxon_list_id]]);
-    // Add items to view.
-    $all_names = $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id);
-    $r = array_merge($r, array(
-      'metaFields:synonyms' => $this->formatScientificSynonomy($all_names),
-      'metaFields:commonNames' => $this->formatCommonSynonomy($all_names)
-    ));
     return $r;
   }
 
@@ -454,11 +483,357 @@ SQL;
    *
    * Returns some addition information required by the edit view, which is not
    * associated with a particular record.
+   *
+   * @param array $values
+   *   The values prepared for the edit view.
+   *
+   * @return array
+   *   Additional data required by the edit view.
    */
   protected function prepareOtherViewData(array $values) {
     return [
       'taxon_lists' => $this->loadPermittedTaxonLists(),
+      'related_names' => $this->loadRelatedNames($this->model->taxon_meaning_id, $this->model->taxon_list_id),
+      'name_languages' => $this->db->select('iso, language')->from('languages')->orderby('language')->get()->result_array(FALSE),
+      'name_ranks' => $this->db->select('id, rank')->from('taxon_ranks')->orderby('sort_order')->get()->result_array(FALSE),
     ];
+  }
+
+  /**
+   * Load the active non-preferred names for the related names grids.
+   *
+   * @param int $taxonMeaningId
+   *   The taxon meaning ID shared by the names.
+   * @param int $taxonListId
+   *   The taxon list ID containing the names.
+   *
+   * @return array
+   *   Related names grouped into synonyms and common names.
+   */
+  private function loadRelatedNames($taxonMeaningId, $taxonListId) {
+    $rows = $this->db->select('ttl.id, ttl.allow_data_entry, ttl.manually_entered, '
+        . 't.id AS taxon_id, t.taxon, t.authority, t.attribute, t.search_code, '
+        . 't.name_deprecated, t.name_form, t.taxon_rank_id, l.iso AS language_iso, '
+        . 'tr.rank AS taxon_rank, ttlpref.common_taxon_id')
+      ->from('taxa_taxon_lists AS ttl')
+      ->join('taxa AS t', 't.id', 'ttl.taxon_id')
+      ->join('languages AS l', 'l.id', 't.language_id', 'LEFT')
+      ->join('taxon_ranks AS tr', 'tr.id', 't.taxon_rank_id', 'LEFT')
+      ->join('taxa_taxon_lists AS ttlpref', [
+        'ttlpref.taxon_meaning_id' => 'ttl.taxon_meaning_id',
+        'ttlpref.taxon_list_id' => 'ttl.taxon_list_id',
+      ], NULL, 'LEFT')
+      ->where([
+        'ttl.taxon_meaning_id' => $taxonMeaningId,
+        'ttl.taxon_list_id' => $taxonListId,
+        'ttl.preferred' => 'f',
+        'ttl.deleted' => 'f',
+        'ttlpref.preferred' => 't',
+        'ttlpref.deleted' => 'f',
+        't.deleted' => 'f',
+      ])
+      ->orderby(['l.iso' => 'ASC', 't.taxon' => 'ASC'])
+      ->get()->result_array(FALSE);
+    $relatedNames = ['synonyms' => [], 'common_names' => []];
+    foreach ($rows as $row) {
+      $row['is_default'] = $row['language_iso'] !== 'lat'
+        && (int) $row['taxon_id'] === (int) $row['common_taxon_id'];
+      $relatedNames[$row['language_iso'] === 'lat' ? 'synonyms' : 'common_names'][] = $row;
+    }
+    usort($relatedNames['common_names'], function ($left, $right) {
+      return (int) $right['is_default'] - (int) $left['is_default'];
+    });
+    return $relatedNames;
+  }
+
+  /**
+   * Save an individual common name or synonym from the related names grid.
+   *
+   * The record data is read from the POST request. New names inherit shared
+   * taxon data from the preferred name in the current taxon list.
+   *
+   * @return void
+   *   Redirects to the preferred taxon edit page after saving or reporting an
+   *   error.
+   */
+  public function save_related_name() {
+    $id = !empty($_POST['id']) ? (int) $_POST['id'] : NULL;
+    $ttl = $id ? ORM::factory('taxa_taxon_list', $id) : ORM::factory('taxa_taxon_list');
+    $isNew = !$ttl->loaded;
+    $listId = !empty($_POST['taxon_list_id']) ? (int) $_POST['taxon_list_id'] : NULL;
+    $preferred = ORM::factory('taxa_taxon_list', (int) $_POST['taxon_meaning_preferred_id']);
+    $meaningId = (int) $_POST['taxon_meaning_id'];
+    if (!$ttl->loaded && !$listId) {
+      $this->relatedNameError('A taxon list is required.');
+      return;
+    }
+    $authorisedListId = $ttl->loaded ? $ttl->taxon_list_id : $listId;
+    if (!$preferred->loaded || $preferred->preferred !== 't' || $preferred->deleted === 't'
+        || (int) $preferred->taxon_list_id !== (int) $authorisedListId
+        || (int) $preferred->taxon_meaning_id !== $meaningId
+        || !$this->taxon_list_authorised($authorisedListId)
+        || ($ttl->loaded && ($ttl->preferred === 't' || (int) $ttl->taxon_meaning_id !== $meaningId))) {
+      $this->relatedNameError('The related taxon name cannot be edited.');
+      return;
+    }
+    $isSynonym = isset($_POST['name_type']) && $_POST['name_type'] === 'synonym';
+    $language = $isSynonym ? 'lat' : (!empty($_POST['language_iso']) ? $_POST['language_iso'] : 'eng');
+    $languageId = ORM::factory('language')->where(['iso' => $language])->find()->id;
+    if (!$languageId || empty($_POST['taxon'])) {
+      $this->relatedNameError('A name and valid language are required.');
+      return;
+    }
+    $_POST['taxa_taxon_list:id'] = $id ?: '';
+    $_POST['taxa_taxon_list:taxon_list_id'] = $authorisedListId;
+    $_POST['taxa_taxon_list:taxon_meaning_id'] = $meaningId;
+    $_POST['taxa_taxon_list:preferred'] = 'f';
+    $_POST['taxa_taxon_list:allow_data_entry'] = !empty($_POST['allow_data_entry']) ? 't' : 'f';
+    $_POST['taxa_taxon_list:manually_entered'] = !empty($_POST['manually_entered']) ? 't' : 'f';
+    $_POST['taxon:id'] = $ttl->loaded ? $ttl->taxon_id : '';
+    $_POST['taxon:taxon'] = trim($_POST['taxon']);
+    $_POST['taxon:language_id'] = $languageId;
+    $_POST['taxon:authority'] = $isSynonym ? trim($_POST['authority'] ?? '') : '';
+    $_POST['taxon:attribute'] = trim($_POST['attribute'] ?? '');
+    $_POST['taxon:search_code'] = trim($_POST['search_code'] ?? '');
+    $_POST['taxon:name_deprecated'] = !empty($_POST['name_deprecated']) ? 't' : 'f';
+    $_POST['taxon:name_form'] = strtoupper(trim($_POST['name_form'] ?? ''));
+    $_POST['taxon:taxon_rank_id'] = $isSynonym && !empty($_POST['taxon_rank_id'])
+      ? (int) $_POST['taxon_rank_id']
+      : ($isNew ? $preferred->taxon->taxon_rank_id : NULL);
+    if ($isNew) {
+      $_POST['taxon:taxon_group_id'] = $preferred->taxon->taxon_group_id;
+      $_POST['taxon:external_key'] = $preferred->taxon->external_key;
+      $_POST['taxon:organism_key'] = $preferred->taxon->organism_key;
+    }
+    $ttl->set_submission_data($_POST);
+    if ($ttl->submit()) {
+      if (!$isSynonym && !$preferred->common_taxon_id) {
+        $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+          $ttl->taxon_id,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+        $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+      }
+      url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
+      return;
+    }
+    $errors = $ttl->getAllErrors();
+    $messages = [];
+    foreach ($errors as $field => $message) {
+      $messages[] = is_array($message) ? implode(' ', $message) : $message;
+    }
+    $this->relatedNameError(implode(' ', $messages) ?: 'The related taxon name could not be saved.');
+  }
+
+  /**
+   * Soft-delete one related common name or synonym.
+   *
+   * The record IDs are read from the POST request.
+   *
+   * @return void
+   *   Redirects to the preferred taxon edit page.
+   */
+  public function delete_related_name() {
+    $ttl = ORM::factory('taxa_taxon_list', (int) $_POST['id']);
+    $preferred = ORM::factory('taxa_taxon_list', (int) $_POST['taxon_meaning_preferred_id']);
+    if (!$ttl->loaded || !$preferred->loaded || $ttl->preferred === 't' || $preferred->preferred !== 't'
+        || $ttl->taxon_list_id !== $preferred->taxon_list_id
+        || $ttl->taxon_meaning_id !== $preferred->taxon_meaning_id
+        || !$this->taxon_list_authorised($ttl->taxon_list_id)) {
+      $this->relatedNameError('The related taxon name cannot be deleted.');
+      return;
+    }
+    $isDefault = $ttl->taxon->language && $ttl->taxon->language->iso !== 'lat'
+      && (int) $preferred->common_taxon_id === (int) $ttl->taxon_id;
+    $this->db->query('BEGIN');
+    try {
+      $ttl->deleted = 't';
+      $ttl->save();
+      if ($isDefault) {
+        $replacement = $this->db->select('t.taxon_id')
+          ->from('taxa_taxon_lists AS t')
+          ->join('taxa AS tx', 'tx.id', 't.taxon_id')
+          ->join('languages AS l', 'l.id', 'tx.language_id')
+          ->where([
+            't.taxon_meaning_id' => $preferred->taxon_meaning_id,
+            't.taxon_list_id' => $preferred->taxon_list_id,
+            't.preferred' => 'f',
+            't.deleted' => 'f',
+          ])
+          ->where('l.iso !=', 'lat')
+          ->orderby(['t.id' => 'ASC'])
+          ->limit(1)
+          ->get()->current();
+        $replacementId = $replacement ? $replacement->taxon_id : NULL;
+        $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+          $replacementId,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+      }
+      $this->db->query('COMMIT');
+      if ($isDefault) {
+        $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+      }
+    }
+    catch (Exception $e) {
+      $this->db->query('ROLLBACK');
+      throw $e;
+    }
+    url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
+  }
+
+  /**
+   * Make a common name the default common name for a taxon concept.
+   *
+   * @return void
+   *   Redirects to the preferred taxon edit page.
+   */
+  public function make_default_common_name() {
+    $commonName = ORM::factory('taxa_taxon_list', (int) $_POST['id']);
+    $preferred = ORM::factory('taxa_taxon_list', (int) $_POST['preferred_id']);
+    if (!$commonName->loaded || !$preferred->loaded || $commonName->preferred === 't'
+        || $preferred->preferred !== 't' || $commonName->deleted === 't' || $preferred->deleted === 't'
+        || $commonName->taxon_list_id !== $preferred->taxon_list_id
+        || $commonName->taxon_meaning_id !== $preferred->taxon_meaning_id
+        || $commonName->taxon->language->iso === 'lat'
+        || !$this->taxon_list_authorised($preferred->taxon_list_id)) {
+      $this->relatedNameError('The common name cannot be made the default.');
+      return;
+    }
+    $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+      $commonName->taxon_id,
+      security::getUserId(),
+      $preferred->id,
+    ]);
+    $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+    url::redirect('taxa_taxon_list/edit/' . (int) $preferred->id);
+  }
+
+  /**
+   * Promote a synonym while preserving one preferred record per concept.
+   *
+   * The synonym and preferred record IDs are read from the POST request.
+   *
+   * @return void
+   *   Redirects to the newly preferred taxon edit page.
+   */
+  public function promote_synonym() {
+    $synonym = ORM::factory('taxa_taxon_list', (int) $_POST['id']);
+    $preferred = ORM::factory('taxa_taxon_list', (int) $_POST['preferred_id']);
+    if (!$synonym->loaded || !$preferred->loaded || $synonym->preferred === 't'
+        || $preferred->preferred !== 't' || $synonym->deleted === 't' || $preferred->deleted === 't'
+        || $synonym->taxon_list_id !== $preferred->taxon_list_id
+        || $synonym->taxon_meaning_id !== $preferred->taxon_meaning_id
+        || !$this->taxon_list_authorised($preferred->taxon_list_id)) {
+      $this->relatedNameError('The synonym cannot be made preferred.');
+      return;
+    }
+    $this->db->query('BEGIN');
+    try {
+      // Ensure that the previous preferred taxon flags are preserved.
+      $this->db->query('UPDATE taxa SET marine_flag=?, freshwater_flag=?, terrestrial_flag=?, non_native_flag=?, updated_on=now(), updated_by_id=? WHERE id IN (SELECT taxon_id FROM taxa_taxon_lists WHERE taxon_meaning_id=?)', [
+        $preferred->taxon->marine_flag,
+        $preferred->taxon->freshwater_flag,
+        $preferred->taxon->terrestrial_flag,
+        $preferred->taxon->non_native_flag,
+        security::getUserId(),
+        $preferred->taxon_meaning_id,
+      ]);
+      // Also ensure the taxonomic sort order preserved across all names.
+      $this->db->query('UPDATE taxa_taxon_lists SET taxonomic_sort_order=?, updated_on=now(), updated_by_id=? WHERE taxon_meaning_id=?', [
+        $preferred->taxonomic_sort_order,
+        security::getUserId(),
+        $preferred->taxon_meaning_id,
+      ]);
+      if (!isset($_POST['move_attributes']) || $_POST['move_attributes'] === 't') {
+        $this->db->query('UPDATE taxa_taxon_list_attribute_values SET taxa_taxon_list_id=?, updated_on=now(), updated_by_id=? WHERE taxa_taxon_list_id=? AND deleted=false', [
+          $synonym->id,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+      }
+      // Copy the promoted synonym's search code to the other names in the concept.
+      $searchCode = trim((string) $synonym->taxon->search_code);
+      if ($searchCode !== '') {
+        $this->db->query(<<<SQL
+          UPDATE taxa t
+          SET external_key=?, updated_on=now(), updated_by_id=?
+          FROM taxa_taxon_lists ttl
+          WHERE ttl.taxon_meaning_id=?
+          AND t.id=ttl.taxon_id
+          AND t.deleted=false
+        SQL, [$searchCode, security::getUserId(), $synonym->taxon_meaning_id]);
+      }
+      // Update old preferred name, no longer preferred and with parent nulled.
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET preferred=false, parent_id=null, common_taxon_id=null, updated_on=now(), updated_by_id=?
+        WHERE id=?
+      SQL, [security::getUserId(), $preferred->id]);
+      // Update the promoted synonym to be preferred and with parent set.
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET preferred=true, parent_id=?, common_taxon_id=?, updated_on=now(), updated_by_id=?
+        WHERE id=?
+      SQL, [$preferred->parent_id, $preferred->common_taxon_id, security::getUserId(), $synonym->id]);
+      // Ensure children of the old preferred taxon are updated to point to the new preferred taxon.
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET parent_id=?, updated_on=now(), updated_by_id=?
+        WHERE parent_id=?
+      SQL, [$synonym->id, security::getUserId(), $preferred->id]);
+      $this->db->query('COMMIT');
+    }
+    catch (Exception $e) {
+      $this->db->query('ROLLBACK');
+      throw $e;
+    }
+    if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
+      $this->db->query(<<<SQL
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', id, 100, 3, now()
+        FROM taxa_taxon_lists
+        WHERE taxon_meaning_id=? AND deleted=false
+        ON CONFLICT DO NOTHING
+      SQL, [$synonym->taxon_meaning_id]);
+    }
+    url::redirect('taxa_taxon_list/edit/' . (int) $synonym->id);
+  }
+
+  /**
+   * Report a related-name operation error and return to the edit page.
+   *
+   * @param string $message
+   *   The error message to display to the user.
+   *
+   * @return void
+   *   Redirects to the preferred taxon edit page.
+   */
+  private function relatedNameError($message) {
+    $this->session->set_flash('flash_error', $message);
+    url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
+  }
+
+  /**
+   * Queue cache refreshes for all names in a taxon meaning.
+   *
+   * @param int $taxonMeaningId
+   *   The taxon meaning whose cached default name changed.
+   *
+   * @return void
+   */
+  private function queueTaxonMeaningCache($taxonMeaningId) {
+    if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
+      $this->db->query(<<<SQL
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', id, 100, 3, now()
+        FROM taxa_taxon_lists
+        WHERE taxon_meaning_id=? AND deleted=false
+        ON CONFLICT DO NOTHING
+      SQL, [$taxonMeaningId]);
+    }
   }
 
   /**

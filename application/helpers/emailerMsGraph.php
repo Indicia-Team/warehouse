@@ -53,7 +53,7 @@ class emailerMsGraph {
         'grant_type' => 'client_credentials',
       ],
     ]);
-    $tokenData = json_decode($response->getBody(), true);
+    $tokenData = json_decode((string) $response->getBody(), true);
     if (!isset($tokenData['access_token'])) {
       throw new Exception("Failed to acquire access token: " . json_encode($tokenData));
     }

@@ -94,7 +94,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('sample-medium-edit');
+  data_entry_helper::enableValidation('sample-medium-edit');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

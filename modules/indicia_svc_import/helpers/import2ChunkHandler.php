@@ -53,6 +53,13 @@ class import2ChunkHandler {
   public static $batchRowLimit = 50;
 
   /**
+   * Maximum number of prechecked row flags to update in one statement.
+   *
+   * @var int
+   */
+  private const PRECHECK_ROW_UPDATE_BATCH_SIZE = 200;
+
+  /**
    * Import or validate a chunk of an import file.
    *
    * @param Database $db
@@ -65,17 +72,26 @@ class import2ChunkHandler {
    *   Array containing summary of processing after this step.
    */
   public static function importChunk($db, $params) {
+    $benchmarkStartedAt = microtime(TRUE);
+    $benchmarkStartIndex = count(Database::$benchmarks);
+    $benchmarkLogged = FALSE;
+    $workflowBulkModeEnabled = FALSE;
     try {
       $configId = $params['config-id'];
       $isPrecheck = !empty($params['precheck']);
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
+      if (class_exists('workflow')) {
+        workflow::setBulkMode(TRUE);
+        $workflowBulkModeEnabled = TRUE;
+      }
       $config = self::getConfig($configId);
       $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
+        unset($config['activeParent']);
         self::saveConfig($configId, $config);
       }
       self::getChunkSize($isBackground, $isPrecheck);
@@ -88,14 +104,35 @@ class import2ChunkHandler {
         $dnaEntityColumns = self::findEntityColumns('dna_occurrence', $config);
       }
       $parentEntityDataRows = self::fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
+      $activeParent = $config['activeParent'] ?? NULL;
+      if (!empty($activeParent['data']) && isset($activeParent['id'])) {
+        // A parent with more child rows than fit in one request is saved in
+        // the import config. Put it back at the front and remove its normal
+        // grouped result so it is resumed rather than submitted twice.
+        $activeParentData = (object) $activeParent['data'];
+        $parentEntityDataRows = array_values(array_filter(
+          $parentEntityDataRows,
+          function ($parentEntityDataRow) use ($activeParentData, $parentEntityColumns, $config) {
+            return !self::parentRowsMatch($parentEntityDataRow, $activeParentData, $parentEntityColumns, $config);
+          }
+        ));
+        array_unshift($parentEntityDataRows, $activeParentData);
+      }
 
       // Check for compound field handling which require presence of a set of
       // fields (e.g. build date from day, month, year).
       $parentEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
       $childEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
+      $precheckRowIds = [];
+      $occurrenceRowsProcessedThisRequest = 0;
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
-        // @todo Updating existing data.
-        $parent = ORM::factory($config['parentEntity']);
+        $isContinuingParent = !empty($activeParent)
+          && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
+        // Reuse the saved parent when continuing a group across requests. The
+        // sample grouping remains based on the original parent field values.
+        $parent = $isContinuingParent
+          ? ORM::factory($config['parentEntity'], $activeParent['id'])
+          : ORM::factory($config['parentEntity']);
         $submission = [];
         self::applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         self::copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
@@ -103,11 +140,16 @@ class import2ChunkHandler {
           'website_id' => $config['global-values']['website_id'],
           'survey_id' => $submission['survey_id'] ?? NULL,
         ];
+        $parent->setIdentifiers($identifiers);
         if ($config['parentEntitySupportsImportGuid']) {
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
         }
         $parent->set_submission_data($submission);
-        if ($isPrecheck) {
+        $parentErrors = [];
+        if ($isContinuingParent) {
+          $parent->set_submission_data($submission);
+        }
+        elseif ($isPrecheck) {
           try {
             $parentErrors = $parent->precheck($identifiers);
           } catch (Exception $e) {
@@ -126,7 +168,18 @@ class import2ChunkHandler {
             $parentErrors['sample:general'] = $e->getMessage();
           }
         }
-        $childEntityDataRows = self::fetchChildEntityData($db, $parentEntityColumns, $isPrecheck, $config, $parentEntityDataRow);
+        $childEntityData = self::fetchChildEntityData(
+          $db,
+          $parentEntityColumns,
+          $isPrecheck,
+          $config,
+          $parentEntityDataRow,
+          // Use the existing chunk-size setting as the total per-request
+          // budget, regardless of how many parent groups it contains.
+          max(1, self::$batchRowLimit - $occurrenceRowsProcessedThisRequest)
+        );
+        $childEntityDataRows = $childEntityData['rows'];
+        $hasMoreChildRows = $childEntityData['hasMore'];
         if (count($parentErrors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
@@ -151,6 +204,8 @@ class import2ChunkHandler {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
             $child->set_submission_data($submission);
+            $child->setIdentifiers($identifiers);
+            $errors = [];
             if ($isPrecheck) {
               try {
                 $errors = $child->precheck($identifiers);
@@ -177,7 +232,15 @@ class import2ChunkHandler {
               self::saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             else {
-              self::setRowDone($db, $childEntityDataRow->_row_id, $isPrecheck, $config);
+              if ($isPrecheck) {
+                $precheckRowIds[] = (int) $childEntityDataRow->_row_id;
+                if (count($precheckRowIds) >= self::PRECHECK_ROW_UPDATE_BATCH_SIZE) {
+                  self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
+                }
+              }
+              else {
+                self::setRowDone($db, $childEntityDataRow->_row_id, FALSE, $config);
+              }
               if (!$isPrecheck) {
                 if (!empty($submission['occurrence:id'])) {
                   $config['rowsUpdated']++;
@@ -205,9 +268,31 @@ class import2ChunkHandler {
               }
             }
             $config['rowsProcessed']++;
+            $occurrenceRowsProcessedThisRequest++;
           }
         }
+        if ($isPrecheck && !empty($precheckRowIds)) {
+          self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
+        }
+        if ($hasMoreChildRows) {
+          if (!$isPrecheck && count($parentErrors) === 0) {
+            // Only saved samples can be resumed. Precheck uses a fake parent
+            // ID, so its rows must be completed in the current request.
+            $config['activeParent'] = [
+              'id' => $parent->id,
+              'data' => (array) $parentEntityDataRow,
+            ];
+          }
+          else {
+            unset($config['activeParent']);
+          }
+          break;
+        }
+        unset($config['activeParent']);
         $config['parentEntityRowsProcessed']++;
+        if ($occurrenceRowsProcessedThisRequest >= self::$batchRowLimit) {
+          break;
+        }
       }
 
       $progress = $config['totalRows'] > 0
@@ -222,6 +307,8 @@ class import2ChunkHandler {
       if (!$isPrecheck) {
         self::saveImportRecord($config);
       }
+      self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck);
+      $benchmarkLogged = TRUE;
       return [
         // Additional check for count of parentDataEntityRows will apply if an
         // import is restarted by refreshing the browser page, as the
@@ -236,6 +323,14 @@ class import2ChunkHandler {
       ];
     }
     catch (Exception $e) {
+      if (!$benchmarkLogged) {
+        self::logBenchmark(
+          $benchmarkStartIndex,
+          $benchmarkStartedAt,
+          $config ?? [],
+          $isPrecheck ?? FALSE
+        );
+      }
       if ($e instanceof RequestAbort) {
         // Abort request implies response already sent.
         return;
@@ -257,6 +352,11 @@ class import2ChunkHandler {
         'status' => 'error',
         'msg' => $e->getMessage(),
       ];
+    }
+    finally {
+      if ($workflowBulkModeEnabled) {
+        workflow::setBulkMode(FALSE);
+      }
     }
   }
 
@@ -432,12 +532,111 @@ class import2ChunkHandler {
     $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
     $key = 'chunk_size_' . ($isBackground ? 'background_' : '') . ($isPrecheck ? 'preprocess' : 'import');
     $defaults = [
-      'chunk_size_preprocess' => 100,
-      'chunk_size_import' => 50,
+      'chunk_size_preprocess' => 500,
+      'chunk_size_import' => 100,
       'chunk_size_background_preprocess' => 1000,
       'chunk_size_background_import' => 500,
     ];
     self::$batchRowLimit = $moduleConfig[$key] ?? $defaults[$key];
+  }
+
+  /**
+   * Log database benchmark data for an import chunk when enabled.
+   *
+   * Query values are removed from the signatures before logging, so the
+   * benchmark does not expose imported data in the log.
+   *
+   * @param int $benchmarkStartIndex
+   *   Index in Database::$benchmarks at the start of the chunk.
+   * @param float $startedAt
+   *   Microtime when processing the chunk started.
+   * @param array $config
+   *   Import configuration.
+   * @param bool $isPrecheck
+   *   Whether this is a precheck chunk.
+   */
+  private static function logBenchmark($benchmarkStartIndex, $startedAt, array $config, $isPrecheck) {
+    $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
+    if (empty($moduleConfig['benchmark_import_chunks'])) {
+      return;
+    }
+    $benchmarks = array_slice(Database::$benchmarks, $benchmarkStartIndex);
+    $queryTime = 0;
+    $byCategory = [];
+    $bySignature = [];
+    foreach ($benchmarks as $benchmark) {
+      $time = (float) ($benchmark['time'] ?? 0);
+      $queryTime += $time;
+      $category = self::getBenchmarkQueryCategory($benchmark['query'] ?? '');
+      if (!isset($byCategory[$category])) {
+        $byCategory[$category] = [
+          'count' => 0,
+          'time' => 0,
+        ];
+      }
+      $byCategory[$category]['count']++;
+      $byCategory[$category]['time'] += $time;
+
+      $signature = self::getBenchmarkQuerySignature($benchmark['query'] ?? '');
+      if (!isset($bySignature[$signature])) {
+        $bySignature[$signature] = [
+          'count' => 0,
+          'time' => 0,
+          'rows' => 0,
+        ];
+      }
+      $bySignature[$signature]['count']++;
+      $bySignature[$signature]['time'] += $time;
+      $bySignature[$signature]['rows'] += (int) ($benchmark['rows'] ?? 0);
+    }
+    uasort($bySignature, function ($left, $right) {
+      return $right['count'] <=> $left['count'];
+    });
+    $bySignature = array_slice($bySignature, 0, 20, TRUE);
+    $summary = [
+      'configId' => $config['importGuid'] ?? NULL,
+      'mode' => $isPrecheck ? 'precheck' : 'import',
+      'rowsProcessed' => $config['rowsProcessed'] ?? NULL,
+      'parentRowsProcessed' => $config['parentEntityRowsProcessed'] ?? NULL,
+      'requestTime' => microtime(TRUE) - $startedAt,
+      'queryCount' => count($benchmarks),
+      'queryTime' => $queryTime,
+      'queriesByCategory' => $byCategory,
+      'topQuerySignatures' => $bySignature,
+    ];
+    kohana::log('debug', 'Import chunk benchmark: ' . json_encode($summary));
+  }
+
+  /**
+   * Categorise a benchmark query by its leading SQL operation.
+   *
+   * @param string $query
+   *   SQL query.
+   *
+   * @return string
+   *   Query category.
+   */
+  private static function getBenchmarkQueryCategory($query) {
+    if (preg_match('/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i', $query, $matches)) {
+      return strtoupper($matches[1]);
+    }
+    return 'OTHER';
+  }
+
+  /**
+   * Normalise a benchmark query for grouping without retaining its values.
+   *
+   * @param string $query
+   *   SQL query.
+   *
+   * @return string
+   *   Normalised query signature.
+   */
+  private static function getBenchmarkQuerySignature($query) {
+    $signature = preg_replace("/'(?:''|[^'])*'/", "'?" . "'", $query);
+    $signature = preg_replace('/\b\d+(?:\.\d+)?\b/', '?', $signature);
+    $signature = preg_replace('/\s+/', ' ', trim($signature));
+    return substr($signature, 0, 240);
   }
 
   /**
@@ -454,10 +653,14 @@ class import2ChunkHandler {
    * @param object $parentEntityDataRow
    *   Data row holding the parent record values.
    *
-   * @return object
-   *   Database result containing child rows.
+  * @param int $limit
+  *   Maximum number of child rows to return. One additional row is fetched
+  *   to determine whether the parent group needs to continue next request.
+  *
+  * @return array
+  *   Array containing the child rows and a flag indicating more rows remain.
    */
-  private static function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow) {
+  private static function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow, $limit) {
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
     $fields = self::getDestFieldsForColumns($columns, $config);
     // Build a filter to extract rows for this parent entity.
@@ -468,8 +671,14 @@ class import2ChunkHandler {
     ];
     foreach ($fields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
-      $wheresList[] = "COALESCE($fieldEsc::text, '')=$value";
+      $fieldValue = $parentEntityDataRow->$field ?? NULL;
+      if ($fieldValue === NULL) {
+        $wheresList[] = "$fieldEsc IS NULL";
+      }
+      else {
+        $value = pg_escape_literal($db->getLink(), $fieldValue);
+        $wheresList[] = "$fieldEsc=$value";
+      }
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
@@ -477,9 +686,37 @@ class import2ChunkHandler {
 SELECT *
 FROM import_temp.$dbIdentifiers[tempTableName]
 WHERE $wheres
-ORDER BY _row_id;
+ORDER BY _row_id
+LIMIT ?;
 SQL;
-    return $db->query($sql)->result();
+    // Materialise the legacy result wrapper before using array operations;
+    // result_array() still returns stdClass rows for the importer.
+    $rows = $db->query($sql, $limit + 1)->result()->result_array();
+    $hasMore = count($rows) > $limit;
+    return [
+      // The extra row is only a lookahead marker and must not be processed.
+      'rows' => $hasMore ? array_slice($rows, 0, $limit) : $rows,
+      'hasMore' => $hasMore,
+    ];
+  }
+
+  /**
+   * Checks whether two parent rows represent the same grouped sample.
+   */
+  private static function parentRowsMatch($left, $right, array $columns, array $config) {
+    foreach (self::getDestFieldsForColumns($columns, $config) as $field) {
+      $leftValue = $left->$field ?? NULL;
+      $rightValue = $right->$field ?? NULL;
+      if ($leftValue === NULL || $rightValue === NULL) {
+        if ($leftValue !== $rightValue) {
+          return FALSE;
+        }
+      }
+      elseif ((string) $leftValue !== (string) $rightValue) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**
@@ -514,7 +751,9 @@ SQL;
       ORDER BY $fieldsAsCsv
       LIMIT ?;
     SQL;
-    return $db->query($sql, self::$batchRowLimit)->result();
+    // Return a PHP array because continuation handling filters and prepends
+    // parent groups before iterating over them.
+    return $db->query($sql, self::$batchRowLimit)->result()->result_array();
   }
 
   /**
@@ -822,8 +1061,14 @@ SQL;
     $whereList = [];
     foreach ($keyFields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
-      $whereList[] = "COALESCE($fieldEsc::text, '')=$value";
+      $fieldValue = $rowData->$field ?? NULL;
+      if ($fieldValue === NULL) {
+        $whereList[] = "$fieldEsc IS NULL";
+      }
+      else {
+        $value = pg_escape_literal($db->getLink(), $fieldValue);
+        $whereList[] = "$fieldEsc=$value";
+      }
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
@@ -886,6 +1131,37 @@ SQL;
       WHERE _row_id = ?;
     SQL;
     $db->query($sql, $rowId);
+  }
+
+  /**
+   * Set the checked flag for a bounded batch of successfully prechecked rows.
+   *
+   * Precheck flags are deliberately flushed independently from import flags.
+   * Repeating a precheck after a failed request is safe, whereas marking an
+   * imported row before the whole operation is durable could allow a retry to
+   * duplicate records. Batching them improves precheck performance.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $rowIds
+   *   Import row IDs to mark as checked. Values must be integers.
+   * @param array $config
+   *   Import configuration settings.
+   */
+  private static function setPrecheckedRowsDone($db, array &$rowIds, array $config) {
+    if (empty($rowIds)) {
+      return;
+    }
+    $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
+    $rowIds = array_map('intval', $rowIds);
+    $rowIdsSql = implode(',', $rowIds);
+    $sql = <<<SQL
+      UPDATE import_temp.$dbIdentifiers[tempTableName]
+      SET checked = true
+      WHERE _row_id IN ($rowIdsSql);
+SQL;
+    $db->query($sql);
+    $rowIds = [];
   }
 
   /**

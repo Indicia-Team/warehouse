@@ -273,6 +273,11 @@ SQL;
    *   List of occurrences affected by a submission.
    */
   public static function updateSampleTrackingForOccurrences($db, array $ids) {
+    // The functional cache entries may not exist yet when cache updates are
+    // deferred, so there is nothing to update until the queued cache task runs.
+    if (self::$delayCacheUpdates) {
+      return;
+    }
     $idList = implode(',', $ids);
     warehouse::validateIntCsvListParam($idList);
     $sql = <<<SQL

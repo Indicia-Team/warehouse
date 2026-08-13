@@ -7,9 +7,9 @@
   ],
   "require": {
     "firebase/php-jwt": "^6.10",
-    "phpoffice/phpspreadsheet": "^5.1",
+    "phpoffice/phpspreadsheet": "^5.8",
     "league/oauth2-client": "^2.8",
-    "guzzlehttp/guzzle": "^7.10"
+    "guzzlehttp/guzzle": "^7.15"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.6",

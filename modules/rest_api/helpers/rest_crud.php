@@ -1298,6 +1298,7 @@ SQL;
    */
   private static function submit($entity, $obj, array $postObj) {
     $obj->submission = self::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
+    $obj->setIdentifiers(['website_id' => RestObjects::$clientWebsiteId]);
     $id = $obj->submit();
     if (!$id) {
       foreach ($obj->getAllErrors() as $msg) {

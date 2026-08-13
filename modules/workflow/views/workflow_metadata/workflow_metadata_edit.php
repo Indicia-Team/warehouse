@@ -32,7 +32,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     <legend>Workflow Metadata specification details</legend>
     <?php
     data_entry_helper::link_default_stylesheet();
-    data_entry_helper::enable_validation('entry-form');
+    data_entry_helper::enableValidation('entry-form');
     echo data_entry_helper::hidden_text(array(
         'fieldname' => 'workflow_metadata:id',
         'default' => html::initial_value($values, 'workflow_metadata:id')

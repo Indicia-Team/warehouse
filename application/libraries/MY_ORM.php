@@ -50,6 +50,13 @@ class ORM extends ORM_Core {
   public static $changedRecords;
 
   /**
+   * Request-local cache of survey IDs for sample and occurrence records.
+   *
+   * @var array
+   */
+  private static $recordContexts = [];
+
+  /**
    * Values before any changes applied.
    *
    * @var array
@@ -406,14 +413,20 @@ class ORM extends ORM_Core {
    */
   public function validate(Validation $array, $save = FALSE) {
     if (!empty($this->identifiers['survey_id'])) {
-      $qry = $this->db
-        ->select('core_validation_rules')
-        ->from('surveys')
-        ->where('id', $this->identifiers['survey_id'])
-        ->get()
-        ->current();
-      if (!empty($qry->core_validation_rules)) {
-        $rules = json_decode($qry->core_validation_rules, TRUE);
+      $cache_key = 'survey_validation_rules_' . $this->identifiers['survey_id'];
+      $validationRules = $this->cache->get($cache_key);
+      if ($validationRules === NULL) {
+        $qry = $this->db
+          ->select('core_validation_rules')
+          ->from('surveys')
+          ->where('id', $this->identifiers['survey_id'])
+          ->get()
+          ->current();
+        $validationRules = $qry->core_validation_rules;
+        $this->cache->set($cache_key, $validationRules);
+      }
+      if (!empty($validationRules)) {
+        $rules = json_decode($validationRules, TRUE);
         if (isset($rules[$this->object_name])) {
           foreach ($rules[$this->object_name] as $field => $rules) {
             $array->add_rules($field, $rules);
@@ -447,8 +460,15 @@ class ORM extends ORM_Core {
         }
       }
     }
-
     $modelFields = $array->as_array();
+    // Normalize all submitted nullable model fields, including validated fields.
+    foreach ($modelFields as $field => $value) {
+      if ($value === ''
+          && isset($this->table_columns[$field]['null'])
+          && $this->table_columns[$field]['null'] == 1) {
+        $array[$field] = NULL;
+      }
+    }
     $fields_to_copy = $this->unvalidatedFields;
     // The created_by_id and updated_by_id fields can be specified by web
     // service calls if the caller knows which Indicia user is making the post.
@@ -458,13 +478,9 @@ class ORM extends ORM_Core {
     if (!empty($modelFields['updated_by_id'])) {
       $fields_to_copy[] = 'updated_by_id';
     }
+    // Copy data into the model.
     foreach ($fields_to_copy as $a) {
       if (array_key_exists($a, $modelFields)) {
-        // When a field allows nulls, convert empty values to null. Otherwise
-        // we end up trying to store '' in non-string fields such as dates.
-        if ($array[$a] === '' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null'] == 1) {
-          $array[$a] = NULL;
-        }
         $this->__set($a, $array[$a]);
       }
     }
@@ -599,6 +615,16 @@ class ORM extends ORM_Core {
   public function getUserId() {
     global $remoteUserId;
     return $remoteUserId ?? $_SESSION['auth_user']->id ?? Kohana::config('indicia.defaultPersonId');
+  }
+
+  /**
+   * Provide website, survey or taxon list context for validation.
+   *
+   * @param array $identifiers
+   *   Identifier values keyed by identifier name.
+   */
+  public function setIdentifiers(array $identifiers) {
+    $this->identifiers = array_merge($this->identifiers, $identifiers);
   }
 
   /**
@@ -777,6 +803,88 @@ class ORM extends ORM_Core {
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id'];
       }
     }
+    if (empty($this->identifiers['survey_id'])) {
+      $this->populateSurveyIdentifierFromOwner();
+    }
+  }
+
+  /**
+   * Populate survey context when the submission only identifies an owner.
+   *
+   * This supports standalone occurrence and attribute-value submissions,
+   * where the survey is not itself a submitted field.
+   */
+  private function populateSurveyIdentifierFromOwner() {
+    $ownerType = NULL;
+    $ownerId = NULL;
+    // Attribute values need the owner survey to validate survey-specific
+    // rules. Do not infer it for ordinary sample/occurrence saves: doing so
+    // would apply survey-level core validation rules to partial updates that
+    // previously validated without a survey context.
+    if ($this->object_name === 'sample_attribute_value') {
+      $ownerType = 'sample';
+      $ownerId = $this->getSubmissionFieldValue('sample_id');
+      if (empty($ownerId) && $this->id) {
+        $ownerId = $this->sample_id;
+      }
+    }
+    elseif ($this->object_name === 'occurrence_attribute_value') {
+      if (!empty($this->getSubmissionFieldValue('sample_id'))) {
+        $ownerType = 'sample';
+        $ownerId = $this->getSubmissionFieldValue('sample_id');
+      }
+      else {
+        $ownerType = 'occurrence';
+        $ownerId = $this->getSubmissionFieldValue('occurrence_id');
+        if (empty($ownerId) && $this->id) {
+          $ownerId = $this->occurrence_id;
+        }
+      }
+    }
+    if (empty($ownerType) || empty($ownerId)) {
+      return;
+    }
+    $cacheKey = "$ownerType:$ownerId";
+    if (!array_key_exists($cacheKey, self::$recordContexts)) {
+      if ($ownerType === 'sample') {
+        $context = $this->db->select('srv.website_id, s.survey_id')
+          ->from('samples AS s')
+          ->join('surveys AS srv', 'srv.id', 's.survey_id')
+          ->where('s.id', $ownerId)
+          ->get()->current();
+      }
+      else {
+        $context = $this->db->select('o.website_id, s.survey_id')
+          ->from('occurrences AS o')
+          ->join('samples AS s', 's.id', 'o.sample_id')
+          ->where('o.id', $ownerId)
+          ->get()->current();
+      }
+      self::$recordContexts[$cacheKey] = $context ? [
+        'website_id' => $context->website_id,
+        'survey_id' => $context->survey_id,
+      ] : NULL;
+    }
+    if (!empty(self::$recordContexts[$cacheKey])) {
+      if (empty($this->identifiers['website_id'])) {
+        $this->identifiers['website_id'] = self::$recordContexts[$cacheKey]['website_id'];
+      }
+      if (empty($this->identifiers['survey_id'])) {
+        $this->identifiers['survey_id'] = self::$recordContexts[$cacheKey]['survey_id'];
+      }
+    }
+  }
+
+  /**
+   * Get a submitted field value regardless of whether it uses the standard
+   * value wrapper or the scalar form accepted by generic services.
+   */
+  private function getSubmissionFieldValue($field) {
+    if (!isset($this->submission['fields'][$field])) {
+      return NULL;
+    }
+    $value = $this->submission['fields'][$field];
+    return is_array($value) ? ($value['value'] ?? NULL) : $value;
   }
 
   /**
@@ -1067,6 +1175,7 @@ class ORM extends ORM_Core {
       foreach ($vArray as $field => $value) {
         if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
           $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $attrObj->setIdentifiers($this->identifiers);
           $valueField = $this->getValueField($allAttributes, $matches['id']);
           $attrArray = [
             $this->object_name . '_id' => 1,
@@ -1774,13 +1883,12 @@ class ORM extends ORM_Core {
       ($this->identifiers['taxon_list_id'] ?? '') . '-' .
       ($required ? 't' : 'f') .
       $typeFilter;
-    $cache = Cache::instance();
-    $attrs = $cache->get($cacheId);
+    $attrs = $this->cache->get($cacheId);
     if ($attrs === NULL) {
       $attrEntity = $this->object_name . '_attribute';
       $attrTable = inflector::plural($this->object_name . '_attribute');
 
-      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value");
+      $this->db->select(["$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value"]);
       $this->db->from($attrTable);
       $this->db->where("$attrTable.deleted", 'f');
       if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
@@ -1835,7 +1943,7 @@ class ORM extends ORM_Core {
       }
       $this->db->orderby("$attrTable.caption", 'ASC');
       $attrs = $this->db->get()->result_array(TRUE);
-      $cache->set($cacheId, $attrs, ['attribute-lists']);
+      $this->cache->set($cacheId, $attrs, ['attribute-lists']);
     }
     return $attrs;
   }
@@ -2237,6 +2345,7 @@ class ORM extends ORM_Core {
       $attrValueModel = ORM::factory($this->object_name . '_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
     }
+    $attrValueModel->setIdentifiers($this->identifiers);
     if (!empty($valueId)) {
       // If we know the value ID, load the model.
       $attrValueModel->find($valueId);

@@ -38,3 +38,5 @@ $config['chunk_size_background_preprocess'] = 1000;
 // Override processing chunk size during actual import phase of import if
 // background importing a large file..
 $config['chunk_size_background_import'] = 500;
+// Log per-import-chunk query counts, timings, and anonymised query signatures.
+$config['benchmark_import_chunks'] = FALSE;
