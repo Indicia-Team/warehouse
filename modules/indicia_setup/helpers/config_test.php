@@ -163,11 +163,11 @@ class config_test {
    *   False reports both failures and successes.
    */
   private static function check_php_version(&$messages, $problems_only) {
-    if (PHP_VERSION_ID < 50600) {
+    if (PHP_VERSION_ID < 80200) {
       array_push($messages, array(
         'title' => 'PHP Version',
         'description' => 'Your PHP version is ' . phpversion() . ' which is unsupported. Please upgrade the PHP ' .
-          'installation on this web server to version 5.6 or higher.',
+          'installation on this web server to version 8.2 or higher.',
         'success' => FALSE,
       ));
     }
