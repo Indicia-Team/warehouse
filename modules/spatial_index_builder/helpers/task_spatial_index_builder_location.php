@@ -419,7 +419,11 @@ class task_spatial_index_builder_location {
     $qry = <<<SQL
       DROP TABLE IF EXISTS location_updates;
 
-      SELECT w.record_id as location_id, array_remove(array_agg(DISTINCT clhl.higher_location_id), NULL) as higher_location_ids
+      SELECT w.record_id as location_id,
+        COALESCE(
+          array_remove(array_agg(DISTINCT clhl.higher_location_id), NULL),
+          ARRAY[]::integer[]
+        ) as higher_location_ids
       INTO TEMPORARY location_updates
       FROM work_queue w
       LEFT JOIN contained_locations_higher_locations clhl ON clhl.location_id=w.record_id
