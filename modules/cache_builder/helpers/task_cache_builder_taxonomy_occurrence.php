@@ -81,6 +81,23 @@ SQL;
 
     // Now process taxonomy where the cache update is already done.
     $sql = <<<SQL
+WITH target_occurrences AS MATERIALIZED (
+  SELECT DISTINCT o.id
+  FROM cache_occurrences_functional o
+  JOIN occurrences occ ON occ.id=o.id
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=occ.taxa_taxon_list_id
+  JOIN cache_taxa_taxon_lists cttlm ON cttlm.taxon_meaning_id=cttl.taxon_meaning_id
+  JOIN work_queue q ON q.record_id=cttlm.id
+  WHERE q.entity='taxa_taxon_list'
+  AND q.task='task_cache_builder_taxonomy_occurrence'
+  AND q.claimed_by=?
+), locked_occurrences AS MATERIALIZED (
+  SELECT o.id
+  FROM cache_occurrences_functional o
+  JOIN target_occurrences t ON t.id=o.id
+  ORDER BY o.id
+  FOR UPDATE OF o
+)
 UPDATE cache_occurrences_functional o
 SET taxon_path=ctp.path,
   preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
@@ -93,19 +110,14 @@ SET taxon_path=ctp.path,
   freshwater_flag=cttl.freshwater_flag,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag
-FROM work_queue q, cache_taxa_taxon_lists cttlm
-JOIN cache_taxa_taxon_lists cttl ON cttl.taxon_meaning_id=cttlm.taxon_meaning_id
-JOIN occurrences occ ON occ.taxa_taxon_list_id=cttl.id
-LEFT JOIN cache_taxon_paths ctp
-  ON ctp.external_key=cttl.external_key
+FROM occurrences occ
+JOIN cache_taxa_taxon_lists cttl ON cttl.id=occ.taxa_taxon_list_id
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key
   AND ctp.taxon_list_id=COALESCE(?, cttl.taxon_list_id)
-WHERE o.id=occ.id
-AND cttlm.id=q.record_id
-AND q.entity='taxa_taxon_list'
-AND q.task='task_cache_builder_taxonomy_occurrence'
-AND q.claimed_by=?;
+JOIN locked_occurrences l ON l.id=o.id
+WHERE o.id=occ.id;
 SQL;
-    $db->query($sql, [$masterListId, $procId]);
+  $db->query($sql, [$procId, $masterListId]);
   }
 
 }

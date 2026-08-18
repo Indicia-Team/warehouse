@@ -330,12 +330,30 @@ SQL;
           $updateFieldSQL[] = "map_sq_{$km}km_id=$msqId";
           $updateFilterSQL[] = "map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId";
         }
-        $db->query("UPDATE cache_occurrences_functional SET " . implode(', ', $updateFieldSQL) .
-          " WHERE sample_id={$s->id}" .
-          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
-        $db->query("UPDATE cache_samples_functional SET " . implode(', ', $updateFieldSQL) .
-          " WHERE id={$s->id}" .
-          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
+        $updateFieldSqlJoined = implode(', ', $updateFieldSQL);
+        $updateFilterSqlJoined = implode(' OR ', $updateFilterSQL);
+        // To avoid deadlocks, we need to target the occurrences first, then
+        // lock them in deterministic order and finally update them.
+        $db->query(<<<SQL
+          WITH target_occurrences AS MATERIALIZED (
+            SELECT DISTINCT o.id FROM cache_occurrences_functional o
+            WHERE o.sample_id={$s->id}
+            AND ($updateFilterSqlJoined)
+          ), locked_occurrences AS MATERIALIZED (
+            SELECT o.id FROM cache_occurrences_functional o
+            JOIN target_occurrences target ON target.id=o.id
+            ORDER BY o.id FOR UPDATE OF o
+          )
+          UPDATE cache_occurrences_functional o SET $updateFieldSqlJoined
+          FROM locked_occurrences lo
+          WHERE o.id=lo.id
+        SQL);
+        // Finally update the sample itself.
+        $db->query(<<<SQL
+          UPDATE cache_samples_functional SET $updateFieldSqlJoined
+          WHERE id={$s->id}
+          AND ($updateFilterSqlJoined)
+        SQL);
       }
     }
   }

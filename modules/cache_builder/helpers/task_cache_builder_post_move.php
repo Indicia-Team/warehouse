@@ -75,11 +75,25 @@ class task_cache_builder_post_move {
       );
     SQL;
     $db->query($sql);
+    // To avoid deadlocks, we need to target the occurrences first, then lock
+    // them in deterministic order and finally update them.
     $sql = <<<SQL
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT u.id
+        FROM cache_occurrences_functional u
+        JOIN moving_records mr ON mr.id=u.id
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT u.id
+        FROM cache_occurrences_functional u
+        JOIN target_occurrences t ON t.id=u.id
+        ORDER BY u.id
+        FOR UPDATE OF u
+      )
       UPDATE cache_occurrences_functional u
       SET website_id=mr.website_id,
         survey_id=mr.survey_id
       FROM moving_records mr
+      JOIN locked_occurrences l ON l.id=mr.id
       WHERE mr.id=u.id;
     SQL;
     $db->query($sql);

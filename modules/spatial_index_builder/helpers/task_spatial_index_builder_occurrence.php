@@ -81,11 +81,26 @@ class task_spatial_index_builder_occurrence {
       AND q.entity='occurrence'
       AND q.task='task_spatial_index_builder_occurrence';
 
+      -- To avoid deadlocks, we need to target the occurrences first, then lock
+      -- them in deterministic order and finally update them.
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT o.id
+        FROM cache_occurrences_functional o
+        JOIN occlist ol ON ol.id=o.id
+        WHERE o.location_ids <> ol.location_ids
+        OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL)
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN target_occurrences t ON t.id=o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
       UPDATE cache_occurrences_functional o
       SET location_ids = ol.location_ids
       FROM occlist ol
-      WHERE ol.id=o.id
-      AND (o.location_ids <> ol.location_ids OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL));
+      JOIN locked_occurrences l ON l.id=o.id
+      WHERE o.id=ol.id;
 
       -- Delete processed.
       DELETE FROM work_queue q

@@ -61,29 +61,43 @@ class task_cache_builder_user_privacy {
   public static function process($db, $taskType, $procId) {
     $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
+WITH target_occurrences AS MATERIALIZED (
+  SELECT DISTINCT o.id
+  FROM cache_occurrences_functional o
+  JOIN users u ON u.id=o.created_by_id
+  JOIN work_queue q
+    ON q.record_id=u.id
+    AND q.task='task_cache_builder_user_privacy'
+    AND q.entity='user'
+    AND q.claimed_by=$procIdEsc
+), locked_occurrences AS MATERIALIZED (
+  SELECT o.id
+  FROM cache_occurrences_functional o
+  JOIN target_occurrences t ON t.id=o.id
+  ORDER BY o.id
+  FOR UPDATE OF o
+)
 UPDATE cache_occurrences_functional o
-  SET blocked_sharing_tasks=
-    CASE WHEN u.allow_share_for_reporting
-      AND u.allow_share_for_peer_review AND u.allow_share_for_verification
-      AND u.allow_share_for_data_flow AND u.allow_share_for_moderation
-      AND u.allow_share_for_editing
-    THEN null
-    ELSE
-      ARRAY_REMOVE(ARRAY[
-        CASE WHEN u.allow_share_for_reporting=false THEN 'R' ELSE NULL END,
-        CASE WHEN u.allow_share_for_peer_review=false THEN 'P' ELSE NULL END,
-        CASE WHEN u.allow_share_for_verification=false THEN 'V' ELSE NULL END,
-        CASE WHEN u.allow_share_for_data_flow=false THEN 'D' ELSE NULL END,
-        CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
-        CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
-      ], NULL)
-    END
+SET blocked_sharing_tasks=
+  CASE WHEN u.allow_share_for_reporting
+    AND u.allow_share_for_peer_review
+    AND u.allow_share_for_verification
+    AND u.allow_share_for_data_flow
+    AND u.allow_share_for_moderation
+    AND u.allow_share_for_editing
+  THEN null
+  ELSE
+    ARRAY_REMOVE(ARRAY[
+      CASE WHEN u.allow_share_for_reporting=false THEN 'R' ELSE NULL END,
+      CASE WHEN u.allow_share_for_peer_review=false THEN 'P' ELSE NULL END,
+      CASE WHEN u.allow_share_for_verification=false THEN 'V' ELSE NULL END,
+      CASE WHEN u.allow_share_for_data_flow=false THEN 'D' ELSE NULL END,
+      CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
+      CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
+    ], NULL)
+  END
 FROM users u
-JOIN work_queue q
-  ON q.record_id=u.id
-  AND q.task='task_cache_builder_user_privacy'
-  AND q.entity='user'
-  AND q.claimed_by=$procIdEsc
+JOIN locked_occurrences l ON l.id=o.id
 WHERE u.id=o.created_by_id;
 
 UPDATE cache_samples_functional s

@@ -96,11 +96,19 @@ HTML;
     // Preprocess some of the tags in the queries.
     if (is_array($queries['update'])) {
       foreach ($queries['update'] as &$sql) {
-        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
+        $sql = str_replace(
+          ['#join_needs_update#', '#occurrence_ids#'],
+          [$queries['join_needs_update'], ''],
+          $sql
+        );
       }
     }
     else {
-      $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
+      $queries['update'] = str_replace(
+        ['#join_needs_update#', '#occurrence_ids#'],
+        [$queries['join_needs_update'], ''],
+        $queries['update']
+      );
     }
     cache_builder::run_statement($db, $table, $queries['update'], 'update');
     // Preprocess some of the tags in the queries.
@@ -205,12 +213,15 @@ HTML;
           $queries['update'] = [$queries['update']];
         }
         foreach ($queries['update'] as $query) {
+          $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $updateSql = str_replace(
-            ['#join_needs_update#', '#master_list_id#'],
-            ['', $master_list_id],
+            ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
+            ['', $master_list_id, "AND o.id IN ($idList)"],
             $query
           );
-          $updateSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          if (!$hasOccurrenceIdFilter) {
+            $updateSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          }
           $db->query($updateSql);
         }
         self::final_queries($db, $table, $ids);
