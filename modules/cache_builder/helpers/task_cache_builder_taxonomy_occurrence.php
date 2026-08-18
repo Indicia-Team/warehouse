@@ -114,7 +114,7 @@ FROM occurrences occ
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=occ.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key
   AND ctp.taxon_list_id=COALESCE(?, cttl.taxon_list_id)
-JOIN locked_occurrences l ON l.id=o.id
+JOIN locked_occurrences l ON l.id=occ.id
 WHERE o.id=occ.id;
 SQL;
   $db->query($sql, [$procId, $masterListId]);

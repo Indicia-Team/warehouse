@@ -239,9 +239,9 @@ class task_spatial_index_builder_sample {
       )
       UPDATE cache_occurrences_functional o
       SET location_ids = s.location_ids
-      FROM cache_samples_functional s
-      JOIN locked_occurrences l ON l.id=o.id
+      FROM cache_samples_functional s, locked_occurrences l
       WHERE o.sample_id=s.id
+      AND o.id=l.id
       AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
     SQL;
     $db->query($qry);
