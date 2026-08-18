@@ -170,12 +170,15 @@ HTML;
           $queries['insert'] = [$queries['insert']];
         }
         foreach ($queries['insert'] as $query) {
+          $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $insertSql = str_replace(
-            ['#join_needs_update#', '#master_list_id#'],
-            ['', $master_list_id],
+            ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
+            ['', $master_list_id, "AND o.id IN ($idList)"],
             $query
           );
-          $insertSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          if (!$hasOccurrenceIdFilter) {
+            $insertSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          }
           $db->query($insertSql);
         }
       }
