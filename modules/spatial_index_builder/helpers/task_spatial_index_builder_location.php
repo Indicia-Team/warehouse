@@ -275,9 +275,9 @@ class task_spatial_index_builder_location {
           WHEN u.location_ids IS NULL THEN clh.location_ids
           ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
         END
-      FROM changed_location_hits clh
-      JOIN locked_occurrences l ON l.id=u.id
+      FROM changed_location_hits clh, locked_occurrences l
       WHERE u.sample_id=clh.sample_id
+      AND l.id=u.id
       AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
       -- Find samples currently indexed against locations where they no longer
