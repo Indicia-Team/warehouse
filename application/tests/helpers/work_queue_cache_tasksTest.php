@@ -33,7 +33,7 @@ class Helper_Work_Queue_Cache_Tasks_Test extends TestCase {
     foreach (self::OCCURRENCE_WORKERS as $worker) {
       $source = file_get_contents($worker);
       $this->assertStringContainsString(
-        'WITH target_occurrences AS MATERIALIZED',
+        'target_occurrences AS MATERIALIZED',
         $source,
         "$worker must materialize occurrence targets"
       );

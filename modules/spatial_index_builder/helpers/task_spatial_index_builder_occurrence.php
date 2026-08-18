@@ -99,7 +99,7 @@ class task_spatial_index_builder_occurrence {
       UPDATE cache_occurrences_functional o
       SET location_ids = ol.location_ids
       FROM occlist ol
-      JOIN locked_occurrences l ON l.id=o.id
+      JOIN locked_occurrences l ON l.id=ol.id
       WHERE o.id=ol.id;
 
       -- Delete processed.
