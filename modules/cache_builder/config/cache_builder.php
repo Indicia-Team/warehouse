@@ -1787,7 +1787,14 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+LEFT JOIN LATERAL (
+  SELECT path
+  FROM cache_taxon_paths
+  WHERE external_key=cttl.external_key
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  ORDER BY taxon_list_id=#master_list_id# DESC
+  LIMIT 1
+) ctp ON true
 LEFT JOIN LATERAL (
   SELECT t.sort_order
   FROM occurrence_attribute_values oav
@@ -1820,28 +1827,6 @@ LEFT JOIN LATERAL (
 LEFT JOIN dna_occurrences dnao ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE u.id=o.id
 ";
-
-// Fill in taxon_path if it was unable to be populated from the master list.
-$config['occurrences']['update']['functional_taxon_path'] = <<<SQL
-  WITH locked_occurrences AS MATERIALIZED (
-    SELECT o.id
-    FROM cache_occurrences_functional o
-    #join_needs_update#
-    WHERE
-    #occurrence_ids#
-    AND o.taxon_path IS NULL
-    ORDER BY o.id
-    FOR UPDATE OF o
-  )
-  UPDATE cache_occurrences_functional u
-  SET taxon_path=ctp.path
-  FROM locked_occurrences lo
-  JOIN occurrences o ON o.id=lo.id
-  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-  JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=cttl.taxon_list_id
-  WHERE u.id=lo.id
-  AND u.taxon_path IS NULL
-SQL;
 
 // Fill in classifier agreement. Records with classifier info default to
 // disagreement unless a matching suggestion was chosen as the best match.
@@ -2137,7 +2122,14 @@ LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN users u ON u.id=o.created_by_id -- deleted users records still included.
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+LEFT JOIN LATERAL (
+  SELECT path
+  FROM cache_taxon_paths
+  WHERE external_key=cttl.external_key
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  ORDER BY taxon_list_id=#master_list_id# DESC
+  LIMIT 1
+) ctp ON true
 LEFT JOIN LATERAL (
     SELECT t.sort_order
     FROM occurrence_attribute_values oav
@@ -2156,11 +2148,6 @@ LEFT JOIN dna_occurrences dnao
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
-
-// Insert can use same query as update to fill in the taxon paths. On insert,
-// classifier_agreement is handled by the classification result model as too
-// early at this point.
-$config['occurrences']['insert']['functional_taxon_path'] = $config['occurrences']['update']['functional_taxon_path'];
 
 $config['occurrences']['insert']['functional_sensitive'] = <<<SQL
   UPDATE cache_samples_functional cs
