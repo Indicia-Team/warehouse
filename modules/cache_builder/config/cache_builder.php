@@ -934,17 +934,22 @@ UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
   survey_id=s.survey_id,
   input_form=COALESCE(sp.input_form, s.input_form),
-  location_id= s.location_id,
+  location_id=CASE
+    WHEN occurrence_stats.confidential IS TRUE THEN NULL
+    ELSE s.location_id
+  END,
   location_name=CASE
-    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    WHEN s.privacy_precision IS NOT NULL
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
   public_geom=reduce_precision(
     coalesce(s.geom, l.centroid_geom),
-    false,
+    occurrence_stats.confidential,
     greatest(
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id)
+      occurrence_stats.sensitivity_precision
     )
   ),
   date_start=s.date_start,
@@ -966,7 +971,7 @@ SET website_id=su.website_id,
   parent_sample_id=s.parent_id,
   media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   external_key=s.external_key,
-  sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  sensitive=occurrence_stats.sensitivity_precision IS NOT NULL,
   private=s.privacy_precision IS NOT NULL,
   hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0)
 FROM samples s
@@ -975,6 +980,12 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
@@ -1000,11 +1011,13 @@ SET website_title=w.title,
   survey_title=su.title,
   group_title=g.title,
   public_entered_sref=case
-    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+    when s.privacy_precision is not null
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE then
       get_output_sref(
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.sensitivity_precision,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
@@ -1015,12 +1028,13 @@ SET website_title=w.title,
             when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
           else 10
           end,
+          CASE occurrence_stats.confidential WHEN true THEN 100000 ELSE 0 END,
           10 -- default minimum square size
         ), reduce_precision(
           coalesce(s.geom, l.centroid_geom),
-          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.confidential,
           greatest(
-            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            occurrence_stats.sensitivity_precision,
             case s.privacy_precision when 0 then 10000 else s.privacy_precision end
           )
         )
@@ -1046,7 +1060,7 @@ SET website_title=w.title,
   output_sref=get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.sensitivity_precision,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
@@ -1060,9 +1074,9 @@ SET website_title=w.title,
       10 -- default minimum square size
     ), reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1070,9 +1084,9 @@ SET website_title=w.title,
   output_sref_system=get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1140,6 +1154,12 @@ JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN (sample_attribute_values v_email
   JOIN sample_attributes a_email on a_email.id=v_email.sample_attribute_id and a_email.deleted=false and a_email.system_function='email'
 ) on v_email.sample_id=s.id and v_email.deleted=false
@@ -1188,12 +1208,18 @@ INSERT INTO cache_samples_functional(
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, training, import_guid, query, parent_sample_id, media_count, external_key,
             sensitive, private, hide_sample_as_private)
-SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
+SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form),
   CASE
-    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    WHEN occurrence_stats.confidential IS TRUE THEN NULL
+    ELSE s.location_id
+  END,
+  CASE
+    WHEN s.privacy_precision IS NOT NULL
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), occurrence_stats.confidential, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, occurrence_stats.sensitivity_precision)),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   coalesce(s.group_id, sp.group_id), s.record_status, s.training, s.import_guid,
   case
@@ -1204,7 +1230,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   s.parent_id,
   (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   s.external_key,
-  (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  occurrence_stats.sensitivity_precision IS NOT NULL,
   s.privacy_precision IS NOT NULL, s.privacy_precision IS NOT NULL AND s.privacy_precision=0
 FROM samples s
 #join_needs_update#
@@ -1213,6 +1239,12 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
@@ -1247,11 +1279,13 @@ INSERT INTO cache_samples_nonfunctional(
             attr_sref_precision, output_sref, output_sref_system, verifier)
 SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   case
-    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+    when s.privacy_precision is not null
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE then
       get_output_sref(
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.sensitivity_precision,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
@@ -1262,12 +1296,13 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
             when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
             else 10
           end,
+          CASE occurrence_stats.confidential WHEN true THEN 100000 ELSE 0 END,
           10 -- default minimum square size
         ), reduce_precision(
           coalesce(s.geom, l.centroid_geom),
-          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.confidential,
           greatest(
-            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            occurrence_stats.sensitivity_precision,
             case s.privacy_precision when 0 then 10000 else s.privacy_precision end
           )
         )
@@ -1301,7 +1336,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.sensitivity_precision,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
@@ -1315,9 +1350,9 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
       10 -- default minimum square size
     ), reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1325,9 +1360,9 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1341,6 +1376,12 @@ JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value

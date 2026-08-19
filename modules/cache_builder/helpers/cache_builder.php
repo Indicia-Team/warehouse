@@ -114,11 +114,19 @@ HTML;
     // Preprocess some of the tags in the queries.
     if (is_array($queries['insert'])) {
       foreach ($queries['insert'] as &$sql) {
-        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
+        $sql = str_replace(
+          ['#join_needs_update#', '#occurrence_ids#'],
+          [$queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', 'TRUE'],
+          $sql
+        );
       }
     }
     else {
-      $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
+      $queries['insert'] = str_replace(
+        ['#join_needs_update#', '#occurrence_ids#'],
+        [$queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', 'TRUE'],
+        $queries['insert']
+      );
     }
     cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
     if (isset($queries['extra_multi_record_updates'])) {
@@ -375,6 +383,7 @@ SQL;
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
     $db->query("create temporary table $needsUpdateTable as $query");
+    echo "\ncreate temporary table $needsUpdateTable as $query\n";
     if (!variable::get("populated-$table")) {
       // As well as the changed records, pick up max 5000 previous records,
       // which is important for initial population. 5000 is an arbitrary number
