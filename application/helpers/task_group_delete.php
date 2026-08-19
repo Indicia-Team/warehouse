@@ -57,42 +57,53 @@ class task_group_delete{
     // an undo if required.
     $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
+      UPDATE samples u
+      SET group_id=null
+      FROM work_queue wq
+      WHERE u.group_id=wq.record_id
+        AND wq.task='task_group_delete'
+        AND wq.entity='group'
+        AND wq.claimed_by=$procIdEsc;
 
-UPDATE samples u
-SET group_id=null
-FROM work_queue wq
-WHERE u.group_id=wq.record_id
-  AND wq.task='task_group_delete'
-  AND wq.entity='group'
-  AND wq.claimed_by=$procIdEsc;
+      UPDATE cache_samples_nonfunctional snf
+      SET group_title=null
+      FROM work_queue wq
+      JOIN groups g ON g.id=wq.record_id
+        AND wq.task='task_group_delete'
+        AND wq.entity='group'
+      JOIN cache_samples_functional s ON s.group_id=g.id
+      WHERE snf.id=s.id
+      AND wq.claimed_by=$procIdEsc;
 
-UPDATE cache_samples_nonfunctional snf
-SET group_title=null
-FROM work_queue wq
-JOIN groups g ON g.id=wq.record_id
-  AND wq.task='task_group_delete'
-  AND wq.entity='group'
-JOIN cache_samples_functional s ON s.group_id=g.id
-WHERE snf.id=s.id
-AND wq.claimed_by=$procIdEsc;
+      UPDATE cache_samples_functional u
+      SET group_id=null
+      FROM work_queue wq
+      WHERE u.group_id=wq.record_id
+        AND wq.task='task_group_delete'
+        AND wq.entity='group'
+        AND wq.claimed_by=$procIdEsc;
 
-UPDATE cache_samples_functional u
-SET group_id=null
-FROM work_queue wq
-WHERE u.group_id=wq.record_id
-  AND wq.task='task_group_delete'
-  AND wq.entity='group'
-  AND wq.claimed_by=$procIdEsc;
-
-UPDATE cache_occurrences_functional u
-SET group_id=null
-FROM work_queue wq
-WHERE u.group_id=wq.record_id
-  AND wq.task='task_group_delete'
-  AND wq.entity='group'
-  AND wq.claimed_by=$procIdEsc;
-
-SQL;
+      -- To avoid deadlocks, we need to target the occurrences first, then
+      -- lock them in deterministic order and finally update them.
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT o.id
+        FROM cache_occurrences_functional o
+        JOIN work_queue wq_target ON wq_target.record_id = o.group_id
+        WHERE wq_target.task = 'task_group_delete'
+          AND wq_target.entity = 'group'
+          AND wq_target.claimed_by = $procIdEsc
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN target_occurrences t ON t.id = o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
+      UPDATE cache_occurrences_functional u
+      SET group_id = NULL
+      FROM locked_occurrences l
+      WHERE u.id = l.id;
+    SQL;
     $db->query($sql);
   }
 

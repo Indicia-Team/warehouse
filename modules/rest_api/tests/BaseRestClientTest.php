@@ -5,7 +5,7 @@ use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 /**
  * Base class for tests against REST Clients.
  */
-class BaseRestClientTest extends Indicia_DatabaseTestCase {
+abstract class BaseRestClientTest extends Indicia_DatabaseTestCase {
 
   /**
    * Private key for use in tests.

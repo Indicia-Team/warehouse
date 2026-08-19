@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
  * the now obsolete DbUnit. Allows the set up of fixtures from arrays
  * containing data for records in tables.
  */
-class SimpleDatabaseTestCase extends TestCase {
+abstract class SimpleDatabaseTestCase extends TestCase {
   /**
    * One database connection shared by all tests.
    *

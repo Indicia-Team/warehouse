@@ -82,18 +82,41 @@ AND s.created_by_id=(q.params->>'user_id')::integer
 AND snf.id=s.id
 AND COALESCE(snf.licence_code, '')<>l.code;
 
+-- To avoid deadlocks, we need to target the occurrences first, then lock them
+-- in deterministic order and finally update them.
+WITH candidate_occurrences AS MATERIALIZED (
+  SELECT DISTINCT ON (o.id)
+    o.id,
+    o.licence_id AS current_licence_id,
+    q.id AS queue_id,
+    q.params->>'licence_id' AS new_licence_id,
+    q.params->>'licence_mode' AS licence_mode
+  FROM cache_occurrences_functional o
+  JOIN work_queue q
+    ON q.task='task_users_website_apply_licence'
+   AND q.entity='users_website'
+   AND q.claimed_by=$procIdEsc
+   AND (q.params->>'licence_id') IS NOT NULL
+  WHERE o.website_id=(q.params->>'website_id')::integer
+    AND o.created_by_id=(q.params->>'user_id')::integer
+  ORDER BY o.id, q.id DESC
+), target_occurrences AS MATERIALIZED (
+  SELECT id, new_licence_id
+  FROM candidate_occurrences
+  WHERE licence_mode='all'
+     OR (licence_mode='empty' AND current_licence_id IS NULL)
+), locked_occurrences AS MATERIALIZED (
+  SELECT o.id
+  FROM cache_occurrences_functional o
+  JOIN target_occurrences t ON t.id=o.id
+  ORDER BY o.id
+  FOR UPDATE OF o
+)
 UPDATE cache_occurrences_functional o
-SET licence_id=(q.params->>'licence_id')::integer
-FROM work_queue q
-WHERE q.task='task_users_website_apply_licence'
-AND q.claimed_by=$procIdEsc
-AND (q.params->>'licence_id') IS NOT NULL
-AND o.website_id=(q.params->>'website_id')::integer
-AND o.created_by_id=(q.params->>'user_id')::integer
-AND (
-  (q.params->>'licence_mode')='all'
-  OR ((q.params->>'licence_mode')='empty' AND o.licence_id IS NULL)
-);
+SET licence_id=t.new_licence_id::integer
+FROM locked_occurrences l
+JOIN target_occurrences t ON t.id=l.id
+WHERE o.id=l.id;
 
 UPDATE cache_occurrences_nonfunctional onf
 SET licence_code=l.code

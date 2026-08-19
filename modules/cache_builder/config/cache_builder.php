@@ -432,6 +432,21 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = [
         OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
     );
 
+    WITH target_occurrences AS MATERIALIZED (
+      SELECT DISTINCT u.id
+      FROM cache_occurrences_functional u
+      JOIN cache_taxa_taxon_lists cttl ON cttl.id=u.taxa_taxon_list_id
+      JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
+      JOIN master_list_paths mlp ON mlp.external_key=cttl.external_key
+      WHERE (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
+      OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(mlp.path, ARRAY[]::integer[]))
+    ), locked_occurrences AS MATERIALIZED (
+      SELECT u.id
+      FROM cache_occurrences_functional u
+      JOIN target_occurrences target ON target.id=u.id
+      ORDER BY u.id
+      FOR UPDATE OF u
+    )
     UPDATE cache_occurrences_functional u
     SET family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id,
       taxon_path=mlp.path
@@ -439,6 +454,7 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = [
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN master_list_paths mlp ON mlp.external_key=cttl.external_key
+    JOIN locked_occurrences lo ON lo.id=u.id
     WHERE cttl.id=u.taxa_taxon_list_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
     OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(mlp.path, ARRAY[]::integer[]));",
@@ -918,17 +934,22 @@ UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
   survey_id=s.survey_id,
   input_form=COALESCE(sp.input_form, s.input_form),
-  location_id= s.location_id,
+  location_id=CASE
+    WHEN occurrence_stats.confidential IS TRUE THEN NULL
+    ELSE s.location_id
+  END,
   location_name=CASE
-    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    WHEN s.privacy_precision IS NOT NULL
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
   public_geom=reduce_precision(
     coalesce(s.geom, l.centroid_geom),
-    false,
+    occurrence_stats.confidential,
     greatest(
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id)
+      occurrence_stats.sensitivity_precision
     )
   ),
   date_start=s.date_start,
@@ -950,7 +971,7 @@ SET website_id=su.website_id,
   parent_sample_id=s.parent_id,
   media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   external_key=s.external_key,
-  sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  sensitive=occurrence_stats.sensitivity_precision IS NOT NULL,
   private=s.privacy_precision IS NOT NULL,
   hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0)
 FROM samples s
@@ -959,6 +980,12 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
@@ -984,11 +1011,13 @@ SET website_title=w.title,
   survey_title=su.title,
   group_title=g.title,
   public_entered_sref=case
-    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+    when s.privacy_precision is not null
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE then
       get_output_sref(
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.sensitivity_precision,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
@@ -999,12 +1028,13 @@ SET website_title=w.title,
             when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
           else 10
           end,
+          CASE occurrence_stats.confidential WHEN true THEN 100000 ELSE 0 END,
           10 -- default minimum square size
         ), reduce_precision(
           coalesce(s.geom, l.centroid_geom),
-          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.confidential,
           greatest(
-            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            occurrence_stats.sensitivity_precision,
             case s.privacy_precision when 0 then 10000 else s.privacy_precision end
           )
         )
@@ -1030,7 +1060,7 @@ SET website_title=w.title,
   output_sref=get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.sensitivity_precision,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
@@ -1044,9 +1074,9 @@ SET website_title=w.title,
       10 -- default minimum square size
     ), reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1054,9 +1084,9 @@ SET website_title=w.title,
   output_sref_system=get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1124,6 +1154,12 @@ JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN (sample_attribute_values v_email
   JOIN sample_attributes a_email on a_email.id=v_email.sample_attribute_id and a_email.deleted=false and a_email.system_function='email'
 ) on v_email.sample_id=s.id and v_email.deleted=false
@@ -1172,12 +1208,18 @@ INSERT INTO cache_samples_functional(
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, training, import_guid, query, parent_sample_id, media_count, external_key,
             sensitive, private, hide_sample_as_private)
-SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
+SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form),
   CASE
-    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    WHEN occurrence_stats.confidential IS TRUE THEN NULL
+    ELSE s.location_id
+  END,
+  CASE
+    WHEN s.privacy_precision IS NOT NULL
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), occurrence_stats.confidential, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, occurrence_stats.sensitivity_precision)),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   coalesce(s.group_id, sp.group_id), s.record_status, s.training, s.import_guid,
   case
@@ -1188,7 +1230,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   s.parent_id,
   (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   s.external_key,
-  (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  occurrence_stats.sensitivity_precision IS NOT NULL,
   s.privacy_precision IS NOT NULL, s.privacy_precision IS NOT NULL AND s.privacy_precision=0
 FROM samples s
 #join_needs_update#
@@ -1197,6 +1239,12 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
@@ -1231,11 +1279,13 @@ INSERT INTO cache_samples_nonfunctional(
             attr_sref_precision, output_sref, output_sref_system, verifier)
 SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   case
-    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+    when s.privacy_precision is not null
+      OR occurrence_stats.sensitivity_precision IS NOT NULL
+      OR occurrence_stats.confidential IS TRUE then
       get_output_sref(
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.sensitivity_precision,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
@@ -1246,12 +1296,13 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
             when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
             else 10
           end,
+          CASE occurrence_stats.confidential WHEN true THEN 100000 ELSE 0 END,
           10 -- default minimum square size
         ), reduce_precision(
           coalesce(s.geom, l.centroid_geom),
-          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          occurrence_stats.confidential,
           greatest(
-            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            occurrence_stats.sensitivity_precision,
             case s.privacy_precision when 0 then 10000 else s.privacy_precision end
           )
         )
@@ -1285,7 +1336,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.sensitivity_precision,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
@@ -1299,9 +1350,9 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
       10 -- default minimum square size
     ), reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1309,9 +1360,9 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
-      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      occurrence_stats.confidential,
       greatest(
-        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        occurrence_stats.sensitivity_precision,
         case s.privacy_precision when 0 then 10000 else s.privacy_precision end
       )
     )
@@ -1325,6 +1376,12 @@ JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+LEFT JOIN LATERAL (
+  SELECT max(o.sensitivity_precision) AS sensitivity_precision,
+    bool_or(o.confidential) AS confidential
+  FROM occurrences o
+  WHERE o.sample_id=s.id
+) occurrence_stats ON true
 LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
@@ -1640,6 +1697,15 @@ delete from cache_occurrences_nonfunctional where id in (select id from needs_up
 ];
 
 $config['occurrences']['update']['functional'] = "
+WITH locked_occurrences AS MATERIALIZED (
+  SELECT o.id
+  FROM cache_occurrences_functional o
+  #join_needs_update#
+  WHERE
+  #occurrence_ids#
+  ORDER BY o.id
+  FOR UPDATE OF o
+)
 UPDATE cache_occurrences_functional u
 SET sample_id=o.sample_id,
   website_id=o.website_id,
@@ -1684,9 +1750,9 @@ SET sample_id=o.sample_id,
       else 'U'
   end,
   query=case
-    when oc1.id is not null and oc2.id is not null then 'A'
-    when oc1.id is not null and oc2.id is null then 'Q'
-    else null
+    when comment_info.last_query_id is null then null
+    when comment_info.last_answer_id>comment_info.last_query_id then 'A'
+    else 'Q'
   end,
   sensitive=o.sensitivity_precision is not null,
   private=s.privacy_precision is not null,
@@ -1696,7 +1762,10 @@ SET sample_id=o.sample_id,
   freshwater_flag=cttl.freshwater_flag,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag,
-  data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
+  data_cleaner_result=case
+    when o.last_verification_check_date is null then null
+    else not coalesce(comment_info.manual_check_required, false)
+  end,
   applied_verification_rule_types=case when o.last_verification_check_date is null then null else u.applied_verification_rule_types end,
   training=o.training,
   zero_abundance=o.zero_abundance,
@@ -1709,73 +1778,95 @@ SET sample_id=o.sample_id,
   verification_checks_enabled=w.verification_checks_enabled,
   media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
   identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false),
-  dna_derived=dnao.id IS NOT NULL AND dnao.deleted=false
+  dna_derived=dnao.id IS NOT NULL
 FROM occurrences o
-#join_needs_update#
-LEFT JOIN cache_occurrences_functional co on co.id=o.id
+JOIN locked_occurrences lo ON lo.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-LEFT JOIN (occurrence_attribute_values oav
-    JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted=false
-LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
-    AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
-LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
-    AND oc2.query=false AND oc2.generated_by IS NULL
-    AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
-LEFT JOIN occurrence_comments dc
-    ON dc.occurrence_id=o.id
-    AND dc.implies_manual_check_required=true
-    AND dc.deleted=false
-LEFT JOIN dna_occurrences dnao
-    ON dnao.occurrence_id=o.id
+LEFT JOIN LATERAL (
+  SELECT path
+  FROM cache_taxon_paths
+  WHERE external_key=cttl.external_key
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  ORDER BY taxon_list_id=#master_list_id# DESC
+  LIMIT 1
+) ctp ON true
+LEFT JOIN LATERAL (
+  SELECT t.sort_order
+  FROM occurrence_attribute_values oav
+  JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id
+      AND oa.deleted=false AND oa.system_function='certainty'
+  JOIN termlists_terms t ON t.id=oav.int_value
+  WHERE oav.occurrence_id=o.id
+  AND oav.deleted=false
+  ORDER BY oav.id DESC
+  LIMIT 1
+) certainty ON true
+LEFT JOIN LATERAL (
+  SELECT
+    max(oc.id) FILTER (
+      WHERE oc.auto_generated=false
+      AND oc.query=true
+      AND (o.verified_on IS NULL OR oc.created_on>o.verified_on)
+    ) AS last_query_id,
+    max(oc.id) FILTER (
+      WHERE oc.auto_generated=false
+      AND oc.query=false
+      AND oc.generated_by IS NULL
+      AND (o.verified_on IS NULL OR oc.created_on>o.verified_on)
+    ) AS last_answer_id,
+    bool_or(oc.implies_manual_check_required) AS manual_check_required
+  FROM occurrence_comments oc
+  WHERE oc.occurrence_id=o.id
+  AND oc.deleted=false
+) comment_info ON true
+LEFT JOIN dna_occurrences dnao ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE u.id=o.id
 ";
 
-// Fill in taxon_path if it was unable to be populated from the master list.
-$config['occurrences']['update']['functional_taxon_path'] = <<<SQL
-  UPDATE cache_occurrences_functional u
-  SET taxon_path=ctp.path
-  FROM occurrences o
-  #join_needs_update#
-  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-  JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=cttl.taxon_list_id
-  WHERE u.id=o.id
-  AND u.taxon_path IS NULL
-SQL;
-
-// Fill in classifier agreement.
-$config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
-  -- Set a default of disagreement for all records with classifier info.
-  UPDATE cache_occurrences_functional u
-  SET classifier_agreement=false
-  FROM occurrences o
-  #join_needs_update#
-  JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-  JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-  WHERE u.id=o.id
-SQL;
-
-// For records with classifier info where a suggestion matches the current det,
-// set agreement to true if the classifier chose that suggestion as the best match.
+// Fill in classifier agreement. Records with classifier info default to
+// disagreement unless a matching suggestion was chosen as the best match.
 $config['occurrences']['update']['functional_classification'] = <<<SQL
+  WITH locked_occurrences AS MATERIALIZED (
+    SELECT o.id
+    FROM cache_occurrences_functional o
+    #join_needs_update#
+    WHERE
+    #occurrence_ids#
+    AND EXISTS (
+      SELECT 1
+      FROM occurrence_media m
+      JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+      WHERE m.occurrence_id=o.id
+      AND m.deleted=false
+    )
+    ORDER BY o.id
+    FOR UPDATE OF o
+  ), classifier_agreement AS MATERIALIZED (
+    SELECT lo.id,
+      bool_or(
+        CASE WHEN cs.id IS NULL OR cttl.external_key=o.taxa_taxon_list_external_key
+          THEN COALESCE(cs.classifier_chosen, false)
+          ELSE false
+        END
+      ) AS agreement
+    FROM locked_occurrences lo
+    JOIN cache_occurrences_functional o ON o.id=lo.id
+    JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+    JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+    LEFT JOIN (classification_suggestions cs
+      JOIN cache_taxa_taxon_lists cttl ON cttl.id=cs.taxa_taxon_list_id
+    ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+    GROUP BY lo.id
+  )
   UPDATE cache_occurrences_functional u
-  SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
-  FROM occurrences o
-  #join_needs_update#
-  JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-  JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-  LEFT JOIN (classification_suggestions cs
-    JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
-  ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
-  WHERE u.id=o.id
-  AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
+  SET classifier_agreement=ca.agreement
+  FROM classifier_agreement ca
+  WHERE u.id=ca.id
 SQL;
 
 // Ensure occurrence sensitivity changes apply to parent sample cache data.
@@ -1794,6 +1885,15 @@ UPDATE cache_occurrences_nonfunctional
 SET comment=o.comment,
   sensitivity_precision=o.sensitivity_precision,
   privacy_precision=s.privacy_precision,
+  media=(SELECT array_to_string(array_agg(om.path), ',')
+    FROM occurrence_media om
+    WHERE om.occurrence_id=o.id AND om.deleted=false),
+  data_cleaner_info=CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
+    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
+      FROM occurrence_comments oc
+      WHERE oc.occurrence_id=o.id
+         AND oc.implies_manual_check_required=true
+         AND oc.deleted=false), 'pass') END,
   output_sref=get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
@@ -1939,31 +2039,6 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
 WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
-$config['occurrences']['update']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
-$config['occurrences']['update']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET data_cleaner_info=
-  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
-    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
-      FROM occurrence_comments oc
-      WHERE oc.occurrence_id=onf.id
-         AND oc.implies_manual_check_required=true
-         AND oc.deleted=false), 'pass') END
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
 $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_functional(
             id, sample_id, website_id, survey_id, input_form, location_id,
             location_name, public_geom,
@@ -2031,21 +2106,32 @@ LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN users u ON u.id=o.created_by_id -- deleted users records still included.
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-LEFT JOIN (occurrence_attribute_values oav
-    JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted=false
+LEFT JOIN LATERAL (
+  SELECT path
+  FROM cache_taxon_paths
+  WHERE external_key=cttl.external_key
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  ORDER BY taxon_list_id=#master_list_id# DESC
+  LIMIT 1
+) ctp ON true
+LEFT JOIN LATERAL (
+    SELECT t.sort_order
+    FROM occurrence_attribute_values oav
+    JOIN occurrence_attributes oa
+      ON oa.id=oav.occurrence_attribute_id
+     AND oa.deleted=false
+     AND oa.system_function='certainty'
+    JOIN termlists_terms t ON t.id=oav.int_value
+    WHERE oav.occurrence_id=o.id
+      AND oav.deleted=false
+    ORDER BY oav.id DESC
+    LIMIT 1
+  ) certainty ON true
 LEFT JOIN dna_occurrences dnao
     ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
-
-// Insert can use same query as update to fill in the taxon paths. On insert,
-// classifier_agreement is handled by the classification result model as too
-// early at this point.
-$config['occurrences']['insert']['functional_taxon_path'] = $config['occurrences']['update']['functional_taxon_path'];
 
 $config['occurrences']['insert']['functional_sensitive'] = <<<SQL
   UPDATE cache_samples_functional cs
@@ -2059,10 +2145,20 @@ SQL;
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, verifier, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, media, data_cleaner_info,
+            output_sref, output_sref_system, verifier, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
+  (SELECT array_to_string(array_agg(om.path), ',')
+    FROM occurrence_media om
+    WHERE om.occurrence_id=o.id AND om.deleted=false),
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
+    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
+      FROM occurrence_comments oc
+      WHERE oc.occurrence_id=o.id
+         AND oc.implies_manual_check_required=true
+         AND oc.deleted=false), 'pass') END,
   get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
@@ -2215,31 +2311,6 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
   LEFT JOIN cache_termlists_terms t_det_full_name on a_det_full_name.data_type='L' and t_det_full_name.id=v_det_full_name.int_value
 ) on v_det_full_name.occurrence_id=o.id and v_det_full_name.deleted=false
 WHERE cache_occurrences_nonfunctional.id=o.id
-";
-
-$config['occurrences']['insert']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
-$config['occurrences']['insert']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET data_cleaner_info=
-  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
-    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
-      FROM occurrence_comments oc
-      WHERE oc.occurrence_id=onf.id
-         AND oc.implies_manual_check_required=true
-         AND oc.deleted=false), 'pass') END
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
 ";
 
 $config['occurrences']['join_needs_update'] = 'join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';

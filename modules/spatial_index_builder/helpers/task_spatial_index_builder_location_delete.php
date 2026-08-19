@@ -56,9 +56,21 @@ class task_spatial_index_builder_location_delete {
 DROP TABLE IF EXISTS loclist;
 SELECT record_id INTO temporary loclist FROM work_queue WHERE claimed_by=? AND entity='location';
 
+WITH target_occurrences AS MATERIALIZED (
+  SELECT DISTINCT u.id
+  FROM cache_occurrences_functional u
+  JOIN loclist l ON u.location_ids @> ARRAY[l.record_id]
+), locked_occurrences AS MATERIALIZED (
+  SELECT u.id
+  FROM cache_occurrences_functional u
+  JOIN target_occurrences t ON t.id=u.id
+  ORDER BY u.id
+  FOR UPDATE OF u
+)
 UPDATE cache_occurrences_functional u
 SET location_ids=array_remove(u.location_ids, l.record_id)
 FROM loclist l
+JOIN locked_occurrences locked ON locked.id=u.id
 WHERE u.location_ids @> ARRAY[l.record_id];
 
 UPDATE cache_samples_functional u

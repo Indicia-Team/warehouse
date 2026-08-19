@@ -219,30 +219,65 @@ class task_spatial_index_builder_location {
 
       -- Find occurrences currently indexed against locations where they no
       -- longer intersect.
-      SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
+      WITH occurrence_deleted_locations AS (
+        SELECT o.id,
+          o.location_ids,
+          array_agg(DISTINCT ll.record_id) AS deleted_location_ids
+        FROM cache_occurrences_functional o
+        JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
+        LEFT JOIN (changed_location_hits clh
+          JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
+        ) ON clh.sample_id=o.sample_id
+        WHERE clh.sample_id IS NULL
+        GROUP BY o.id, o.location_ids
+      )
+      SELECT id,
+        ARRAY(
+          SELECT location_id
+          FROM unnest(location_ids) AS remaining(location_id)
+          WHERE NOT remaining.location_id = ANY(deleted_location_ids)
+        ) AS location_ids
       INTO TEMPORARY occ_locations_deleted
-      FROM cache_occurrences_functional o
-      JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
-      LEFT JOIN (changed_location_hits clh
-        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
-      ) ON clh.sample_id=o.sample_id
-      WHERE clh.sample_id IS NULL;
+      FROM occurrence_deleted_locations;
 
-      -- Remove the locations from the occurrences which no longer intersect.
+      -- Remove the locations from the occurrences which no longer intersect,
+      -- locking in deterministic order to avoid deadlock possibility.
+      WITH locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN occ_locations_deleted d ON d.id=o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
       UPDATE cache_occurrences_functional u
       SET location_ids=ld.location_ids
       FROM occ_locations_deleted ld
-      WHERE u.id=ld.id;
+      JOIN locked_occurrences l ON l.id=ld.id
+      WHERE u.id=l.id;
 
       -- Add missing hits to occurrences which are now indexed against
-      -- locations but weren't before.
+      -- locations but weren't before, locking in deterministic order to avoid
+      -- deadlock possibility.
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT o.id
+        FROM cache_occurrences_functional o
+        JOIN changed_location_hits clh ON clh.sample_id=o.sample_id
+        WHERE o.location_ids IS NULL OR NOT o.location_ids @> clh.location_ids
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN target_occurrences t ON t.id=o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
       UPDATE cache_occurrences_functional u
         SET location_ids=CASE
           WHEN u.location_ids IS NULL THEN clh.location_ids
           ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
         END
-      FROM changed_location_hits clh
+      FROM changed_location_hits clh, locked_occurrences l
       WHERE u.sample_id=clh.sample_id
+      AND l.id=u.id
       AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
       -- Find samples currently indexed against locations where they no longer
@@ -384,7 +419,11 @@ class task_spatial_index_builder_location {
     $qry = <<<SQL
       DROP TABLE IF EXISTS location_updates;
 
-      SELECT w.record_id as location_id, array_remove(array_agg(DISTINCT clhl.higher_location_id), NULL) as higher_location_ids
+      SELECT w.record_id as location_id,
+        COALESCE(
+          array_remove(array_agg(DISTINCT clhl.higher_location_id), NULL),
+          ARRAY[]::integer[]
+        ) as higher_location_ids
       INTO TEMPORARY location_updates
       FROM work_queue w
       LEFT JOIN contained_locations_higher_locations clhl ON clhl.location_id=w.record_id
