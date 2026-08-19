@@ -173,11 +173,11 @@ HTML;
           $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $insertSql = str_replace(
             ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
-            ['', $master_list_id, "AND o.id IN ($idList)"],
+            ['', $master_list_id, "o.id IN ($idList)"],
             $query
           );
           if (!$hasOccurrenceIdFilter) {
-            $insertSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+            $insertSql .= "\nAND $queries[key_field] IN ($idList)";
           }
           $db->query($insertSql);
         }
@@ -223,7 +223,7 @@ HTML;
             $query
           );
           if (!$hasOccurrenceIdFilter) {
-            $updateSql .= "AND $queries[key_field] IN ($idList)";
+            $updateSql .= "\nAND $queries[key_field] IN ($idList)";
           }
           $db->query($updateSql);
         }

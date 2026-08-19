@@ -1829,7 +1829,7 @@ $config['occurrences']['update']['functional_classification'] = <<<SQL
         END
       ) AS agreement
     FROM locked_occurrences lo
-    JOIN occurrences o ON o.id=lo.id
+    JOIN cache_occurrences_functional o ON o.id=lo.id
     JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
     JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
     LEFT JOIN (classification_suggestions cs
