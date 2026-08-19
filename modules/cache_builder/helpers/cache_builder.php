@@ -447,7 +447,7 @@ SQL;
     }
     else {
       $sql = str_replace('#master_list_id#', $master_list_id, $query);
-      $count = $db->query($query)->count();
+      $count = $db->query($sql)->count();
       if (variable::get("populated-$table")) {
         echo "    <tr><th scope=\"row\">$action(s)</th><td>$count</td></tr>\n";
       }
