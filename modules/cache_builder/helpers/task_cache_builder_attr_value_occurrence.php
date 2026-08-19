@@ -147,11 +147,23 @@ class task_cache_builder_attr_value_occurrence {
     SQL;
     $db->query($sql);
     $sql = <<<SQL
+      -- To avoid deadlocks, we need to target the occurrences first, then lock
+      -- them in deterministic order and finally update them.
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT occurrence_id
+        FROM attrs
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT u.id
+        FROM cache_occurrences_functional u
+        JOIN target_occurrences t ON t.occurrence_id=u.id
+        ORDER BY u.id
+        FOR UPDATE OF u
+      )
       -- Force tracking update.
       UPDATE cache_occurrences_functional u
       SET website_id=u.website_id
-      FROM attrs a
-      WHERE a.occurrence_id=u.id;
+      FROM locked_occurrences l
+      WHERE u.id=l.id;
 
       DROP TABLE attrs;
     SQL;

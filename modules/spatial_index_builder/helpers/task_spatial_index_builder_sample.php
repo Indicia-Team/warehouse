@@ -223,11 +223,25 @@ class task_spatial_index_builder_sample {
     SQL;
     $db->query($qry);
     $qry = <<<SQL
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT o.id
+        FROM cache_occurrences_functional o
+        JOIN cache_samples_functional s ON s.id=o.sample_id
+        JOIN changed_samples cs on cs.sample_id=s.id
+        WHERE o.location_ids <> s.location_ids
+        OR (o.location_ids IS NULL)<>(s.location_ids IS NULL)
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN target_occurrences t ON t.id=o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
       UPDATE cache_occurrences_functional o
       SET location_ids = s.location_ids
-      FROM cache_samples_functional s
-      JOIN changed_samples cs on cs.sample_id=s.id
+      FROM cache_samples_functional s, locked_occurrences l
       WHERE o.sample_id=s.id
+      AND o.id=l.id
       AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
     SQL;
     $db->query($qry);

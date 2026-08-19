@@ -96,21 +96,37 @@ HTML;
     // Preprocess some of the tags in the queries.
     if (is_array($queries['update'])) {
       foreach ($queries['update'] as &$sql) {
-        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
+        $sql = str_replace(
+          ['#join_needs_update#', '#occurrence_ids#'],
+          [$queries['join_needs_update'], 'TRUE'],
+          $sql
+        );
       }
     }
     else {
-      $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
+      $queries['update'] = str_replace(
+        ['#join_needs_update#', '#occurrence_ids#'],
+        [$queries['join_needs_update'], 'TRUE'],
+        $queries['update']
+      );
     }
     cache_builder::run_statement($db, $table, $queries['update'], 'update');
     // Preprocess some of the tags in the queries.
     if (is_array($queries['insert'])) {
       foreach ($queries['insert'] as &$sql) {
-        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
+        $sql = str_replace(
+          ['#join_needs_update#', '#occurrence_ids#'],
+          [$queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', 'TRUE'],
+          $sql
+        );
       }
     }
     else {
-      $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
+      $queries['insert'] = str_replace(
+        ['#join_needs_update#', '#occurrence_ids#'],
+        [$queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', 'TRUE'],
+        $queries['insert']
+      );
     }
     cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
     if (isset($queries['extra_multi_record_updates'])) {
@@ -162,12 +178,15 @@ HTML;
           $queries['insert'] = [$queries['insert']];
         }
         foreach ($queries['insert'] as $query) {
+          $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $insertSql = str_replace(
-            ['#join_needs_update#', '#master_list_id#'],
-            ['', $master_list_id],
+            ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
+            ['', $master_list_id, "o.id IN ($idList)"],
             $query
           );
-          $insertSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          if (!$hasOccurrenceIdFilter) {
+            $insertSql .= "\nAND $queries[key_field] IN ($idList)";
+          }
           $db->query($insertSql);
         }
       }
@@ -205,12 +224,15 @@ HTML;
           $queries['update'] = [$queries['update']];
         }
         foreach ($queries['update'] as $query) {
+          $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $updateSql = str_replace(
-            ['#join_needs_update#', '#master_list_id#'],
-            ['', $master_list_id],
+            ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
+            ['', $master_list_id, "o.id IN ($idList)"],
             $query
           );
-          $updateSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+          if (!$hasOccurrenceIdFilter) {
+            $updateSql .= "\nAND $queries[key_field] IN ($idList)";
+          }
           $db->query($updateSql);
         }
         self::final_queries($db, $table, $ids);
@@ -361,6 +383,7 @@ SQL;
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
     $db->query("create temporary table $needsUpdateTable as $query");
+    echo "\ncreate temporary table $needsUpdateTable as $query\n";
     if (!variable::get("populated-$table")) {
       // As well as the changed records, pick up max 5000 previous records,
       // which is important for initial population. 5000 is an arbitrary number
@@ -433,7 +456,7 @@ SQL;
     }
     else {
       $sql = str_replace('#master_list_id#', $master_list_id, $query);
-      $count = $db->query($query)->count();
+      $count = $db->query($sql)->count();
       if (variable::get("populated-$table")) {
         echo "    <tr><th scope=\"row\">$action(s)</th><td>$count</td></tr>\n";
       }

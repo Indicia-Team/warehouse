@@ -38,11 +38,19 @@ class Login_Controller extends Indicia_Controller {
     }
     $this->buildTemplate();
     if (request::method() == 'post') {
-      $ok = $this->auth->login(array('username' => $_POST['user']), $_POST['password'], isset($_POST['remember_me']));
-      // If failed to log in with username then try email address.
-      if (!$ok) {
-        $person = ORM::factory('person')->like('email_address', $_POST['user'], FALSE)->find();
-        $ok = $this->auth->login(array('person_id' => $person->id), $_POST['password'], isset($_POST['remember_me']));
+      $validCredentials = isset($_POST['user'], $_POST['password'])
+        && is_string($_POST['user'])
+        && is_string($_POST['password'])
+        && $_POST['user'] !== ''
+        && $_POST['password'] !== '';
+      $ok = false;
+      if ($validCredentials) {
+        $ok = $this->auth->login(array('username' => $_POST['user']), $_POST['password'], isset($_POST['remember_me']));
+        // If failed to log in with username then try email address.
+        if (!$ok) {
+          $person = ORM::factory('person')->like('email_address', $_POST['user'], FALSE)->find();
+          $ok = $this->auth->login(array('person_id' => $person->id), $_POST['password'], isset($_POST['remember_me']));
+        }
       }
       if ($ok) {
         $user = new User_Model($_SESSION['auth_user']->id);

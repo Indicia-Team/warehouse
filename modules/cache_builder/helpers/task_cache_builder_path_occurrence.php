@@ -60,19 +60,35 @@ class task_cache_builder_path_occurrence {
    */
   public static function process($db, $taskType, $procId) {
     $masterListId = warehouse::getMasterTaxonListId();
+    // To avoid deadlocks, we need to target the occurrences first, then lock
+    // them in deterministic order and finally update them.
     $sql = <<<SQL
+      WITH target_occurrences AS MATERIALIZED (
+        SELECT DISTINCT o.id
+        FROM cache_occurrences_functional o
+        JOIN work_queue q ON q.record_id=o.id
+        JOIN cache_taxa_taxon_lists cttl
+          ON cttl.external_key=o.taxa_taxon_list_external_key
+          AND cttl.taxon_list_id=$masterListId
+        WHERE q.entity='occurrence'
+        AND q.task='task_cache_builder_path_occurrence'
+        AND q.claimed_by=?
+      ), locked_occurrences AS MATERIALIZED (
+        SELECT o.id
+        FROM cache_occurrences_functional o
+        JOIN target_occurrences t ON t.id=o.id
+        ORDER BY o.id
+        FOR UPDATE OF o
+      )
       UPDATE cache_occurrences_functional o
       SET taxon_path=ctp.path
-      FROM work_queue q, cache_taxa_taxon_lists cttl
+      FROM locked_occurrences l, cache_taxa_taxon_lists cttl
       LEFT JOIN cache_taxon_paths ctp
         ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
         AND ctp.taxon_list_id=$masterListId
       WHERE cttl.external_key=o.taxa_taxon_list_external_key
       AND cttl.taxon_list_id=$masterListId
-      AND o.id=q.record_id
-      AND q.entity='occurrence'
-      AND q.task='task_cache_builder_path_occurrence'
-      AND q.claimed_by=?;
+      AND o.id=l.id;
     SQL;
     $db->query($sql, [$procId]);
   }
