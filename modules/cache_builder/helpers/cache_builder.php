@@ -98,7 +98,7 @@ HTML;
       foreach ($queries['update'] as &$sql) {
         $sql = str_replace(
           ['#join_needs_update#', '#occurrence_ids#'],
-          [$queries['join_needs_update'], ''],
+          [$queries['join_needs_update'], 'TRUE'],
           $sql
         );
       }
@@ -106,7 +106,7 @@ HTML;
     else {
       $queries['update'] = str_replace(
         ['#join_needs_update#', '#occurrence_ids#'],
-        [$queries['join_needs_update'], ''],
+        [$queries['join_needs_update'], 'TRUE'],
         $queries['update']
       );
     }
@@ -219,11 +219,11 @@ HTML;
           $hasOccurrenceIdFilter = strpos($query, '#occurrence_ids#') !== false;
           $updateSql = str_replace(
             ['#join_needs_update#', '#master_list_id#', '#occurrence_ids#'],
-            ['', $master_list_id, "AND o.id IN ($idList)"],
+            ['', $master_list_id, "o.id IN ($idList)"],
             $query
           );
           if (!$hasOccurrenceIdFilter) {
-            $updateSql .= ' and ' . $queries['key_field'] . " in ($idList)";
+            $updateSql .= "AND $queries[key_field] IN ($idList)";
           }
           $db->query($updateSql);
         }

@@ -1656,21 +1656,14 @@ delete from cache_occurrences_nonfunctional where id in (select id from needs_up
 ];
 
 $config['occurrences']['update']['functional'] = "
-WITH target_occurrences AS MATERIALIZED (
-  SELECT DISTINCT o.id
-  FROM cache_occurrences_functional u
-  JOIN occurrences o ON o.id=u.id
+WITH locked_occurrences AS MATERIALIZED (
+  SELECT o.id
+  FROM cache_occurrences_functional o
   #join_needs_update#
-  JOIN samples s ON s.id=o.sample_id AND s.deleted=false
-  JOIN websites w ON w.id=o.website_id AND w.deleted=false
-  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  WHERE
   #occurrence_ids#
-), locked_occurrences AS MATERIALIZED (
-  SELECT u.id
-  FROM cache_occurrences_functional u
-  JOIN target_occurrences target ON target.id=u.id
-  ORDER BY u.id
-  FOR UPDATE OF u
+  ORDER BY o.id
+  FOR UPDATE OF o
 )
 UPDATE cache_occurrences_functional u
 SET sample_id=o.sample_id,
@@ -1773,21 +1766,15 @@ WHERE u.id=o.id
 
 // Fill in taxon_path if it was unable to be populated from the master list.
 $config['occurrences']['update']['functional_taxon_path'] = <<<SQL
-  WITH target_occurrences AS MATERIALIZED (
-    SELECT DISTINCT o.id
-    FROM cache_occurrences_functional u
-    JOIN occurrences o ON o.id=u.id
+  WITH locked_occurrences AS MATERIALIZED (
+    SELECT o.id
+    FROM cache_occurrences_functional o
     #join_needs_update#
-    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=cttl.taxon_list_id
-    WHERE u.taxon_path IS NULL
+    WHERE
     #occurrence_ids#
-  ), locked_occurrences AS MATERIALIZED (
-    SELECT u.id
-    FROM cache_occurrences_functional u
-    JOIN target_occurrences target ON target.id=u.id
-    ORDER BY u.id
-    FOR UPDATE OF u
+    AND o.taxon_path IS NULL
+    ORDER BY o.id
+    FOR UPDATE OF o
   )
   UPDATE cache_occurrences_functional u
   SET taxon_path=ctp.path
@@ -1802,21 +1789,21 @@ SQL;
 // Fill in classifier agreement.
 $config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
   -- Set a default of disagreement for all records with classifier info.
-  WITH target_occurrences AS MATERIALIZED (
-    SELECT DISTINCT o.id
-    FROM cache_occurrences_functional u
-    JOIN occurrences o ON o.id=u.id
+  WITH locked_occurrences AS MATERIALIZED (
+    SELECT o.id
+    FROM cache_occurrences_functional o
     #join_needs_update#
-    JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-    JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-    WHERE u.id=o.id
+    WHERE
     #occurrence_ids#
-  ), locked_occurrences AS MATERIALIZED (
-    SELECT u.id
-    FROM cache_occurrences_functional u
-    JOIN target_occurrences target ON target.id=u.id
-    ORDER BY u.id
-    FOR UPDATE OF u
+    AND EXISTS (
+      SELECT 1
+      FROM occurrence_media m
+      JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+      WHERE m.occurrence_id=o.id
+      AND m.deleted=false
+    )
+    ORDER BY o.id
+    FOR UPDATE OF o
   )
   UPDATE cache_occurrences_functional u
   SET classifier_agreement=false
@@ -1827,25 +1814,25 @@ SQL;
 // For records with classifier info where a suggestion matches the current det,
 // set agreement to true if the classifier chose that suggestion as the best match.
 $config['occurrences']['update']['functional_classification'] = <<<SQL
-  WITH target_occurrences AS MATERIALIZED (
-    SELECT DISTINCT o.id
-    FROM cache_occurrences_functional u
-    JOIN occurrences o ON o.id=u.id
+  WITH locked_occurrences AS MATERIALIZED (
+    SELECT o.id
+    FROM cache_occurrences_functional o
     #join_needs_update#
-    JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-    JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-    LEFT JOIN (classification_suggestions cs
-      JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
-    ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
-    WHERE u.id=o.id
-    AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
+    WHERE
     #occurrence_ids#
-  ), locked_occurrences AS MATERIALIZED (
-    SELECT u.id
-    FROM cache_occurrences_functional u
-    JOIN target_occurrences target ON target.id=u.id
-    ORDER BY u.id
-    FOR UPDATE OF u
+    AND EXISTS (
+      SELECT 1
+      FROM occurrence_media m
+      JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+      LEFT JOIN (classification_suggestions cs
+        JOIN cache_taxa_taxon_lists cttl ON cttl.id=cs.taxa_taxon_list_id
+      ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+      WHERE m.occurrence_id=o.id
+      AND m.deleted=false
+      AND (cttl.external_key=o.taxa_taxon_list_external_key OR cs.id IS NULL)
+    )
+    ORDER BY o.id
+    FOR UPDATE OF o
   )
   UPDATE cache_occurrences_functional u
   SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
