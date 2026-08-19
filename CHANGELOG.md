@@ -22,6 +22,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Import files with blank first row no longer cause errors, instead a warning is returned. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/2101.
 * Update to latest version of PHPSpreadsheet library used for imports.
+* Bugfixes in the record owner notifications code.
 * PHP version requirement increased to 8.2.
 
 
