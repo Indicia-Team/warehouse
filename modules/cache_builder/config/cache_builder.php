@@ -1802,33 +1802,8 @@ $config['occurrences']['update']['functional_taxon_path'] = <<<SQL
   AND u.taxon_path IS NULL
 SQL;
 
-// Fill in classifier agreement.
-$config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
-  -- Set a default of disagreement for all records with classifier info.
-  WITH locked_occurrences AS MATERIALIZED (
-    SELECT o.id
-    FROM cache_occurrences_functional o
-    #join_needs_update#
-    WHERE
-    #occurrence_ids#
-    AND EXISTS (
-      SELECT 1
-      FROM occurrence_media m
-      JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-      WHERE m.occurrence_id=o.id
-      AND m.deleted=false
-    )
-    ORDER BY o.id
-    FOR UPDATE OF o
-  )
-  UPDATE cache_occurrences_functional u
-  SET classifier_agreement=false
-  FROM locked_occurrences lo
-  WHERE u.id=lo.id
-SQL;
-
-// For records with classifier info where a suggestion matches the current det,
-// set agreement to true if the classifier chose that suggestion as the best match.
+// Fill in classifier agreement. Records with classifier info default to
+// disagreement unless a matching suggestion was chosen as the best match.
 $config['occurrences']['update']['functional_classification'] = <<<SQL
   WITH locked_occurrences AS MATERIALIZED (
     SELECT o.id
@@ -1840,27 +1815,32 @@ $config['occurrences']['update']['functional_classification'] = <<<SQL
       SELECT 1
       FROM occurrence_media m
       JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-      LEFT JOIN (classification_suggestions cs
-        JOIN cache_taxa_taxon_lists cttl ON cttl.id=cs.taxa_taxon_list_id
-      ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
       WHERE m.occurrence_id=o.id
       AND m.deleted=false
-      AND (cttl.external_key=o.taxa_taxon_list_external_key OR cs.id IS NULL)
     )
     ORDER BY o.id
     FOR UPDATE OF o
+  ), classifier_agreement AS MATERIALIZED (
+    SELECT lo.id,
+      bool_or(
+        CASE WHEN cs.id IS NULL OR cttl.external_key=o.taxa_taxon_list_external_key
+          THEN COALESCE(cs.classifier_chosen, false)
+          ELSE false
+        END
+      ) AS agreement
+    FROM locked_occurrences lo
+    JOIN occurrences o ON o.id=lo.id
+    JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+    JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+    LEFT JOIN (classification_suggestions cs
+      JOIN cache_taxa_taxon_lists cttl ON cttl.id=cs.taxa_taxon_list_id
+    ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+    GROUP BY lo.id
   )
   UPDATE cache_occurrences_functional u
-  SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
-  FROM locked_occurrences lo
-  JOIN occurrences o ON o.id=lo.id
-  JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-  JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-  LEFT JOIN (classification_suggestions cs
-    JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
-  ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
-  WHERE u.id=lo.id
-  AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
+  SET classifier_agreement=ca.agreement
+  FROM classifier_agreement ca
+  WHERE u.id=ca.id
 SQL;
 
 // Ensure occurrence sensitivity changes apply to parent sample cache data.
