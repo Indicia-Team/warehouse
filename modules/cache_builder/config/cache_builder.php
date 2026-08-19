@@ -1709,9 +1709,9 @@ SET sample_id=o.sample_id,
       else 'U'
   end,
   query=case
-    when oc1.id is not null and oc2.id is not null then 'A'
-    when oc1.id is not null and oc2.id is null then 'Q'
-    else null
+    when comment_info.last_query_id is null then null
+    when comment_info.last_answer_id>comment_info.last_query_id then 'A'
+    else 'Q'
   end,
   sensitive=o.sensitivity_precision is not null,
   private=s.privacy_precision is not null,
@@ -1721,7 +1721,10 @@ SET sample_id=o.sample_id,
   freshwater_flag=cttl.freshwater_flag,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag,
-  data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
+  data_cleaner_result=case
+    when o.last_verification_check_date is null then null
+    else not coalesce(comment_info.manual_check_required, false)
+  end,
   applied_verification_rule_types=case when o.last_verification_check_date is null then null else u.applied_verification_rule_types end,
   training=o.training,
   zero_abundance=o.zero_abundance,
@@ -1734,10 +1737,8 @@ SET sample_id=o.sample_id,
   verification_checks_enabled=w.verification_checks_enabled,
   media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
   identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false),
-  dna_derived=dnao.id IS NOT NULL AND dnao.deleted=false
+  dna_derived=dnao.id IS NOT NULL
 FROM occurrences o
-#join_needs_update#
-LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN locked_occurrences lo ON lo.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 JOIN websites w ON w.id=o.website_id AND w.deleted=false
@@ -1746,21 +1747,36 @@ LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-LEFT JOIN (occurrence_attribute_values oav
-    JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted=false
-LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
-    AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
-LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
-    AND oc2.query=false AND oc2.generated_by IS NULL
-    AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
-LEFT JOIN occurrence_comments dc
-    ON dc.occurrence_id=o.id
-    AND dc.implies_manual_check_required=true
-    AND dc.deleted=false
-LEFT JOIN dna_occurrences dnao
-    ON dnao.occurrence_id=o.id
+LEFT JOIN LATERAL (
+  SELECT t.sort_order
+  FROM occurrence_attribute_values oav
+  JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id
+      AND oa.deleted=false AND oa.system_function='certainty'
+  JOIN termlists_terms t ON t.id=oav.int_value
+  WHERE oav.occurrence_id=o.id
+  AND oav.deleted=false
+  ORDER BY oav.id DESC
+  LIMIT 1
+) certainty ON true
+LEFT JOIN LATERAL (
+  SELECT
+    max(oc.id) FILTER (
+      WHERE oc.auto_generated=false
+      AND oc.query=true
+      AND (o.verified_on IS NULL OR oc.created_on>o.verified_on)
+    ) AS last_query_id,
+    max(oc.id) FILTER (
+      WHERE oc.auto_generated=false
+      AND oc.query=false
+      AND oc.generated_by IS NULL
+      AND (o.verified_on IS NULL OR oc.created_on>o.verified_on)
+    ) AS last_answer_id,
+    bool_or(oc.implies_manual_check_required) AS manual_check_required
+  FROM occurrence_comments oc
+  WHERE oc.occurrence_id=o.id
+  AND oc.deleted=false
+) comment_info ON true
+LEFT JOIN dna_occurrences dnao ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE u.id=o.id
 ";
 
@@ -2101,10 +2117,19 @@ LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN users u ON u.id=o.created_by_id -- deleted users records still included.
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-LEFT JOIN (occurrence_attribute_values oav
-    JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted=false
+LEFT JOIN LATERAL (
+    SELECT t.sort_order
+    FROM occurrence_attribute_values oav
+    JOIN occurrence_attributes oa
+      ON oa.id=oav.occurrence_attribute_id
+     AND oa.deleted=false
+     AND oa.system_function='certainty'
+    JOIN termlists_terms t ON t.id=oav.int_value
+    WHERE oav.occurrence_id=o.id
+      AND oav.deleted=false
+    ORDER BY oav.id DESC
+    LIMIT 1
+  ) certainty ON true
 LEFT JOIN dna_occurrences dnao
     ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE o.deleted=false
