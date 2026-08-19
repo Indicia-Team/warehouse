@@ -855,6 +855,13 @@ class Scheduled_Tasks_Controller extends Controller {
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
         'samples.created_on>=' => $lastRunDate,
+        'occurrences.deleted' => 'f',
+        'samples.deleted' => 'f',
+        'surveys.deleted' => 'f',
+        'sav1.deleted' => 'f',
+        'sa1.deleted' => 'f',
+        'sav2.deleted' => 'f',
+        'sa2.deleted' => 'f',
       ])
       ->where('sav1.int_value<>0')
       ->get();
@@ -873,11 +880,15 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $qry = $this->db
       ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, ' .
-          's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
+          's.location_name, s.comment as sample_comment, o.comment as occurrence_comment')
       ->from('samples as s')
       ->join('occurrences as o', 'o.sample_id', 's.id')
       ->join('cache_taxa_taxon_lists as ttl', 'ttl.id', 'o.taxa_taxon_list_id')
       ->in('o.id', $recordsToFetch);
+    $qry->where([
+      'o.deleted' => 'f',
+      's.deleted' => 'f',
+    ]);
     if ($useWorkflowModule) {
       // Extra query info to determine if comms need to be logged for this
       // species.
@@ -931,21 +942,36 @@ class Scheduled_Tasks_Controller extends Controller {
       $attrArray[$attrValue->occurrence_id][$attrValue->caption] = $attrValue->value;
     }
     $email_config = Kohana::config('email');
+    $emailSendResults = [];
+    $sendFailure = FALSE;
     foreach ($emailsRequired as $email) {
+      if (!isset($occurrenceArray[$email->occurrence_id])) {
+        kohana::log('warning', "Skipping record owner notification for occurrence $email->occurrence_id because the occurrence is no longer available.");
+        continue;
+      }
       $emailContent = "Thank you for sending your record to $email->survey. Here are the details of your contribution for your records.<br/><table>";
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
       $emailer->addRecipient($email->email_address);
       $emailer->setFrom($email_config['address']);
-      $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>", 'recordOwnerNotification');
+      $sendResult = $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>", 'recordOwnerNotification');
+      $emailSendResults[$email->occurrence_id][] = $sendResult > 0;
+      if ($sendResult === 0) {
+        $sendFailure = TRUE;
+        kohana::log('error', "Failed to send record owner notification for occurrence $email->occurrence_id to $email->email_address");
+      }
     }
     if ($useWorkflowModule) {
       foreach ($occurrences as $occurrence) {
-        if ($occurrence->log_all_communications === 't') {
+        if ($occurrence->log_all_communications === 't'
+            && !empty($emailSendResults[$occurrence->id])) {
+          $emailSendSucceeded = !in_array(FALSE, $emailSendResults[$occurrence->id], TRUE);
           $this->db->insert('occurrence_comments', [
             'occurrence_id' => $occurrence->id,
-            'comment' => "An acknowledgement email was sent to the record contributor.",
+            'comment' => $emailSendSucceeded
+              ? "An acknowledgement email was sent to the record contributor."
+              : "Sending acknowledgement email to the record contributor was attempted but failed due to an email send failure",
             'correspondence_data' => json_encode([
               'email' => [
                 [
@@ -964,7 +990,12 @@ class Scheduled_Tasks_Controller extends Controller {
         }
       }
     }
-    variable::set('record-owner-notifications', date('c', $currentTime));
+    if (!$sendFailure) {
+      variable::set('record-owner-notifications', date('c', $currentTime));
+    }
+    else {
+      kohana::log('error', 'Record owner notification checkpoint was not advanced because one or more emails failed to send.');
+    }
   }
 
   /**
@@ -976,6 +1007,9 @@ class Scheduled_Tasks_Controller extends Controller {
    * one for the value.
    */
   private function addArrayToEmailTable($occurrenceId, $array, &$emailContent) {
+    if (!isset($array[$occurrenceId])) {
+      return;
+    }
     $excludedFields = [
       'date_end',
       'date_type',
