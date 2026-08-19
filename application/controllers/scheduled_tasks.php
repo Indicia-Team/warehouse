@@ -905,6 +905,19 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($occurrences as $occurrence) {
       $occurrenceArray[$occurrence->id] = $occurrence;
     }
+    // A record may have been deleted between the candidate and detail
+    // queries. Exclude it from all subsequent array lookups and processing.
+    $availableEmails = [];
+    foreach ($emailsRequired as $email) {
+      if (isset($occurrenceArray[$email->occurrence_id])) {
+        $availableEmails[] = $email;
+      }
+    }
+    $emailsRequired = $availableEmails;
+    if (count($emailsRequired) === 0) {
+      self::msg("No record owner notification details available");
+      return;
+    }
     $attrArray = [];
     // Get the sample attributes.
     $occurrenceIds = implode(',', $recordsToFetch);
@@ -945,10 +958,6 @@ class Scheduled_Tasks_Controller extends Controller {
     $emailSendResults = [];
     $sendFailure = FALSE;
     foreach ($emailsRequired as $email) {
-      if (!isset($occurrenceArray[$email->occurrence_id])) {
-        kohana::log('warning', "Skipping record owner notification for occurrence $email->occurrence_id because the occurrence is no longer available.");
-        continue;
-      }
       $emailContent = "Thank you for sending your record to $email->survey. Here are the details of your contribution for your records.<br/><table>";
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
