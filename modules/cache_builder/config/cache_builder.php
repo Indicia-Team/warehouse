@@ -1885,6 +1885,15 @@ UPDATE cache_occurrences_nonfunctional
 SET comment=o.comment,
   sensitivity_precision=o.sensitivity_precision,
   privacy_precision=s.privacy_precision,
+  media=(SELECT array_to_string(array_agg(om.path), ',')
+    FROM occurrence_media om
+    WHERE om.occurrence_id=o.id AND om.deleted=false),
+  data_cleaner_info=CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
+    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
+      FROM occurrence_comments oc
+      WHERE oc.occurrence_id=o.id
+         AND oc.implies_manual_check_required=true
+         AND oc.deleted=false), 'pass') END,
   output_sref=get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
@@ -2030,31 +2039,6 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
 WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
-$config['occurrences']['update']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
-$config['occurrences']['update']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET data_cleaner_info=
-  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
-    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
-      FROM occurrence_comments oc
-      WHERE oc.occurrence_id=onf.id
-         AND oc.implies_manual_check_required=true
-         AND oc.deleted=false), 'pass') END
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
 $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_functional(
             id, sample_id, website_id, survey_id, input_form, location_id,
             location_name, public_geom,
@@ -2161,10 +2145,20 @@ SQL;
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, verifier, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, media, data_cleaner_info,
+            output_sref, output_sref_system, verifier, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
+  (SELECT array_to_string(array_agg(om.path), ',')
+    FROM occurrence_media om
+    WHERE om.occurrence_id=o.id AND om.deleted=false),
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
+    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
+      FROM occurrence_comments oc
+      WHERE oc.occurrence_id=o.id
+         AND oc.implies_manual_check_required=true
+         AND oc.deleted=false), 'pass') END,
   get_output_sref(
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
@@ -2317,31 +2311,6 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
   LEFT JOIN cache_termlists_terms t_det_full_name on a_det_full_name.data_type='L' and t_det_full_name.id=v_det_full_name.int_value
 ) on v_det_full_name.occurrence_id=o.id and v_det_full_name.deleted=false
 WHERE cache_occurrences_nonfunctional.id=o.id
-";
-
-$config['occurrences']['insert']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
-";
-
-$config['occurrences']['insert']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional onf
-SET data_cleaner_info=
-  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
-    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
-      FROM occurrence_comments oc
-      WHERE oc.occurrence_id=onf.id
-         AND oc.implies_manual_check_required=true
-         AND oc.deleted=false), 'pass') END
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=onf.id
-AND o.deleted=false
 ";
 
 $config['occurrences']['join_needs_update'] = 'join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
