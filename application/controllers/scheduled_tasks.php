@@ -842,8 +842,9 @@ class Scheduled_Tasks_Controller extends Controller {
     $currentTime = time();
     // Get a list of the records which contributors want to get a summary back
     // for.
+    $currentTimeTimestamp = date('c', $currentTime);
     $emailsRequired = $this->db
-      ->select('DISTINCT occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
+      ->select('DISTINCT ON (occurrences.id) occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
       ->from('occurrences')
       ->join('samples', 'samples.id', 'occurrences.sample_id')
       ->join('surveys', 'surveys.id', 'samples.survey_id')
@@ -854,7 +855,8 @@ class Scheduled_Tasks_Controller extends Controller {
       ->where([
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
-        'samples.created_on>=' => $lastRunDate,
+        'samples.created_on>' => $lastRunDate,
+        'samples.created_on<=' => $currentTimeTimestamp,
         'occurrences.deleted' => 'f',
         'samples.deleted' => 'f',
         'surveys.deleted' => 'f',
@@ -864,9 +866,14 @@ class Scheduled_Tasks_Controller extends Controller {
         'sa2.deleted' => 'f',
       ])
       ->where('sav1.int_value<>0')
+      ->orderby([
+        'occurrences.id' => 'ASC',
+        'sav2.id' => 'ASC',
+      ])
       ->get();
     if (count($emailsRequired) === 0) {
       self::msg("No record owner notifications to send");
+      variable::set('record-owner-notifications', $currentTimeTimestamp);
       return;
     }
     // Get a list of the records we need details of, so we can hit the db more
@@ -916,6 +923,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $emailsRequired = $availableEmails;
     if (count($emailsRequired) === 0) {
       self::msg("No record owner notification details available");
+      variable::set('record-owner-notifications', $currentTimeTimestamp);
       return;
     }
     $attrArray = [];
@@ -958,7 +966,8 @@ class Scheduled_Tasks_Controller extends Controller {
     $emailSendResults = [];
     $sendFailure = FALSE;
     foreach ($emailsRequired as $email) {
-      $emailContent = "Thank you for sending your record to $email->survey. Here are the details of your contribution for your records.<br/><table>";
+      $surveyTitle = htmlspecialchars((string) $email->survey, ENT_QUOTES, 'UTF-8');
+      $emailContent = "Thank you for sending your record to $surveyTitle. Here are the details of your contribution for your records.<br/><table>";
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
@@ -1038,6 +1047,8 @@ class Scheduled_Tasks_Controller extends Controller {
         $field = 'date';
       }
       if (!empty($value) && !in_array($field, $excludedFields)) {
+        $field = htmlspecialchars((string) $field, ENT_QUOTES, 'UTF-8');
+        $value = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
         $emailContent .= "<tr><td>$field</td><td>$value</td></tr>";
       }
     }
