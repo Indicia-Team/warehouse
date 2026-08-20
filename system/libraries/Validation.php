@@ -15,6 +15,9 @@ class Validation_Core extends ArrayObject {
   protected $pre_filters = array();
   protected $post_filters = array();
 
+  // Tracks whether pre-filters have already been applied before validation.
+  protected $pre_filters_applied = FALSE;
+
   // Rules and callbacks
   protected $rules = array();
   protected $callbacks = array();
@@ -67,6 +70,7 @@ class Validation_Core extends ArrayObject {
   {
     $this->errors = array();
     $this->messages = array();
+    $this->pre_filters_applied = FALSE;
   }
 
   /**
@@ -279,6 +283,74 @@ class Validation_Core extends ArrayObject {
   }
 
   /**
+   * Apply pre-filters to the current values.
+   *
+   * This can be called before validate() when callers need filtered values
+   * before the validation process copies them elsewhere.
+   *
+   * @chainable
+   * @return object
+   */
+  public function apply_pre_filters()
+  {
+    if ($this->pre_filters_applied)
+      return $this;
+
+    // Get all field names
+    $fields = $this->field_names();
+
+    // Copy the array from the object, to optimize multiple sets
+    $array = $this->getArrayCopy();
+
+    foreach ($fields as $field)
+    {
+      if ($field === '*')
+      {
+        // Ignore wildcard
+        continue;
+      }
+
+      if ( ! isset($array[$field]))
+      {
+        if (isset($this->array_fields[$field]))
+        {
+          // This field must be an array
+          $array[$field] = array();
+        }
+        else
+        {
+          $array[$field] = NULL;
+        }
+      }
+    }
+
+    // Swap the array back into the object.
+    $this->exchangeArray($array);
+
+    // Get all defined field names.
+    $fields = array_keys($array);
+
+    foreach ($this->pre_filters as $field => $callbacks) {
+      foreach ($callbacks as $callback) {
+        if ($field === '*') {
+          foreach ($fields as $f) {
+            // Can't trim NULL from PHP 8.1.
+            if ($this[$f] !== NULL || $callback !== 'trim') {
+              $this[$f] = is_array($this[$f]) ? array_map($callback, $this[$f]) : call_user_func($callback, $this[$f]);
+            }
+          }
+        }
+        else {
+          $this[$field] = is_array($this[$field]) ? array_map($callback, $this[$field]) : call_user_func($callback, $this[$field]);
+        }
+      }
+    }
+
+    $this->pre_filters_applied = TRUE;
+    return $this;
+  }
+
+  /**
    * Add a post-filter to one or more inputs. Post-filters are applied after
    * rules and callbacks have been executed.
    *
@@ -419,58 +491,15 @@ class Validation_Core extends ArrayObject {
       $object = $this;
     }
 
-    // Get all field names
-    $fields = $this->field_names();
-
-    // Copy the array from the object, to optimize multiple sets
-    $array = $this->getArrayCopy();
-
-    foreach ($fields as $field)
-    {
-      if ($field === '*')
-      {
-        // Ignore wildcard
-        continue;
-      }
-
-      if ( ! isset($array[$field]))
-      {
-        if (isset($this->array_fields[$field]))
-        {
-          // This field must be an array
-          $array[$field] = array();
-        }
-        else
-        {
-          $array[$field] = NULL;
-        }
-      }
-    }
-
-    // Swap the array back into the object.
-    $this->exchangeArray($array);
+    $this->apply_pre_filters();
 
     // Get all defined field names.
-    $fields = array_keys($array);
+    $fields = array_keys($this->getArrayCopy());
 
-    foreach ($this->pre_filters as $field => $callbacks) {
-      foreach ($callbacks as $callback) {
-        if ($field === '*') {
-          foreach ($fields as $f) {
-            // Can't trim NULL from PHP 8.1.
-            if ($this[$f] !== NULL || $callback !== 'trim') {
-              $this[$f] = is_array($this[$f]) ? array_map($callback, $this[$f]) : call_user_func($callback, $this[$f]);
-            }
-          }
-        }
-        else {
-          $this[$field] = is_array($this[$field]) ? array_map($callback, $this[$field]) : call_user_func($callback, $this[$field]);
-        }
-      }
-    }
-
-    if ($this->submitted === FALSE)
+    if ($this->submitted === FALSE) {
+      $this->pre_filters_applied = FALSE;
       return FALSE;
+    }
 
     foreach ($this->rules as $field => $callbacks) {
 
@@ -614,6 +643,8 @@ class Validation_Core extends ArrayObject {
     }
 
     // Return TRUE if there are no errors
+    $this->pre_filters_applied = FALSE;
+
     return $this->errors === array();
   }
 

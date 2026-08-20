@@ -469,6 +469,9 @@ class ORM extends ORM_Core {
         $array[$field] = NULL;
       }
     }
+    // Apply filters before copying unvalidated fields into the model.
+    $array->apply_pre_filters();
+    $modelFields = $array->as_array();
     $fields_to_copy = $this->unvalidatedFields;
     // The created_by_id and updated_by_id fields can be specified by web
     // service calls if the caller knows which Indicia user is making the post.
