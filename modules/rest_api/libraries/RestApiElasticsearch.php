@@ -80,7 +80,7 @@ class RestApiElasticsearch {
   private $esCsvTemplates = [
     "default" => [
       ['caption' => 'Record ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'Sample ID', 'field' => 'event.event_id'],
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date start', 'field' => 'event.date_start'],
@@ -142,7 +142,7 @@ class RestApiElasticsearch {
     ],
     "easy-download" => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
       [
         'caption' => 'Source',
@@ -257,7 +257,7 @@ class RestApiElasticsearch {
         'caption' => 'Comment',
         'field' => '#sample_occurrence_comment:nonewline:notab:addref#',
       ],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       [
         'caption' => 'Source',
@@ -1440,6 +1440,30 @@ class RestApiElasticsearch {
     else {
       return $value;
     }
+  }
+
+  /**
+   * Special field handler for Elasticsearch record keys.
+   *
+   * Returns the _id field which holds the globally unique record key,
+   * including warehouse prefix and record ID. Strips the ! used to indicate a
+   * sensitive record from the key if present.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *   Can be empty or a string to specify a format.
+   *
+   * @return string
+   *   Formatted record key.
+   */
+  private function esGetSpecialFieldRecordKey(array $doc, array $params) {
+    $key = $doc['_id'] ?? '';
+    if (substr($key, -1) === '!') {
+      $key = substr($key, 0, -1);
+    }
+    return $key;
   }
 
   /**
