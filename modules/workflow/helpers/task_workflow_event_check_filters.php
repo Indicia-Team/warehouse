@@ -47,22 +47,22 @@ class task_workflow_event_check_filters {
     // Retrieve work queue tasks for this procId, where the task links to an
     // event with a filter, but the record does not comply with the filter.
     $qry = <<<SQL
-SELECT q.record_id
-FROM work_queue q
-JOIN occurrences o ON o.id=q.record_id
-JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
-LEFT JOIN (occurrence_attribute_values v
-  JOIN cache_termlists_terms t on t.id=v.int_value
-  JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id AND a.deleted=false
-) ON v.occurrence_id=o.id AND e.attrs_filter_term IS NOT NULL
-  -- case insensitive array check.
-  AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
-  AND lower(a.term_name)=lower(e.attrs_filter_term)
-  AND v.deleted=false
-WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
--- Need to fail on the attribute values filter.
-AND e.attrs_filter_term IS NOT NULL AND v.id IS NULL;
-SQL;
+      SELECT q.record_id
+      FROM work_queue q
+      JOIN occurrences o ON o.id=q.record_id
+      JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
+      LEFT JOIN (occurrence_attribute_values v
+        JOIN cache_termlists_terms t on t.id=v.int_value
+        JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id AND a.deleted=false
+      ) ON v.occurrence_id=o.id AND e.attrs_filter_term IS NOT NULL
+        -- case insensitive array check.
+        AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
+        AND lower(a.term_name)=lower(e.attrs_filter_term)
+        AND v.deleted=false
+      WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
+      -- Need to fail on the attribute values filter.
+      AND e.attrs_filter_term IS NOT NULL AND v.id IS NULL;
+    SQL;
     $tasks = $db->query($qry, [$procId]);
     $occurrenceIds = [];
     foreach ($tasks as $task) {
@@ -70,6 +70,9 @@ SQL;
     }
     // For the records outside the workflow_event's filter we can rewind them.
     $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', $occurrenceIds, ['S', 'V', 'R']);
+    $rewoundOccurrenceIds = [];
+    $sampleIds = [];
+    // Rewind the records to their previous state.
     foreach ($rewinds as $key => $rewind) {
       list($entity, $id) = explode('.', $key);
       $obj = ORM::factory($entity, $id);
@@ -77,7 +80,21 @@ SQL;
         $obj->$field = $value;
       }
       $obj->save();
+      // Track the rewound occurrence and sample IDs for cache updates.
+      $rewoundOccurrenceIds[] = (int) $id;
+      $sampleIds[] = (int) $obj->sample_id;
     }
+    // Update the cache for the rewound occurrences and samples.
+    cache_builder::update(
+      $db,
+      'occurrences',
+      array_values(array_unique($rewoundOccurrenceIds))
+    );
+    cache_builder::update(
+      $db,
+      'samples',
+      array_values(array_unique($sampleIds))
+    );
   }
 
 }
