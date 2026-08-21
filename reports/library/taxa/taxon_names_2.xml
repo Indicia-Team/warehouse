@@ -7,7 +7,8 @@
       case tall.language_iso when 'lat' then '&lt;em&gt;' || tall.taxon || '&lt;/em&gt;' || coalesce(' ' || tall.authority, '') else tall.taxon end,
       tall.language_iso,
       tall.language_iso='lat' as latin,
-      tall.preferred
+      tall.preferred,
+      tall.taxon_list_id as taxon_list_id
     from cache_taxa_taxon_lists t
     join cache_taxa_taxon_lists tall on tall.taxon_meaning_id=t.taxon_meaning_id
     where 1=1
