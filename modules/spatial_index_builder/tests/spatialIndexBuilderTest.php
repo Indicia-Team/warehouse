@@ -31,6 +31,65 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     return $ds1;
   }
 
+  public function setUp(): void {
+    parent::setUp();
+    self::$db->query('DELETE FROM work_queue');
+  }
+
+  public function tearDown(): void {
+    self::$db->query('DELETE FROM work_queue');
+    parent::tearDown();
+  }
+
+  public function testSpatialLocationDeleteWorkerRemovesAllQueuedLocations() {
+    self::$db->query("UPDATE cache_occurrences_functional SET location_ids=ARRAY[1,900,901] WHERE id=1");
+    self::$db->query("UPDATE cache_samples_functional SET location_ids=ARRAY[1,900,901] WHERE id=1");
+    self::$db->query("UPDATE locations SET higher_location_ids=ARRAY[1,900,901] WHERE id=1");
+    self::$db->query(<<<SQL
+      INSERT INTO work_queue
+        (task, entity, record_id, cost_estimate, priority, created_on, claimed_by)
+      VALUES
+        ('task_spatial_index_builder_location_delete', 'location', 1, 30, 2, now(), 'location-delete-test'),
+        ('task_spatial_index_builder_location_delete', 'location', 900, 30, 2, now(), 'location-delete-test')
+    SQL);
+
+    task_spatial_index_builder_location_delete::process(
+      self::$db,
+      (object) [],
+      'location-delete-test'
+    );
+
+    $locationIds = self::$db->query(<<<SQL
+      SELECT ARRAY_AGG(location_id ORDER BY location_id) AS location_ids
+      FROM (
+        SELECT unnest(location_ids) AS location_id
+        FROM cache_occurrences_functional
+        WHERE id=1
+      ) AS occurrence_locations
+    SQL)->current();
+    $this->assertSame('{901}', (string) $locationIds->location_ids);
+
+    $sampleLocationIds = self::$db->query(<<<SQL
+      SELECT ARRAY_AGG(location_id ORDER BY location_id) AS location_ids
+      FROM (
+        SELECT unnest(location_ids) AS location_id
+        FROM cache_samples_functional
+        WHERE id=1
+      ) AS sample_locations
+    SQL)->current();
+    $this->assertSame('{901}', (string) $sampleLocationIds->location_ids);
+
+    $higherLocationIds = self::$db->query(<<<SQL
+      SELECT ARRAY_AGG(location_id ORDER BY location_id) AS location_ids
+      FROM (
+        SELECT unnest(higher_location_ids) AS location_id
+        FROM locations
+        WHERE id=1
+      ) AS higher_locations
+    SQL)->current();
+    $this->assertSame('{901}', (string) $higherLocationIds->location_ids);
+  }
+
   /**
    * Full test for the population of location.higher_location_ids.
    */
