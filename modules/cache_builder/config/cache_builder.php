@@ -454,8 +454,9 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = [
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN master_list_paths mlp ON mlp.external_key=cttl.external_key
-    JOIN locked_occurrences lo ON lo.id=u.id
+    CROSS JOIN locked_occurrences lo
     WHERE cttl.id=u.taxa_taxon_list_id
+    AND lo.id=u.id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
     OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(mlp.path, ARRAY[]::integer[]));",
   "teardown" => "
