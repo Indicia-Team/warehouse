@@ -97,8 +97,9 @@ SET blocked_sharing_tasks=
     ], NULL)
   END
 FROM users u
-JOIN locked_occurrences l ON l.id=o.id
-WHERE u.id=o.created_by_id;
+CROSS JOIN locked_occurrences l
+WHERE l.id=o.id
+AND u.id=o.created_by_id;
 
 UPDATE cache_samples_functional s
   SET blocked_sharing_tasks=
