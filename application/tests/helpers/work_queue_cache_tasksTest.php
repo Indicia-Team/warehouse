@@ -177,6 +177,71 @@ class Helper_Work_Queue_Cache_Tasks_Integration_Test extends Indicia_DatabaseTes
     $this->assertSame('0', (string) $result->count);
   }
 
+  public function testWorkflowFilterWorkerRewindsOccurrenceAndSampleCaches() {
+    if (!class_exists('task_workflow_event_check_filters', FALSE)) {
+      require_once 'modules/workflow/helpers/task_workflow_event_check_filters.php';
+    }
+    $this->db->query(<<<SQL
+      UPDATE occurrences
+      SET sensitivity_precision=10000
+      WHERE id=1
+    SQL);
+    $this->db->query(<<<SQL
+      UPDATE cache_occurrences_nonfunctional
+      SET sensitivity_precision=10000
+      WHERE id=1
+    SQL);
+    $this->db->query(<<<SQL
+      UPDATE cache_samples_functional
+      SET sensitive=true
+      WHERE id=1
+    SQL);
+    $eventId = $this->db->query(<<<SQL
+      INSERT INTO workflow_events
+        (group_code, entity, event_type, key, key_value, values,
+         attrs_filter_term, attrs_filter_values, created_on, created_by_id,
+         updated_on, updated_by_id)
+      VALUES
+        ('test', 'occurrence', 'S', 'taxa_taxon_list_external_key', 'TESTKEY',
+         '{}', 'Test filter', ARRAY['matching'], now(), 1, now(), 1)
+      RETURNING id
+    SQL)->current()->id;
+    $this->db->query(<<<SQL
+      INSERT INTO workflow_undo
+        (entity, entity_id, event_type, original_values, created_on, created_by_id)
+      VALUES
+        ('occurrence', 1, 'S', '{"sensitivity_precision":null}', now(), 1)
+    SQL);
+    $this->db->query(<<<SQL
+      INSERT INTO work_queue
+        (task, entity, record_id, cost_estimate, priority, params, claimed_by, created_on)
+      VALUES
+        ('task_workflow_event_check_filters', 'occurrence', 1, 30, 2,
+         json_build_object('workflow_events.id', ?), 'workflow-test', now())
+    SQL, [$eventId]);
+
+    task_workflow_event_check_filters::process(
+      $this->db,
+      NULL,
+      'workflow-test'
+    );
+
+    $occurrence = $this->db->query(<<<SQL
+      SELECT o.sensitivity_precision AS occurrence_sensitivity,
+        n.sensitivity_precision AS cache_sensitivity
+      FROM occurrences o
+      JOIN cache_occurrences_nonfunctional n ON n.id=o.id
+      WHERE o.id=1
+    SQL)->current();
+    $sample = $this->db->query(
+      'SELECT sensitive FROM cache_samples_functional WHERE id=1'
+    )->current();
+
+    $this->assertNull($occurrence->occurrence_sensitivity);
+    $this->assertNull($occurrence->cache_sensitivity);
+    $this->assertSame('f', (string) $sample->sensitive);
+  }
+
   public function testScheduledTaskWorkQueueEntryPointCompletes() {
     if (!class_exists('Scheduled_Tasks_Controller', FALSE)) {
       require_once 'application/controllers/scheduled_tasks.php';
