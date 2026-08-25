@@ -125,4 +125,51 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
     $this->assertSame('{R}', (string) $sample->blocked_sharing_tasks);
   }
 
+  /**
+   * Rebuild an occurrence when its live taxon cache row has been removed.
+   */
+  public function testOccurrenceInsertUsesSourceTaxonAsFallback() {
+    require_once 'modules/cache_builder/helpers/cache_builder.php';
+    $this->db->query('DELETE FROM cache_occurrences_functional WHERE id=1');
+    $this->db->query('DELETE FROM cache_occurrences_nonfunctional WHERE id=1');
+    $this->db->query('DELETE FROM cache_taxa_taxon_lists WHERE id=1');
+
+    cache_builder::insert($this->db, 'occurrences', [1]);
+
+    $functional = $this->db->query(
+      'SELECT taxa_taxon_list_id, taxon_meaning_id, taxa_taxon_list_external_key,
+        taxon_group_id, freshwater_flag, terrestrial_flag, non_native_flag
+       FROM cache_occurrences_functional WHERE id=1'
+    )->current();
+    $this->assertSame('1', (string) $functional->taxa_taxon_list_id);
+    $this->assertSame('10000', (string) $functional->taxon_meaning_id);
+    $this->assertSame('TESTKEY', (string) $functional->taxa_taxon_list_external_key);
+    $this->assertSame('1', (string) $functional->taxon_group_id);
+    $this->assertNotNull($functional->freshwater_flag);
+    $this->assertNotNull($functional->terrestrial_flag);
+    $this->assertNotNull($functional->non_native_flag);
+  }
+
+  /**
+   * Update an occurrence when its live taxon cache row has been removed.
+   */
+  public function testOccurrenceUpdateUsesSourceTaxonAsFallback() {
+    require_once 'modules/cache_builder/helpers/cache_builder.php';
+    $this->db->query('DELETE FROM cache_taxa_taxon_lists WHERE id=1');
+    $this->db->query(
+      "UPDATE cache_occurrences_functional
+       SET taxon_meaning_id=NULL, taxa_taxon_list_external_key=NULL
+       WHERE id=1"
+    );
+
+    cache_builder::update($this->db, 'occurrences', [1]);
+
+    $functional = $this->db->query(
+      'SELECT taxon_meaning_id, taxa_taxon_list_external_key
+       FROM cache_occurrences_functional WHERE id=1'
+    )->current();
+    $this->assertSame('10000', (string) $functional->taxon_meaning_id);
+    $this->assertSame('TESTKEY', (string) $functional->taxa_taxon_list_external_key);
+  }
+
 }

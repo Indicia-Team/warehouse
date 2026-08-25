@@ -1644,7 +1644,7 @@ $config['samples']['extra_single_record_updates'] = [
 // ---------------------------------------------------------------------------------------------------------------------
 
 $config['occurrences']['get_missing_items_query'] = "
-  select distinct o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
+  select distinct o.id, o.deleted or s.deleted or su.deleted as deleted
     from occurrences o
     join samples s on s.id=o.sample_id
     join surveys su on su.id=s.survey_id
@@ -1654,7 +1654,7 @@ $config['occurrences']['get_missing_items_query'] = "
     left join cache_occurrences_functional co on co.id=o.id
     left join needs_update_occurrences nu on nu.id=o.id
     where co.id is null and nu.id is null
-    and (o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null)) = false";
+    and (o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted) = false";
 
 $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted
@@ -1732,17 +1732,17 @@ SET sample_id=o.sample_id,
   date_end=s.date_end,
   date_type=s.date_type,
   created_on=o.created_on,
-  updated_on=greatest(o.updated_on, cttl.cache_updated_on),
+  updated_on=greatest(o.updated_on, COALESCE(cttl.cache_updated_on, u.updated_on)),
   verified_on=o.verified_on,
   created_by_id=o.created_by_id,
   group_id=coalesce(s.group_id, sp.group_id),
   taxa_taxon_list_id=o.taxa_taxon_list_id,
-  preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
-  taxon_meaning_id=cttl.taxon_meaning_id,
-  taxa_taxon_list_external_key=cttl.external_key,
-  family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id,
-  taxon_group_id=cttl.taxon_group_id,
-  taxon_rank_sort_order=cttl.taxon_rank_sort_order,
+  preferred_taxa_taxon_list_id=COALESCE(cttl.preferred_taxa_taxon_list_id, tf.preferred_taxa_taxon_list_id),
+  taxon_meaning_id=COALESCE(cttl.taxon_meaning_id, tf.taxon_meaning_id, u.taxon_meaning_id),
+  taxa_taxon_list_external_key=COALESCE(cttl.external_key, tf.external_key, u.taxa_taxon_list_external_key),
+  family_taxa_taxon_list_id=COALESCE(cttl.family_taxa_taxon_list_id, u.family_taxa_taxon_list_id),
+  taxon_group_id=COALESCE(cttl.taxon_group_id, tf.taxon_group_id, u.taxon_group_id),
+  taxon_rank_sort_order=COALESCE(cttl.taxon_rank_sort_order, tf.taxon_rank_sort_order, u.taxon_rank_sort_order),
   record_status=o.record_status,
   record_substatus=o.record_substatus,
   certainty=case when certainty.sort_order is null then null
@@ -1759,10 +1759,10 @@ SET sample_id=o.sample_id,
   private=s.privacy_precision is not null,
   hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0),
   release_status=o.release_status,
-  marine_flag=cttl.marine_flag,
-  freshwater_flag=cttl.freshwater_flag,
-  terrestrial_flag=cttl.terrestrial_flag,
-  non_native_flag=cttl.non_native_flag,
+  marine_flag=COALESCE(cttl.marine_flag, tf.marine_flag, u.marine_flag, false),
+  freshwater_flag=COALESCE(cttl.freshwater_flag, tf.freshwater_flag, u.freshwater_flag, false),
+  terrestrial_flag=COALESCE(cttl.terrestrial_flag, tf.terrestrial_flag, u.terrestrial_flag, false),
+  non_native_flag=COALESCE(cttl.non_native_flag, tf.non_native_flag, u.non_native_flag, false),
   data_cleaner_result=case
     when o.last_verification_check_date is null then null
     else not coalesce(comment_info.manual_check_required, false)
@@ -1774,7 +1774,7 @@ SET sample_id=o.sample_id,
   import_guid=o.import_guid,
   confidential=o.confidential,
   external_key=o.external_key,
-  taxon_path=ctp.path,
+  taxon_path=COALESCE(ctp.path, u.taxon_path),
   parent_sample_id=s.parent_id,
   verification_checks_enabled=w.verification_checks_enabled,
   media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
@@ -1787,12 +1787,34 @@ JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
-JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+-- This join included to allow cache_occurrence_functional to work even if the taxon is deleted.
+LEFT JOIN LATERAL (
+  SELECT COALESCE(preferred_ttl.id, ttl.id) AS preferred_taxa_taxon_list_id,
+    ttl.taxon_meaning_id, ttl.taxon_list_id,
+    COALESCE(preferred_taxon.external_key, taxon.external_key) AS external_key,
+    COALESCE(preferred_taxon.taxon_group_id, taxon.taxon_group_id) AS taxon_group_id,
+    COALESCE(ttl.taxonomic_sort_order, taxon_rank.sort_order) AS taxon_rank_sort_order,
+    taxon.marine_flag, taxon.freshwater_flag, taxon.terrestrial_flag, taxon.non_native_flag
+  FROM taxa_taxon_lists ttl
+  JOIN taxa taxon ON taxon.id=ttl.taxon_id
+  LEFT JOIN taxon_ranks taxon_rank ON taxon_rank.id=taxon.taxon_rank_id AND taxon_rank.deleted=false
+  LEFT JOIN taxa_taxon_lists preferred_ttl ON preferred_ttl.taxon_meaning_id=ttl.taxon_meaning_id
+    AND preferred_ttl.taxon_list_id=ttl.taxon_list_id
+    AND preferred_ttl.preferred=true
+    AND preferred_ttl.deleted=false
+  LEFT JOIN taxa preferred_taxon ON preferred_taxon.id=preferred_ttl.taxon_id
+    AND preferred_taxon.deleted=false
+  WHERE cttl.id IS NULL
+    AND ttl.id=o.taxa_taxon_list_id
+  ORDER BY preferred_ttl.id
+  LIMIT 1
+) tf ON true
 LEFT JOIN LATERAL (
   SELECT path
   FROM cache_taxon_paths
-  WHERE external_key=cttl.external_key
-  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  WHERE external_key=COALESCE(cttl.external_key, tf.external_key)
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=COALESCE(cttl.taxon_list_id, tf.taxon_list_id))
   ORDER BY taxon_list_id=#master_list_id# DESC
   LIMIT 1
 ) ctp ON true
@@ -2064,9 +2086,13 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
       )
     ) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
-    o.created_by_id, coalesce(s.group_id, sp.group_id), o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
-    cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
-    cttl.taxon_group_id, cttl.taxon_rank_sort_order, o.record_status, o.record_substatus,
+    o.created_by_id, coalesce(s.group_id, sp.group_id), o.taxa_taxon_list_id,
+    COALESCE(cttl.preferred_taxa_taxon_list_id, tf.preferred_taxa_taxon_list_id),
+    COALESCE(cttl.taxon_meaning_id, tf.taxon_meaning_id),
+    COALESCE(cttl.external_key, tf.external_key),
+    cttl.family_taxa_taxon_list_id,
+    COALESCE(cttl.taxon_group_id, tf.taxon_group_id),
+    COALESCE(cttl.taxon_rank_sort_order, tf.taxon_rank_sort_order), o.record_status, o.record_substatus,
     case when certainty.sort_order is null then null
         when certainty.sort_order <100 then 'C'
         when certainty.sort_order <200 then 'L'
@@ -2074,7 +2100,10 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     null,
     o.sensitivity_precision is not null, s.privacy_precision is not null, s.privacy_precision IS NOT NULL AND s.privacy_precision=0, o.release_status,
-    cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, null,
+    COALESCE(cttl.marine_flag, tf.marine_flag, false),
+    COALESCE(cttl.freshwater_flag, tf.freshwater_flag, false),
+    COALESCE(cttl.terrestrial_flag, tf.terrestrial_flag, false),
+    COALESCE(cttl.non_native_flag, tf.non_native_flag, false), null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,
     CASE WHEN u.allow_share_for_reporting
@@ -2106,12 +2135,34 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN users u ON u.id=o.created_by_id -- deleted users records still included.
-JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+-- This join included to allow cache_occurrence_functional to work even if the taxon is deleted.
+LEFT JOIN LATERAL (
+  SELECT COALESCE(preferred_ttl.id, ttl.id) AS preferred_taxa_taxon_list_id,
+    ttl.taxon_meaning_id, ttl.taxon_list_id,
+    COALESCE(preferred_taxon.external_key, taxon.external_key) AS external_key,
+    COALESCE(preferred_taxon.taxon_group_id, taxon.taxon_group_id) AS taxon_group_id,
+    COALESCE(ttl.taxonomic_sort_order, taxon_rank.sort_order) AS taxon_rank_sort_order,
+    taxon.marine_flag, taxon.freshwater_flag, taxon.terrestrial_flag, taxon.non_native_flag
+  FROM taxa_taxon_lists ttl
+  JOIN taxa taxon ON taxon.id=ttl.taxon_id
+  LEFT JOIN taxon_ranks taxon_rank ON taxon_rank.id=taxon.taxon_rank_id AND taxon_rank.deleted=false
+  LEFT JOIN taxa_taxon_lists preferred_ttl ON preferred_ttl.taxon_meaning_id=ttl.taxon_meaning_id
+    AND preferred_ttl.taxon_list_id=ttl.taxon_list_id
+    AND preferred_ttl.preferred=true
+    AND preferred_ttl.deleted=false
+  LEFT JOIN taxa preferred_taxon ON preferred_taxon.id=preferred_ttl.taxon_id
+    AND preferred_taxon.deleted=false
+  WHERE cttl.id IS NULL
+    AND ttl.id=o.taxa_taxon_list_id
+  ORDER BY preferred_ttl.id
+  LIMIT 1
+) tf ON true
 LEFT JOIN LATERAL (
   SELECT path
   FROM cache_taxon_paths
-  WHERE external_key=cttl.external_key
-  AND (taxon_list_id=#master_list_id# OR taxon_list_id=cttl.taxon_list_id)
+  WHERE external_key=COALESCE(cttl.external_key, tf.external_key)
+  AND (taxon_list_id=#master_list_id# OR taxon_list_id=COALESCE(cttl.taxon_list_id, tf.taxon_list_id))
   ORDER BY taxon_list_id=#master_list_id# DESC
   LIMIT 1
 ) ctp ON true
