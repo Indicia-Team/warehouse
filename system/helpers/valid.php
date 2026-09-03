@@ -19,7 +19,7 @@ class valid_Core {
 	 */
 	public static function email($email)
 	{
-		return (bool) preg_match('/^[-_a-z0-9\'+*$^&%=~!?{}]++(?:\.[-_a-z0-9\'+*$^&%=~!?{}]+)*+@(?:(?![-.])[-a-z0-9.]+(?<![-.])\.[a-z]{2,63}|\d{1,3}(?:\.\d{1,3}){3})(?::\d++)?$/iD', (string) $email);
+		return filter_var((string) $email, FILTER_VALIDATE_EMAIL) !== FALSE;
 	}
 
 	/**
