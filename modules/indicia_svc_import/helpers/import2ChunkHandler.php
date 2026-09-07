@@ -669,6 +669,7 @@ class import2ChunkHandler {
       "$fieldToTrackDoneBy=false",
       'errors IS NULL',
     ];
+    $binds = [];
     foreach ($fields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $fieldValue = $parentEntityDataRow->$field ?? NULL;
@@ -676,8 +677,8 @@ class import2ChunkHandler {
         $wheresList[] = "$fieldEsc IS NULL";
       }
       else {
-        $value = pg_escape_literal($db->getLink(), $fieldValue);
-        $wheresList[] = "$fieldEsc=$value";
+        $wheresList[] = "$fieldEsc=?";
+        $binds[] = $fieldValue;
       }
     }
     $wheres = implode("\nAND ", $wheresList);
@@ -691,7 +692,8 @@ LIMIT ?;
 SQL;
     // Materialise the legacy result wrapper before using array operations;
     // result_array() still returns stdClass rows for the importer.
-    $rows = $db->query($sql, $limit + 1)->result()->result_array();
+    $binds[] = $limit + 1;
+    $rows = $db->query($sql, $binds)->result()->result_array();
     $hasMore = count($rows) > $limit;
     return [
       // The extra row is only a lookahead marker and must not be processed.
