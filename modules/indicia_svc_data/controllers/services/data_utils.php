@@ -944,6 +944,9 @@ SQL;
    *   Database connection.
    * @param string $occurrenceIdList
    *   CSV format string of occurrence IDs to process.
+   *
+   * @return int[]
+   *   IDs of the cloned samples.
    */
   private static function splitSamplesFromOtherOccurrences($db, $occurrenceIdList) {
     // First find a list of sample IDs that need to be duplicated.
@@ -981,6 +984,8 @@ SQL;
       AND o.id in ($occurrenceIdList);
 SQL;
     $db->query($qry);
+    $rows = $db->query('SELECT new_sample_id FROM samples_to_clone')->result_array(FALSE);
+    return array_map('intval', array_column($rows, 'new_sample_id'));
   }
 
   /**
@@ -1273,10 +1278,11 @@ SQL;
       return;
     }
     $db = new Database();
+    $splitSampleIds = [];
     $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
     if ($results) {
       if (!empty($options->allowSampleSplits)) {
-        $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
+        $splitSampleIds = $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
       }
       else {
         $message = 'Samples require splitting';
@@ -1299,15 +1305,17 @@ SQL;
     $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
     $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
     $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders<>' . pg_escape_literal($db->getLink(), $updates->recorder_name);
+    $splitSampleChangedCheckSql = empty($splitSampleIds) ? '' : 'OR s.id IN (' . implode(',', $splitSampleIds) . ')';
     $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
     $userId = (int) $this->user_id;
     $qry = <<<SQL
       SELECT s.id
       INTO TEMPORARY changing_samples
       FROM samples s
-      JOIN cache_samples_nonfunctional snf ON snf.id=s.id
+      LEFT JOIN cache_samples_nonfunctional snf ON snf.id=s.id
       WHERE ($sampleFieldChangedCheckSql
-      $recorderNameFieldChangedCheckSql)
+        $recorderNameFieldChangedCheckSql
+        $splitSampleChangedCheckSql)
       AND s.deleted=false
       AND s.id IN ($sampleIds)
       -- Ensure only bulk update own samples.
@@ -1344,6 +1352,7 @@ SQL;
 
 SQL;
     $db->query($qry);
+
     if (!empty($updates->recorder_name)) {
       // Recorder name a little different as it might be a custom attribute.
       $this->bulkEditRecorderNames($db, $sampleIds, $updates->recorder_name);
