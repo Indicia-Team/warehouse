@@ -36,6 +36,7 @@ $siteTitle = html::specialchars($warehouseTitle);
 <!-- Main template -->
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
 <meta id="routedURI" name="routedURI" content="<?php echo url::site() . router::$routed_uri; ?>" />
 <title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
