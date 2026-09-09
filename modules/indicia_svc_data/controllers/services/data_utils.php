@@ -1125,7 +1125,7 @@ WHERE w.id IN ($impactedWebsiteList)
 AND w.id NOT IN (SELECT from_website_id FROM index_websites_website_agreements WHERE provide_for_editing=true AND to_website_id=$this->website_id);
 SQL;
     if ($db->query($qry)->current()->count > 0) {
-      $this->fail('Unauthorized', 401, 'Request to move occurrences from websites that don\'t provide editing rights.');
+      $this->fail('Unauthorized', 401, 'Request to edit occurrences from websites that don\'t provide editing rights.');
       return FALSE;
     }
     return TRUE;
@@ -1292,7 +1292,6 @@ SQL;
   /**
    * Controller action for the bulk edit endpoint.
    *
-   * @todo Website restrictions
    * @todo restrictToOwnData -
    * @todo restrictToOwnData if not set, then ensure current user has site admin rights
    */
@@ -1311,6 +1310,15 @@ SQL;
       return;
     }
     $db = new Database();
+    $websiteRows = $db->query("SELECT DISTINCT website_id FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->result_array(FALSE);
+    $websiteIds = array_map('intval', array_column($websiteRows, 'website_id'));
+    if (empty($websiteIds)) {
+      $this->fail('Not Found', 404, 'No active occurrences were found for the supplied IDs.');
+      return FALSE;
+    }
+    if (!$this->checkWebsitesAuthorisedForEditing($db, $websiteIds)) {
+      return FALSE;
+    }
     $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
     if (!$this->checkSamplesAllBelongToUser($db, $sampleIds)) {
       $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
