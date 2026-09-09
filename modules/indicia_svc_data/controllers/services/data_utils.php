@@ -1320,37 +1320,67 @@ SQL;
       AND s.id IN ($sampleIds)
       -- Ensure only bulk update own samples.
       AND s.created_by_id=$userId;
+    SQL;
+    if ($updates->skip_reverify ?? FALSE === TRUE) {
+      $qry .= <<<SQL
+        UPDATE samples s
+        SET $sampleFieldUpdateSql
+          updated_on=now(),
+          updated_by_id=$userId
+        FROM changing_samples cs
+        WHERE cs.id=s.id;
 
-      UPDATE samples s
-      SET $sampleFieldUpdateSql
-        updated_on=now(),
-        updated_by_id=$userId,
-        record_status='C',
-        verified_by_id=null,
-        verified_on=null
-      FROM changing_samples cs
-      WHERE cs.id=s.id;
+        UPDATE occurrences o
+        SET updated_on=now(),
+          updated_by_id=$userId
+        FROM changing_samples cs
+        WHERE cs.id=o.sample_id
+        AND o.deleted=false;
+      SQL;
+    }
+    else {
+      $qry .= <<<SQL
+        UPDATE samples s
+        SET $sampleFieldUpdateSql
+          updated_on=now(),
+          updated_by_id=$userId,
+          record_status='C',
+          verified_by_id=null,
+          verified_on=null
+        FROM changing_samples cs
+        WHERE cs.id=s.id;
 
-      -- Also reset verification status on changed occurrences.
-      INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
-      SELECT o.id, $langRecheck, 't', now(), $userId, now(), $userId
-      FROM changing_samples cs
-      JOIN occurrences o ON o.sample_id=cs.id
-      AND o.deleted=false
-      AND (o.record_status<>'C' OR o.record_substatus IS NOT NULL);
+        -- Also reset verification status on changed occurrences.
+        INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
+        SELECT o.id, $langRecheck, 't', now(), $userId, now(), $userId
+        FROM changing_samples cs
+        JOIN occurrences o ON o.sample_id=cs.id
+        AND o.deleted=false
+        AND (o.record_status<>'C' OR o.record_substatus IS NOT NULL);
 
-      UPDATE occurrences o
-      SET updated_on=now(),
-        updated_by_id=$userId,
-        record_status='C',
-        record_substatus=null,
-        verified_by_id=null,
-        verified_on=null
-      FROM changing_samples cs
-      WHERE cs.id=o.sample_id
-      AND o.deleted=false;
+        UPDATE occurrences o
+        SET updated_on=now(),
+          updated_by_id=$userId,
+          record_status='C',
+          record_substatus=null,
+          verified_by_id=null,
+          verified_on=null
+        FROM changing_samples cs
+        WHERE cs.id=o.sample_id
+        AND o.deleted=false;
 
-SQL;
+      SQL;
+    }
+    if ($updates->append_comment) {
+      $comment = pg_escape_literal($db->getLink(), $updates->append_comment);
+      $qry .= <<<SQL
+        INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
+        SELECT o.id, $comment, 'f', now(), $userId, now(), $userId
+        FROM changing_samples cs
+        JOIN occurrences o ON o.sample_id=cs.id
+        AND o.deleted=false;
+      SQL;
+    }
     $db->query($qry);
 
     if (!empty($updates->recorder_name)) {
