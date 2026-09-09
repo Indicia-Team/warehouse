@@ -1303,6 +1303,7 @@ SQL;
     $updates = json_decode($_POST['updates']);
     if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+      return;
     }
     $occurrenceIds = $_POST['occurrence:ids'];
     $options = json_decode($_POST['options'] ?? '{}');
