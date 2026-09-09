@@ -51,6 +51,52 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     return $response;
   }
 
+  private function createOccurrence() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $submission = submission_builder::build_submission($array, $structure);
+    $response = data_entry_helper::forward_post_to('sample', $submission, $this->auth['write_tokens']);
+    $this->assertTrue(isset($response['success']), 'Submitting a sample did not return success response');
+    return (int) $response['success'];
+  }
+
+  private function bulkVerify($params, array $extra = []) {
+    return helper_base::http_post(
+      helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
+      array_merge([
+        'report' => 'library/occurrences/filterable_explore_list',
+        'params' => json_encode($params),
+        'user_id' => 1,
+      ], $extra, $this->auth['write_tokens'])
+    );
+  }
+
+
+  private function bulkVerifyError(array $params) {
+    try {
+      $response = helper_base::http_post(
+        helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
+        array_merge($params, $this->auth['write_tokens']),
+        FALSE
+      );
+      return $response['output'];
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      return $e->responseBody;
+    }
+  }
   public function testVerifyOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data__Utils_Test::testVerifyOccurrence");
     $array = [
@@ -203,6 +249,57 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(NULL, $c[0]['record_substatus']);
     $this->assertEquals('admin, core', $c[0]['verifier']);
     $this->assertNotEquals(NULL, $c[0]['verified_on']);
+  }
+
+  public function testBulkVerifyRequiresParams() {
+    $response = $this->bulkVerifyError([
+      'report' => 'library/occurrences/filterable_explore_list',
+      'user_id' => 1,
+    ]);
+    $this->assertContains('Missing params parameter.', $response);
+  }
+
+  public function testBulkVerifyRejectsInvalidParamsJson() {
+    $response = $this->bulkVerifyError([
+      'report' => 'library/occurrences/filterable_explore_list',
+      'params' => '{',
+      'user_id' => 1,
+    ]);
+    $this->assertContains('valid JSON object', $response);
+  }
+
+  public function testBulkVerifyDoesNotReverifyAlreadyVerifiedOccurrence() {
+    $occurrenceId = $this->createOccurrence();
+    $params = ['occurrence_id' => $occurrenceId];
+
+    $response = $this->bulkVerify($params);
+    $this->assertEquals('1', $response['output']);
+
+    $response = $this->bulkVerify($params);
+    $this->assertEquals('0', $response['output']);
+
+    $db = new Database();
+    $commentCount = $db->query(
+      'SELECT count(*) FROM occurrence_comments WHERE occurrence_id=?',
+      [$occurrenceId]
+    )->current()->count;
+    $this->assertEquals('1', $commentCount);
+  }
+
+  public function testBulkVerifyAppliesSubstatus() {
+    $occurrenceId = $this->createOccurrence();
+    $response = $this->bulkVerify(
+      ['occurrence_id' => $occurrenceId],
+      ['record_substatus' => '2']
+    );
+    $this->assertEquals('1', $response['output']);
+
+    $occurrence = ORM::factory('occurrence', $occurrenceId);
+    $this->assertEquals('V', $occurrence->record_status);
+    $this->assertEquals('2', (string) $occurrence->record_substatus);
+    $comment = ORM::factory('occurrence_comment', ['occurrence_id' => $occurrenceId]);
+    $this->assertEquals('This record is accepted as considered correct', $comment->comment);
+    $this->assertEquals('2', (string) $comment->record_substatus);
   }
 
 }
