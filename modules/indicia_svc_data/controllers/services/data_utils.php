@@ -1518,10 +1518,11 @@ SQL;
    */
   private function bulkEditRecorderNames($db, $sampleIds, $recorderName) {
     $userId = (int) $this->user_id;
+    $recorderNameEscaped = pg_escape_literal($db->getLink(), $recorderName);
     $qry = <<<SQL
 -- Update existing custom attributes values.
 UPDATE sample_attribute_values v
-SET text_value='$recorderName', updated_on=now(), updated_by_id=$userId
+SET text_value=$recorderNameEscaped, updated_on=now(), updated_by_id=$userId
 FROM sample_attributes a
 WHERE a.id=v.sample_attribute_id
 AND a.deleted=false
@@ -1532,7 +1533,7 @@ AND v.sample_id in ($sampleIds);
 -- Insert new custom attribute values if linked to the samples survey and an
 -- attribute value not already present.
 INSERT INTO sample_attribute_values(sample_id, sample_attribute_id, text_value, created_on, created_by_id, updated_on, updated_by_id)
-SELECT s.id, a.id, '$recorderName', now(), $userId, now(), $userId
+SELECT s.id, a.id, $recorderNameEscaped, now(), $userId, now(), $userId
 FROM samples s
 LEFT JOIN (sample_attribute_values vexist
   JOIN sample_attributes aexist ON aexist.deleted=false AND aexist.system_function='full_name' AND aexist.id=vexist.sample_attribute_id
@@ -1545,7 +1546,7 @@ AND vexist.id IS NULL;
 -- For any samples that don't have an appropriate attribute in their survey,
 -- set the recorder_names field.
 UPDATE samples s
-SET recorder_names='$recorderName'
+SET recorder_names=$recorderNameEscaped
 FROM samples s2
 LEFT JOIN (sample_attribute_values vexist
   JOIN sample_attributes aexist ON aexist.deleted=false AND aexist.system_function='full_name' AND aexist.id=vexist.sample_attribute_id
