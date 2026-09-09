@@ -1292,20 +1292,45 @@ SQL;
   /**
    * Controller action for the bulk edit endpoint.
    *
-   * @todo restrictToOwnData -
-   * @todo restrictToOwnData if not set, then ensure current user has site admin rights
+   * Updates the selected occurrences and their samples. When selected
+   * occurrences share a sample with unselected occurrences, the request must
+   * set allowSampleSplits in options to move the selected occurrences to cloned
+   * samples before applying the updates.
+   *
+   * POST parameters:
+   * * occurrence:ids - comma-separated occurrence IDs.
+   * * updates - JSON object containing optional date, location_name, sref,
+   *   sref_system, recorder_name and append_comment values. Set skip_reverify
+   *   to true to preserve verification status.
+   * * options - optional JSON object. Set allowSampleSplits to true to permit
+   *   samples to be split when required.
+   *
+   * Returns a JSON response containing the affected sample and occurrence
+   * counts, or an error response when validation or authorization fails.
    */
   public function bulk_edit() {
     header('Content-Type: application/json');
     $tm = microtime(TRUE);
     $this->authenticate('write');
+    if (!isset($_POST['updates'])) {
+      $this->fail('Bad request', 400, 'Missing updates parameter.');
+      return;
+    }
     $updates = json_decode($_POST['updates']);
-    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+    if (!is_object($updates) || json_last_error() !== JSON_ERROR_NONE) {
+      $this->fail('Bad request', 400, 'The updates parameter must contain a valid JSON object.');
+      return;
+    }
+    if (!isset($_POST['occurrence:ids']) || !preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
       return;
     }
     $occurrenceIds = $_POST['occurrence:ids'];
     $options = json_decode($_POST['options'] ?? '{}');
+    if (!is_object($options) || json_last_error() !== JSON_ERROR_NONE) {
+      $this->fail('Bad request', 400, 'The options parameter must contain a valid JSON object.');
+      return;
+    }
     if (!$this->validateBulkEditUpdateValues($updates)) {
       return;
     }
