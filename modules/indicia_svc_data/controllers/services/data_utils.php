@@ -994,11 +994,11 @@ SQL;
       INSERT INTO samples(id, survey_id, location_id, date_start, date_end, date_type, entered_sref, entered_sref_system,
         location_name, created_on, created_by_id, updated_on, updated_by_id, comment, external_key, sample_method_id, deleted,
         geom, recorder_names, parent_id, input_form, group_id, privacy_precision, record_status, verified_by_id, verified_on,
-        licence_id, training)
+        licence_id, training, import_guid, forced_spatial_indexer_location_ids)
       SELECT stc.new_sample_id, s.survey_id, s.location_id, s.date_start, s.date_end, s.date_type, s.entered_sref, s.entered_sref_system,
         s.location_name, now(), s.created_by_id, now(), s.updated_by_id, s.comment, s.external_key, s.sample_method_id, s.deleted,
         s.geom, s.recorder_names, s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status, s.verified_by_id, s.verified_on,
-        s.licence_id, s.training
+        s.licence_id, s.training, s.import_guid, s.forced_spatial_indexer_location_ids
       FROM samples_to_clone stc
       JOIN samples s ON s.id=stc.old_sample_id;
 
@@ -1351,8 +1351,11 @@ SQL;
       }
       $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
       $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
-      $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
-      $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders<>' . pg_escape_literal($db->getLink(), $updates->recorder_name);
+      $sampleFieldUnchangedChecks = array_map(function($update) {
+        return preg_replace('/^([^=]+)=/', '$1 IS NOT DISTINCT FROM ', $update);
+      }, $sampleFieldUpdates);
+      $sampleFieldChangedCheckSql = empty($sampleFieldUnchangedChecks) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUnchangedChecks) . ')';
+      $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders IS DISTINCT FROM ' . pg_escape_literal($db->getLink(), $updates->recorder_name);
       $splitSampleChangedCheckSql = empty($splitSampleIds) ? '' : 'OR s.id IN (' . implode(',', $splitSampleIds) . ')';
       $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
       $userId = (int) $this->user_id;
