@@ -1311,11 +1311,17 @@ SQL;
       return;
     }
     $db = new Database();
+    $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
+    if (!$this->checkSamplesAllBelongToUser($db, $sampleIds)) {
+      $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
+      return FALSE;
+    }
     $splitSampleIds = [];
     $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
     if ($results) {
       if (!empty($options->allowSampleSplits)) {
         $splitSampleIds = $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
+        $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
       }
       else {
         $message = 'Samples require splitting';
@@ -1328,11 +1334,6 @@ SQL;
         ]);
         return FALSE;
       }
-    }
-    $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
-    if (!$this->checkSamplesAllBelongToUser($db, $sampleIds)) {
-      $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
-      return FALSE;
     }
     $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
     $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
