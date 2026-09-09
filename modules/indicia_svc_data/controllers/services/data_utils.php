@@ -139,15 +139,27 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $tm = microtime(TRUE);
     $db = new Database();
     $this->authenticate('write');
-    $dryRun = isset($_POST['dryrun']) && $_POST['dryrun'] === 'true';
-    $report = $_POST['report'];
-    $params = json_decode($_POST['params'], TRUE);
-    $params['sharing'] = 'verification';
-    $websites = $this->website_id ? [$this->website_id] : NULL;
-    $reportEngine = new ReportEngine($websites, $this->user_id);
     try {
+      if (empty($_POST['report'])) {
+        throw new InvalidArgumentException('Missing report parameter.');
+      }
+      if (!isset($_POST['params'])) {
+        throw new InvalidArgumentException('Missing params parameter.');
+      }
+      $params = json_decode($_POST['params'], TRUE);
+      if (!is_array($params) || json_last_error() !== JSON_ERROR_NONE) {
+        throw new InvalidArgumentException('The params parameter must contain a valid JSON object.');
+      }
+      $dryRun = isset($_POST['dryrun']) && $_POST['dryrun'] === 'true';
+      $report = $_POST['report'];
+      $params['sharing'] = 'verification';
+      $websites = $this->website_id ? [$this->website_id] : NULL;
+      $reportEngine = new ReportEngine($websites, $this->user_id);
       // Load the report used for the verification grid with the same params.
       $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      if (!isset($data['content']['records']) || !is_array($data['content']['records'])) {
+        throw new UnexpectedValueException('The verification report did not return a records list.');
+      }
       // Now get a list of all the occurrence ids.
       $ids = [];
       // Get some status related stuff ready.
@@ -160,8 +172,16 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $substatus = $_POST['record_substatus'];
       }
       foreach ($data['content']['records'] as $record) {
+        if (!is_array($record) || !array_key_exists('occurrence_id', $record)
+          || !is_scalar($record['occurrence_id'])
+          || !preg_match('/^\d+$/', (string) $record['occurrence_id'])
+          || !array_key_exists('record_status', $record)
+          || !array_key_exists('record_substatus', $record)
+          || !array_key_exists('pass', $record)) {
+          throw new UnexpectedValueException('The verification report is missing required record fields.');
+        }
         if (($record['record_status'] !== 'V' || $record['record_substatus'] !== $substatus) &&
-          (!empty($record['pass']) || $_POST['ignore'] === 'true')) {
+          (!empty($record['pass']) || ($_POST['ignore'] ?? '') === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
           if (!$dryRun) {
             $db->insert('occurrence_comments', [
@@ -506,14 +526,14 @@ SQL;
         }
         echo 'OK';
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
+          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, NULL, json_encode($ids));
         }
       }
       catch (Exception $e) {
         echo $e->getMessage();
         error_logger::log_error('Exception during redet', $e);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), $ids);
+          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), json_encode($ids));
         }
       }
     }
