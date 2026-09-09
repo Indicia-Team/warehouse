@@ -1324,143 +1324,164 @@ SQL;
       $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
       return FALSE;
     }
-    $splitSampleIds = [];
-    $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
-    if ($results) {
-      if (!empty($options->allowSampleSplits)) {
-        $splitSampleIds = $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
-        $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
+    $transactionStarted = FALSE;
+    try {
+      $db->query('START TRANSACTION;');
+      $transactionStarted = TRUE;
+      $splitSampleIds = [];
+      $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
+      if ($results) {
+        if (!empty($options->allowSampleSplits)) {
+          $splitSampleIds = $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
+          $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
+        }
+        else {
+          $message = 'Samples require splitting';
+          //'The list of occurrences being edited belong to samples which contain other occurrences which are not being edited. ' .
+          //  "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to edit.";
+          $db->query('ROLLBACK;');
+          $transactionStarted = FALSE;
+          $this->fail('Conflict', 409, $message, 'SAMPLES_CONTAIN_OTHER_OCCURRENCES', [
+            'sample_id' => $results->sample_id,
+            'included_occurrence_id' => $results->included_id,
+            'excluded_occurrence_id' => $results->excluded_id,
+          ]);
+          return FALSE;
+        }
+      }
+      $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
+      $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
+      $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
+      $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders<>' . pg_escape_literal($db->getLink(), $updates->recorder_name);
+      $splitSampleChangedCheckSql = empty($splitSampleIds) ? '' : 'OR s.id IN (' . implode(',', $splitSampleIds) . ')';
+      $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
+      $userId = (int) $this->user_id;
+      $qry = <<<SQL
+        SELECT s.id
+        INTO TEMPORARY changing_samples
+        FROM samples s
+        LEFT JOIN cache_samples_nonfunctional snf ON snf.id=s.id
+        WHERE ($sampleFieldChangedCheckSql
+          $recorderNameFieldChangedCheckSql
+          $splitSampleChangedCheckSql)
+        AND s.deleted=false
+        AND s.id IN ($sampleIds)
+        -- Ensure only bulk update own samples.
+        AND s.created_by_id=$userId;
+      SQL;
+      if ($updates->skip_reverify ?? FALSE === TRUE) {
+        $qry .= <<<SQL
+          UPDATE samples s
+          SET $sampleFieldUpdateSql
+            updated_on=now(),
+            updated_by_id=$userId
+          FROM changing_samples cs
+          WHERE cs.id=s.id;
+
+          UPDATE occurrences o
+          SET updated_on=now(),
+            updated_by_id=$userId
+          FROM changing_samples cs
+          WHERE cs.id=o.sample_id
+          AND o.deleted=false;
+        SQL;
       }
       else {
-        $message = 'Samples require splitting';
-        //'The list of occurrences being edited belong to samples which contain other occurrences which are not being edited. ' .
-        //  "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to edit.";
-        $this->fail('Conflict', 409, $message, 'SAMPLES_CONTAIN_OTHER_OCCURRENCES', [
-          'sample_id' => $results->sample_id,
-          'included_occurrence_id' => $results->included_id,
-          'excluded_occurrence_id' => $results->excluded_id,
-        ]);
-        return FALSE;
+        $qry .= <<<SQL
+          UPDATE samples s
+          SET $sampleFieldUpdateSql
+            updated_on=now(),
+            updated_by_id=$userId,
+            record_status='C',
+            verified_by_id=null,
+            verified_on=null
+          FROM changing_samples cs
+          WHERE cs.id=s.id;
+
+          -- Also reset verification status on changed occurrences.
+          INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
+          SELECT o.id, $langRecheck, 't', now(), $userId, now(), $userId
+          FROM changing_samples cs
+          JOIN occurrences o ON o.sample_id=cs.id
+          AND o.deleted=false
+          AND (o.record_status<>'C' OR o.record_substatus IS NOT NULL);
+
+          UPDATE occurrences o
+          SET updated_on=now(),
+            updated_by_id=$userId,
+            record_status='C',
+            record_substatus=null,
+            verified_by_id=null,
+            verified_on=null
+          FROM changing_samples cs
+          WHERE cs.id=o.sample_id
+          AND o.deleted=false;
+
+        SQL;
+      }
+      if ($updates->append_comment) {
+        $comment = pg_escape_literal($db->getLink(), $updates->append_comment);
+        $qry .= <<<SQL
+          INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
+          SELECT o.id, $comment, 'f', now(), $userId, now(), $userId
+          FROM changing_samples cs
+          JOIN occurrences o ON o.sample_id=cs.id
+          AND o.deleted=false;
+        SQL;
+      }
+      $db->query($qry);
+
+      if (!empty($updates->recorder_name)) {
+        // Recorder name a little different as it might be a custom attribute.
+        $this->bulkEditRecorderNames($db, $sampleIds, $updates->recorder_name);
+      }
+
+      // Update the cache_* data using the work queue.
+      $qry = <<<SQL
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT DISTINCT 'task_cache_builder_update', 'occurrence', o.id, 50, 2, now()
+        FROM occurrences o
+        LEFT JOIN work_queue q ON q.record_id=o.id AND q.task='task_cache_builder_update' AND q.entity='occurrence'
+        WHERE o.id IN ($occurrenceIds)
+        AND o.deleted=false
+        AND q.id IS NULL;
+
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT DISTINCT 'task_cache_builder_update', 'sample', s.id, 50, 2, now()
+        FROM samples s
+        LEFT JOIN work_queue q ON q.record_id=s.id AND q.task='task_cache_builder_update' AND q.entity='sample'
+        WHERE s.id IN ($sampleIds)
+        AND s.deleted=false
+        AND q.id IS NULL;
+  SQL;
+      $db->query($qry);
+      if ($transactionStarted) {
+        $db->query('COMMIT;');
+        $transactionStarted = FALSE;
+      }
+      $response = [
+        'code' => 200,
+        'status' => 'OK',
+        'action' => 'records edited',
+        'affected' => [
+          'samples' => count(explode(',', $sampleIds)),
+          'occurrences' => count(explode(',', $occurrenceIds)),
+        ],
+      ];
+      echo json_encode($response);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db);
       }
     }
-    $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
-    $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
-    $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
-    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders<>' . pg_escape_literal($db->getLink(), $updates->recorder_name);
-    $splitSampleChangedCheckSql = empty($splitSampleIds) ? '' : 'OR s.id IN (' . implode(',', $splitSampleIds) . ')';
-    $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
-    $userId = (int) $this->user_id;
-    $qry = <<<SQL
-      SELECT s.id
-      INTO TEMPORARY changing_samples
-      FROM samples s
-      LEFT JOIN cache_samples_nonfunctional snf ON snf.id=s.id
-      WHERE ($sampleFieldChangedCheckSql
-        $recorderNameFieldChangedCheckSql
-        $splitSampleChangedCheckSql)
-      AND s.deleted=false
-      AND s.id IN ($sampleIds)
-      -- Ensure only bulk update own samples.
-      AND s.created_by_id=$userId;
-    SQL;
-    if ($updates->skip_reverify ?? FALSE === TRUE) {
-      $qry .= <<<SQL
-        UPDATE samples s
-        SET $sampleFieldUpdateSql
-          updated_on=now(),
-          updated_by_id=$userId
-        FROM changing_samples cs
-        WHERE cs.id=s.id;
-
-        UPDATE occurrences o
-        SET updated_on=now(),
-          updated_by_id=$userId
-        FROM changing_samples cs
-        WHERE cs.id=o.sample_id
-        AND o.deleted=false;
-      SQL;
-    }
-    else {
-      $qry .= <<<SQL
-        UPDATE samples s
-        SET $sampleFieldUpdateSql
-          updated_on=now(),
-          updated_by_id=$userId,
-          record_status='C',
-          verified_by_id=null,
-          verified_on=null
-        FROM changing_samples cs
-        WHERE cs.id=s.id;
-
-        -- Also reset verification status on changed occurrences.
-        INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
-        SELECT o.id, $langRecheck, 't', now(), $userId, now(), $userId
-        FROM changing_samples cs
-        JOIN occurrences o ON o.sample_id=cs.id
-        AND o.deleted=false
-        AND (o.record_status<>'C' OR o.record_substatus IS NOT NULL);
-
-        UPDATE occurrences o
-        SET updated_on=now(),
-          updated_by_id=$userId,
-          record_status='C',
-          record_substatus=null,
-          verified_by_id=null,
-          verified_on=null
-        FROM changing_samples cs
-        WHERE cs.id=o.sample_id
-        AND o.deleted=false;
-
-      SQL;
-    }
-    if ($updates->append_comment) {
-      $comment = pg_escape_literal($db->getLink(), $updates->append_comment);
-      $qry .= <<<SQL
-        INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
-        SELECT o.id, $comment, 'f', now(), $userId, now(), $userId
-        FROM changing_samples cs
-        JOIN occurrences o ON o.sample_id=cs.id
-        AND o.deleted=false;
-      SQL;
-    }
-    $db->query($qry);
-
-    if (!empty($updates->recorder_name)) {
-      // Recorder name a little different as it might be a custom attribute.
-      $this->bulkEditRecorderNames($db, $sampleIds, $updates->recorder_name);
-    }
-
-    // Update the cache_* data using the work queue.
-    $qry = <<<SQL
-      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-      SELECT DISTINCT 'task_cache_builder_update', 'occurrence', o.id, 50, 2, now()
-      FROM occurrences o
-      LEFT JOIN work_queue q ON q.record_id=o.id AND q.task='task_cache_builder_update' AND q.entity='occurrence'
-      WHERE o.id IN ($occurrenceIds)
-      AND o.deleted=false
-      AND q.id IS NULL;
-
-      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-      SELECT DISTINCT 'task_cache_builder_update', 'sample', s.id, 50, 2, now()
-      FROM samples s
-      LEFT JOIN work_queue q ON q.record_id=s.id AND q.task='task_cache_builder_update' AND q.entity='sample'
-      WHERE s.id IN ($sampleIds)
-      AND s.deleted=false
-      AND q.id IS NULL;
-SQL;
-    $db->query($qry);
-    $response = [
-      'code' => 200,
-      'status' => 'OK',
-      'action' => 'records edited',
-      'affected' => [
-        'samples' => count(explode(',', $sampleIds)),
-        'occurrences' => count(explode(',', $occurrenceIds)),
-      ],
-    ];
-    echo json_encode($response);
-    if (class_exists('request_logging')) {
-      request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db);
+    catch (Exception $e) {
+      if ($transactionStarted) {
+        $db->query('ROLLBACK;');
+      }
+      error_logger::log_error('Exception during bulk edit', $e);
+      $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db, $e->getMessage());
+      }
     }
   }
 
