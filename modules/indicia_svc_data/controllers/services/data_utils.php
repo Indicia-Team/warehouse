@@ -139,6 +139,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $tm = microtime(TRUE);
     $db = new Database();
     $this->authenticate('write');
+    $transactionStarted = FALSE;
     try {
       if (empty($_POST['report'])) {
         throw new InvalidArgumentException('Missing report parameter.');
@@ -170,6 +171,10 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       else {
         $status = $_POST['record_substatus'] == 2 ? 'accepted as considered correct' : 'accepted as correct';
         $substatus = $_POST['record_substatus'];
+      }
+      if (!$dryRun) {
+        $db->query('START TRANSACTION;');
+        $transactionStarted = TRUE;
       }
       foreach ($data['content']['records'] as $record) {
         if (!is_array($record) || !array_key_exists('occurrence_id', $record)
@@ -204,12 +209,19 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         // individual update.
         data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, $this->website_id, $this->user_id, array_keys($ids), $updates);
       }
+      if ($transactionStarted) {
+        $db->query('COMMIT;');
+        $transactionStarted = FALSE;
+      }
       echo count($ids);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
+      if ($transactionStarted) {
+        $db->query('ROLLBACK;');
+      }
       error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
       if (class_exists('request_logging')) {
