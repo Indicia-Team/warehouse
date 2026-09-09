@@ -62,14 +62,6 @@
     <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
-    <column name="administrator" display="Admin" sql="false" datatype="boolean" visible="false" />
-    <!-- following is required to meet group by requirements -->
-    <column name="administrator_raw" display="Admin" sql="false" datatype="boolean" visible="false" />
-    <column name="pending" display="Pending" sql="false" datatype="boolean" visible="false" />
-    <column name="member" display="Member" sql="false" datatype="boolean" visible="false" />
-    <column name="nonmember" display="Non-member" sql="true" datatype="boolean" visible="false" />
-    <column name="canrequestorjoin" display="Can request membership or join" datatype="boolean" visible="false"
-            sql="true" />
     <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
     <column name="role" display="My role" sql="case when true then 'Non-member' end" datatype="text" />
     <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
