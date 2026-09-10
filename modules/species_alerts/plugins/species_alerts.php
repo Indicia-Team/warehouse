@@ -92,7 +92,7 @@ JOIN species_alerts sa ON
   AND (sa.external_key IS NULL OR sa.external_key = delta.taxa_taxon_list_external_key)
   AND (sa.taxon_list_id IS NULL OR ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
   AND
-    ((sa.alert_on_entry='t' AND delta.record_status='C')
+    (sa.alert_on_entry='t'
     OR
     (sa.alert_on_verify='t' AND delta.record_status='V'))
   AND
