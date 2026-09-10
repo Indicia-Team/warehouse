@@ -87,10 +87,19 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    */
   private function store_species_alert($userId) {
     // Load existing or create a new record.
-    if (!empty($_GET['id']))
+    if (!empty($_GET['id'])) {
       $alertRecordSubmissionObj = ORM::factory('species_alert', $_GET['id']);
-    else
+      if (!$alertRecordSubmissionObj->id
+          || (int) $alertRecordSubmissionObj->website_id !== (int) $_GET['website_id']
+          || (int) $alertRecordSubmissionObj->user_id !== (int) $userId
+          || ($this->auth_user_id > 0 && (int) $this->auth_user_id !== (int) $userId)
+          || (!$this->in_warehouse && $this->auth_user_id <= 0)) {
+        throw new EntityAccessError('The requested species alert cannot be updated.', 404);
+      }
+    }
+    else {
       $alertRecordSubmissionObj = ORM::factory('species_alert');
+    }
     // The user id can be either a new user or exsting user, this has already
     // been sorted out by the get_user_id function, so by this point we don't
     // care about whether the user is new or existing, we are just dealing with
