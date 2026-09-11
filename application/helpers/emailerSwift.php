@@ -92,7 +92,7 @@ class emailerSwift {
       $swiftRecipients->addTo($recipient[0], $recipient[1] ?? NULL);
     }
     foreach ($ccList as $cc) {
-      $swiftRecipients->addCc($recipient[0], $recipient[1] ?? NULL);
+      $swiftRecipients->addCc($cc[0], $cc[1] ?? NULL);
     }
     $swiftFrom = $fromName ? new Swift_Address($from, $fromName) : new Swift_Address($from);
     if ($attachmentInfo) {
