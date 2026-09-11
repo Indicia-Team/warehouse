@@ -203,7 +203,7 @@ class Helper_Work_Queue_Cache_Tasks_Integration_Test extends Indicia_DatabaseTes
          updated_on, updated_by_id)
       VALUES
         ('test', 'occurrence', 'S', 'taxa_taxon_list_external_key', 'TESTKEY',
-         '{}', 'Test filter', ARRAY['matching'], now(), 1, now(), 1)
+         '{}', 'Identified_by', ARRAY['matching'], now(), 1, now(), 1)
       RETURNING id
     SQL)->current()->id;
     $this->db->query(<<<SQL
