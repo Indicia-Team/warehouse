@@ -18,7 +18,7 @@
  */
 
 /**
- * Model class for the species_details table.
+ * Model class for the species_alerts table.
  */
 class Species_Alert_Model extends ORM {
   protected $belongs_to = [
@@ -33,7 +33,7 @@ class Species_Alert_Model extends ORM {
     // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('user_id', 'required');
-    $array->add_rules('required');
+    $array->add_rules('website_id', 'required');
     $array->add_rules('external_key', 'length[1,50]');
     $array->add_rules('location_id', 'integer');
     $array->add_rules('survey_id', 'integer');
