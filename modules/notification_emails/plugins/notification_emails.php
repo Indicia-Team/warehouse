@@ -266,6 +266,7 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   }
   $emailSentCounter = 0;
   $emailQueuedCounter = 0;
+  $emailSendFailed = FALSE;
   // All the notifications that need to be sent in an email are grouped by
   // user, as we cycle through the notifications then we can track who the
   // user was for the previous notification. When this user id then changes,
@@ -367,6 +368,7 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
         }
         else {
           $emailQueuedCounter++;
+          $emailSendFailed = TRUE;
         }
         $emailContent = start_building_new_email($notificationToSendEmailsFor);
         $currentType = '';
@@ -377,6 +379,13 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
       }
       if (!empty($notificationToSendEmailsFor['data'])) {
         $record = json_decode($notificationToSendEmailsFor['data'], TRUE);
+        if (!is_array($record)) {
+          kohana::log(
+            'error',
+            'Invalid JSON in notification ' . $notificationToSendEmailsFor['id'] . ': ' . json_last_error_msg()
+          );
+          $record = [];
+        }
         // Output a header for the group of notifications of the same type.
         if ($currentType !== $notificationToSendEmailsFor['source_type']) {
           if ($currentType !== '') {
@@ -408,9 +417,9 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
               $htmlToDisplay = html::specialchars($systemName);
             }
             elseif ($field === 'comment') {
-              // Use the raw value as it can contain HTML.
+              $safeComment = notification_emails_safe_escape($value);
               $htmlToDisplay = '<div style="padding: 4px; border: solid silver 1px; border-radius: 4px;">' .
-                nl2br($value) . '</div>';
+                nl2br($safeComment) . '</div>';
               // Add a reply link if relevant.
               if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
                 $link = notification_emails_hyperlink_id(
@@ -488,13 +497,16 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   }
   else {
     $emailQueuedCounter++;
+    $emailSendFailed = TRUE;
   }
   // Save the maximum notification id against the jobs we are going to run
-  // now, so we know that we have done the notifications up to that id and
-  // next time the jobs are run they only need to work with notifications
-  // later than that id.
+  // now, so we know that we have done the notifications up to that id. Do
+  // not advance it after a failed email, otherwise that notification could
+  // be excluded from future runs by the ID filter.
   // Also set the date/time the job was run.
-  update_last_run_metadata($db, $frequenciesToRun);
+  if (!$emailSendFailed) {
+    update_last_run_metadata($db, $frequenciesToRun);
+  }
   if ($emailSentCounter == 0 && $emailQueuedCounter == 0) {
     echo 'No new notification emails have been sent.<br/>';
   }
@@ -510,6 +522,35 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   elseif ($emailQueuedCounter > 1) {
     echo $emailQueuedCounter . ' notification emails have been queued due to hourly send limit.<br/>';
   }
+}
+
+/**
+ * Escapes a string while preserving a small allowlist of HTML elements.
+ *
+ * Allowed elements are br, em, p and strong. Attributes and all other HTML
+ * elements remain escaped.
+ *
+ * @param string $string
+ *   String to escape.
+ *
+ * @return string
+ *   Escaped string with allowlisted elements preserved.
+ */
+function notification_emails_safe_escape($string) {
+  $escaped = html::specialchars($string);
+  $allowedElements = ['br','em','p','strong'];
+  // Convert allowed elements into a list of search strings.
+  $search = [];
+  $replace = [];
+  foreach ($allowedElements as $element) {
+    $search[] = '/&lt;\s*' . $element . '\s*&gt;/i';
+    $search[] = '/&lt;\s*\/\s*' . $element . '\s*&gt;/i';
+    $search[] = '/&lt;\s*' . $element . '\s*\/\s*&gt;/i';
+    $replace[] = "<$element>";
+    $replace[] = "</$element>";
+    $replace[] = "<$element/>";
+  }
+  return preg_replace($search, $replace, $escaped);
 }
 
 /**
