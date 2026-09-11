@@ -30,7 +30,9 @@ The task rescans a 12-hour period before the previous task checkpoint to allow
 spatial indexing to catch up. It also permits a two-day entry/verification event
 window for retries. Existing notifications for the same user and occurrence are
 excluded. Duplicate alert rows for one user therefore do not create duplicate
-notifications.
+notifications. If one notification cannot be saved, the failure is logged and
+the remaining notifications continue; the failed item can be retried while it
+remains within the processing window.
 
 ## Updating alerts
 

@@ -147,12 +147,32 @@ function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
   // we need to generate a notification for the user.
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
     if ($speciesAlertOccurrenceData->notify_entry === 't') {
-      species_alerts_create_notification($speciesAlertOccurrenceData, 'entered');
-      $notificationCounter++;
+      try {
+        species_alerts_create_notification($speciesAlertOccurrenceData, 'entered');
+        $notificationCounter++;
+      }
+      catch (Throwable $e) {
+        error_logger::log_error(
+          'Error creating species alert entry notification for occurrence ' .
+          $speciesAlertOccurrenceData->occurrence_id . ' and user ' .
+          $speciesAlertOccurrenceData->alerted_user_id,
+          $e
+        );
+      }
     }
     if ($speciesAlertOccurrenceData->notify_verify === 't') {
-      species_alerts_create_notification($speciesAlertOccurrenceData, 'verified');
-      $notificationCounter++;
+      try {
+        species_alerts_create_notification($speciesAlertOccurrenceData, 'verified');
+        $notificationCounter++;
+      }
+      catch (Throwable $e) {
+        error_logger::log_error(
+          'Error creating species alert verification notification for occurrence ' .
+          $speciesAlertOccurrenceData->occurrence_id . ' and user ' .
+          $speciesAlertOccurrenceData->alerted_user_id,
+          $e
+        );
+      }
     }
   }
   if ($notificationCounter === 0) {
