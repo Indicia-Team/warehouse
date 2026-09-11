@@ -18,7 +18,7 @@
  */
 
 /**
- * Model class for the species_details table.
+ * Model class for the species_alerts table.
  */
 class Species_Alert_Model extends ORM {
   protected $belongs_to = [
