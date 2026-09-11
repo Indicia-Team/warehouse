@@ -128,7 +128,22 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     $alertRecordSubmissionObj->alert_on_verify = empty($_GET['alert_on_verify']) ? 'f' : $_GET['alert_on_verify'];
     // Fill in the Created/Updated data fields in the record row.
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
-    $alertRecordSubmissionObj->save();
+    $validation = Validation::factory([
+      'user_id' => $alertRecordSubmissionObj->user_id,
+      'website_id' => $alertRecordSubmissionObj->website_id,
+      'external_key' => $alertRecordSubmissionObj->external_key,
+      'location_id' => $alertRecordSubmissionObj->location_id,
+      'survey_id' => $alertRecordSubmissionObj->survey_id,
+      'taxon_meaning_id' => $alertRecordSubmissionObj->taxon_meaning_id,
+      'taxon_list_id' => $alertRecordSubmissionObj->taxon_list_id,
+    ]);
+    if (!$alertRecordSubmissionObj->validate($validation, TRUE)) {
+      throw new ValidationError(
+        'Validation error',
+        2003,
+        $alertRecordSubmissionObj->getAllErrors()
+      );
+    }
   }
 
   /*
