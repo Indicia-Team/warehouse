@@ -726,8 +726,20 @@ class Validation_Core extends ArrayObject {
 
         if (($errors[$input] = Kohana::lang($key)) === $key)
         {
-          // Get the default error message
-          $errors[$input] = Kohana::lang("$file.$input.default");
+          // JVB Changes for Indicia 2026-09-11.
+          // Add a global and rule specific default message key.
+          // Try to get a global error message for the rule.
+          $errors[$input] = Kohana::lang("$file.$error");
+
+          if ($errors[$input] === "$file.$error") {
+            // Get the default error message for field/rule combination.
+            $errors[$input] = Kohana::lang("$file.$input.default");
+
+            // Fallback if nothing found.
+            if ($errors[$input] === "$file.$input.default") {
+              $errors[$input] = Kohana::lang("$file.default_validation_message");
+            }
+          }
         }
       }
 
