@@ -539,18 +539,28 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
 function notification_emails_safe_escape($string) {
   $escaped = html::specialchars($string);
   $allowedElements = ['br','em','p','strong'];
-  // Convert allowed elements into a list of search strings.
-  $search = [];
-  $replace = [];
-  foreach ($allowedElements as $element) {
-    $search[] = '/&lt;\s*' . $element . '\s*&gt;/i';
-    $search[] = '/&lt;\s*\/\s*' . $element . '\s*&gt;/i';
-    $search[] = '/&lt;\s*' . $element . '\s*\/\s*&gt;/i';
-    $replace[] = "<$element>";
-    $replace[] = "</$element>";
-    $replace[] = "<$element/>";
-  }
-  return preg_replace($search, $replace, $escaped);
+  $openElements = [];
+  $pattern = '/&lt;\s*(\/?)\s*(' . implode('|', $allowedElements)
+    . ')\s*(\/?)\s*&gt;/i';
+
+  return preg_replace_callback($pattern, function ($matches) use (&$openElements) {
+    $element = strtolower($matches[2]);
+    $isClosing = $matches[1] === '/';
+    $isSelfClosing = $matches[3] === '/';
+
+    if ($isClosing) {
+      if (empty($openElements) || end($openElements) !== $element) {
+        return $matches[0];
+      }
+      array_pop($openElements);
+      return "</$element>";
+    }
+
+    if (!$isSelfClosing && $element !== 'br') {
+      $openElements[] = $element;
+    }
+    return $isSelfClosing ? "<$element/>" : "<$element>";
+  }, $escaped);
 }
 
 /**
