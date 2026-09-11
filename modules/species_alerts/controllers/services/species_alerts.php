@@ -87,10 +87,19 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    */
   private function store_species_alert($userId) {
     // Load existing or create a new record.
-    if (!empty($_GET['id']))
+    if (!empty($_GET['id'])) {
       $alertRecordSubmissionObj = ORM::factory('species_alert', $_GET['id']);
-    else
+      if (!$alertRecordSubmissionObj->id
+          || (int) $alertRecordSubmissionObj->website_id !== (int) $_GET['website_id']
+          || (int) $alertRecordSubmissionObj->user_id !== (int) $userId
+          || ($this->auth_user_id > 0 && (int) $this->auth_user_id !== (int) $userId)
+          || (!$this->in_warehouse && $this->auth_user_id <= 0)) {
+        throw new EntityAccessError('The requested species alert cannot be updated.', 404);
+      }
+    }
+    else {
       $alertRecordSubmissionObj = ORM::factory('species_alert');
+    }
     // The user id can be either a new user or exsting user, this has already
     // been sorted out by the get_user_id function, so by this point we don't
     // care about whether the user is new or existing, we are just dealing with
@@ -119,7 +128,22 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     $alertRecordSubmissionObj->alert_on_verify = empty($_GET['alert_on_verify']) ? 'f' : $_GET['alert_on_verify'];
     // Fill in the Created/Updated data fields in the record row.
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
-    $alertRecordSubmissionObj->save();
+    $validation = Validation::factory([
+      'user_id' => $alertRecordSubmissionObj->user_id,
+      'website_id' => $alertRecordSubmissionObj->website_id,
+      'external_key' => $alertRecordSubmissionObj->external_key,
+      'location_id' => $alertRecordSubmissionObj->location_id,
+      'survey_id' => $alertRecordSubmissionObj->survey_id,
+      'taxon_meaning_id' => $alertRecordSubmissionObj->taxon_meaning_id,
+      'taxon_list_id' => $alertRecordSubmissionObj->taxon_list_id,
+    ]);
+    if (!$alertRecordSubmissionObj->validate($validation, TRUE)) {
+      throw new ValidationError(
+        'Validation error',
+        2003,
+        $alertRecordSubmissionObj->getAllErrors()
+      );
+    }
   }
 
   /*

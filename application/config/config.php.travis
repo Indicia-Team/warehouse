@@ -149,5 +149,7 @@ $config['modules'] = [
   MODPATH.'survey_structure_export', // import/export of attributes
   MODPATH.'audit',                   // audit trail
   MODPATH.'summary_occurrences',     // summary occurrences
+  MODPATH.'notification_emails',     // notification email management
+  MODPATH.'species_alerts',          // species alert notifications
   MODPATH.'phpUnit',                 // Required for testing
 ];

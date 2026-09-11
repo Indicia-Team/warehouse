@@ -76,6 +76,7 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
       'VT',
       'M',
       'PT',
+      'GU',
     ];
     foreach ($types as $type) {
       $postedFrequency = $_POST[$type] ?? '';
