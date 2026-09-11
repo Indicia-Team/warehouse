@@ -47,26 +47,26 @@ class task_workflow_event_check_filters {
     // Retrieve work queue tasks for this procId, where the task links to an
     // event with a filter, but the record does not comply with the filter.
     $qry = <<<SQL
-SELECT q.record_id
-FROM work_queue q
-JOIN occurrences o ON o.id=q.record_id
-JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
-WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
--- Need to fail on the attribute values filter.
-AND e.attrs_filter_term IS NOT NULL
-AND NOT EXISTS (
-  SELECT 1
-  FROM occurrence_attribute_values v
-  JOIN cache_termlists_terms t ON t.id=v.int_value
-  JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id
-    AND a.deleted=false
-  WHERE v.occurrence_id=o.id
-    AND v.deleted=false
-    -- Case insensitive array check.
-    AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
-    AND lower(a.term_name)=lower(e.attrs_filter_term)
-);
-SQL;
+      SELECT q.record_id
+      FROM work_queue q
+      JOIN occurrences o ON o.id=q.record_id
+      JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
+      WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
+      -- Need to fail on the attribute values filter.
+      AND e.attrs_filter_term IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM occurrence_attribute_values v
+        JOIN cache_termlists_terms t ON t.id=v.int_value
+        JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id
+          AND a.deleted=false
+        WHERE v.occurrence_id=o.id
+          AND v.deleted=false
+          -- Case insensitive array check.
+          AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
+          AND lower(a.term_name)=lower(e.attrs_filter_term)
+      );
+    SQL;
     $tasks = $db->query($qry, [$procId]);
     $occurrenceIds = [];
     foreach ($tasks as $task) {
