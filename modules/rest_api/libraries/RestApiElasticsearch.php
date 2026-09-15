@@ -78,7 +78,7 @@ class RestApiElasticsearch {
    * @var array
    */
   private $esCsvTemplates = [
-    "default" => [
+    'default' => [
       ['caption' => 'Record ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'Sample ID', 'field' => 'event.event_id'],
@@ -140,7 +140,7 @@ class RestApiElasticsearch {
       ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
       ['caption' => 'Media', 'field' => '#occurrence_media#'],
     ],
-    "easy-download" => [
+    'easy-download' => [
       ['caption' => 'ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
@@ -232,6 +232,160 @@ class RestApiElasticsearch {
       [
         'caption' => 'Automated checks',
         'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
+      ],
+    ],
+    'easy-download-dna' => [
+      ['caption' => 'ID', 'field' => 'id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
+      ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
+      [
+        'caption' => 'Source',
+        'field' => '#datasource_code:<wt> | <st> {|} <gt>#',
+      ],
+      ['caption' => 'Rank', 'field' => 'taxon.taxon_rank'],
+      ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
+      ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
+      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+      ['caption' => 'Kingdom', 'field' => 'taxon.kingdom'],
+      ['caption' => 'Order', 'field' => 'taxon.order'],
+      ['caption' => 'Family', 'field' => 'taxon.family'],
+      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.accepted_taxon_id'],
+      ['caption' => 'Site name', 'field' => '#sitename:obscureifsensitive#'],
+      ['caption' => 'Sensitive site', 'field' => '#sitename:showifsensitive#'],
+      ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
+      ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
+      ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
+      [
+        'caption' => 'Projection (input)',
+        'field' => '#sref_system:location.input_sref_system:alphanumeric#',
+      ],
+      [
+        'caption' => 'Precision',
+        'field' => 'location.coordinate_uncertainty_in_meters',
+      ],
+      ['caption' => 'Output map ref', 'field' => 'location.output_sref_blurred'],
+      [
+        'caption' => 'Projection (output)',
+        'field' => '#sref_system:location.output_sref_system_blurred:alphanumeric#',
+      ],
+      ['caption' => 'Sensitive output map ref', 'field' => '#conditional_value:location.output_sref:metadata.sensitivity_blur:=:F#'],
+      ['caption' => 'Biotope', 'field' => 'event.habitat'],
+      [
+        'caption' => 'VC number',
+        'field' => '#higher_geography:Vice County:code#',
+      ],
+      [
+        'caption' => 'Vice County',
+        'field' => '#higher_geography:Vice County:name#',
+      ],
+      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+      ['caption' => 'Date from', 'field' => 'event.date_start'],
+      ['caption' => 'Date to', 'field' => 'event.date_end'],
+      ['caption' => 'Date type', 'field' => 'event.date_type'],
+      ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
+      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
+      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
+      [
+        'caption' => 'Recorder certainty',
+        'field' => 'identification.recorder_certainty',
+      ],
+      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      [
+        'caption' => 'Count of sex or stage',
+        'field' => 'occurrence.organism_quantity',
+      ],
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
+      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+      ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
+      ['caption' => 'Images', 'field' => '#occurrence_media#'],
+      [
+        'caption' => 'Input on date',
+        'field' => '#datetime:metadata.created_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Last edited on date',
+        'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Verification status 1',
+        'field' => '#verification_status:astext#',
+      ],
+      [
+        'caption' => 'Verification status 2',
+        'field' => '#verification_substatus:astext#',
+      ],
+      ['caption' => 'Query', 'field' => '#query:astext#'],
+      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+      [
+        'caption' => 'Verified on',
+        'field' => '#datetime:identification.verified_on:d/m/Y H\:i#',
+      ],
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
+      [
+        'caption' => 'Automated checks',
+        'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
+      ],
+      [
+        'caption' => 'Associated sequences',
+        'field' => 'dna_derived_data.associated_sequences',
+      ],
+      [
+        'caption' => 'DNA sequence',
+        'field' => 'dna_derived_data.dna_sequence',
+      ],
+      [
+        'caption' => 'Target gene',
+        'field' => 'dna_derived_data.target_gene',
+      ],
+      [
+        'caption' => 'PCR primer reference',
+        'field' => 'dna_derived_data.pcr_primer_reference',
+      ],
+      [
+        'caption' => 'Environmental medium',
+        'field' => 'dna_derived_data.env_medium',
+      ],
+      [
+        'caption' => 'Environmental broad scale',
+        'field' => 'dna_derived_data.env_broad_scale',
+      ],
+      [
+        'caption' => 'OTU database',
+        'field' => 'dna_derived_data.otu_db',
+      ],
+      [
+        'caption' => 'OTU sequence comparison approach',
+        'field' => 'dna_derived_data.otu_seq_comp_appr',
+      ],
+      [
+        'caption' => 'OTU classification approach',
+        'field' => 'dna_derived_data.otu_class_appr',
+      ],
+      [
+        'caption' => 'DNA environmental local scale',
+        'field' => 'dna_derived_data.dna_env_local_scale',
+      ],
+      [
+        'caption' => 'Target subfragment',
+        'field' => 'dna_derived_data.target_subfragment',
+      ],
+      [
+        'caption' => 'PCR primer name forward',
+        'field' => 'dna_derived_data.pcr_primer_name_forward',
+      ],
+      [
+        'caption' => 'PCR primer forward',
+        'field' => 'dna_derived_data.pcr_primer_forward',
+      ],
+      [
+        'caption' => 'PCR primer name reverse',
+        'field' => 'dna_derived_data.pcr_primer_name_reverse',
+      ],
+      [
+        'caption' => 'PCR primer reverse',
+        'field' => 'dna_derived_data.pcr_primer_reverse',
       ],
     ],
     "mapmate" => [
