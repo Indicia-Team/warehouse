@@ -373,7 +373,7 @@ class RestApiElasticsearch {
       $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
+    return $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
   }
 
   /**
