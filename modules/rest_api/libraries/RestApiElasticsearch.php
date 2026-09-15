@@ -1734,7 +1734,7 @@ class RestApiElasticsearch {
    * Applies ES field values to a template.
    *
    * Field names can be supplied in [] inside the template and will be replaced
-   * by the respectiv values.
+   * by the respective values.
    *
    * @param array $doc
    *   Elasticsearch document.
@@ -1745,16 +1745,12 @@ class RestApiElasticsearch {
    *   Template with tokens replaced by values.
    */
   private function applyFieldReplacements(array $doc, $template) {
-    preg_match_all('/\[.*\]/', $template, $matches);
     $replaceKeys = [];
     $replaceValues = [];
-    foreach ($matches as $group) {
-      foreach ($group as $token) {
-        $fieldPath = str_replace(['[', ']'], '', $token);
-        $value = $this->getRawEsFieldValue($doc, $fieldPath);
-        $replaceKeys[] = $token;
-        $replaceValues[] = $value;
-      }
+    preg_match_all('/\[([a-z0-9_-]+(?:\.[a-z0-9_-]+)*)\]/', $template, $matches);
+    foreach ($matches[1] as $index => $fieldPath) {
+      $replaceKeys[] = $matches[0][$index];
+      $replaceValues[] = $this->getRawEsFieldValue($doc, $fieldPath);
     }
     return str_replace($replaceKeys, $replaceValues, $template);
   }
@@ -2264,12 +2260,9 @@ class RestApiElasticsearch {
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.
-          preg_match_all('/\[.*\]/', $field, $matches);
-          foreach ($matches as $group) {
-            foreach ($group as $token) {
-              $fieldPath = str_replace(['[', ']'], '', $token);
-              $fields[] = $fieldPath;
-            }
+          preg_match_all('/\[([a-z0-9_-]+(?:\.[a-z0-9_-]+)*)\]/', $field, $matches);
+          foreach ($matches[1] as $fieldPath) {
+            $fields[] = $fieldPath;
           }
           // Also 2nd parameter can be a path to a nested object.
           $tokens = explode(':', $field);
