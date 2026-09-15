@@ -379,10 +379,8 @@ class RestApiElasticsearch {
   /**
    * Retrieves the Elasticsearch major version number from the config.
    *
-   * If not specified returns null.
-   *
-   * @return int
-   *   Major version number.
+   * @return ?int
+   *   Major version number. If not specified in config returns null.
    */
   public function getMajorVersion() {
     $esVersion = kohana::config('rest.elasticsearch_version');
@@ -609,7 +607,7 @@ class RestApiElasticsearch {
     $output = [];
     if (isset($doc['occurrence']['associations'])) {
       foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc['accepted_name'];
+        $label = $assoc['accepted_name'] ?? '';
         if (!empty($assoc['vernacular_name'])) {
           $label = $assoc['vernacular_name'] . " ($label)";
         }
@@ -759,9 +757,9 @@ class RestApiElasticsearch {
    * Text representation of icons for download.
    */
   private function esGetSpecialFieldDataCleanerIcons(array $doc) {
-    $autoChecks = $doc['identification']['auto_checks'];
+    $autoChecks = $doc['identification']['auto_checks'] ?? [];
     $output = [];
-    if ($autoChecks['enabled'] === 'false') {
+    if (($autoChecks['enabled'] ?? NULL) === 'false') {
       $output[] = 'Automatic rule checks will not be applied to records in this dataset.';
     }
     elseif (isset($autoChecks['result'])) {
@@ -769,10 +767,10 @@ class RestApiElasticsearch {
         $output[] = 'All automatic rule checks passed.';
       }
       elseif ($autoChecks['result'] === 'false') {
-        if (count($autoChecks['output']) > 0) {
+        if (!empty($autoChecks['output'])) {
           // Add an icon for each rule violation.
           foreach ($autoChecks['output'] as $violation) {
-            $output[] = $violation['message'];
+            $output[] = $violation['message'] ?? '';
           }
         }
         else {
@@ -803,14 +801,10 @@ class RestApiElasticsearch {
     if (count($params) > 1) {
       return 'Incorrect params for datasource code field (must be 0 or 1)';
     }
-    $w = $doc['metadata']['website'];
-    $s = $doc['metadata']['survey'];
-    if (isset($doc['metadata']['group'])) {
-      $g = $doc['metadata']['group'];
-    }
-    else {
-      $g = ['title' => '', 'id' => ''];
-    }
+    $metadata = $doc['metadata'] ?? [];
+    $w = $metadata['website'] ?? ['title' => '', 'id' => ''];
+    $s = $metadata['survey'] ?? ['title' => '', 'id' => ''];
+    $g = $metadata['group'] ?? ['title' => '', 'id' => ''];
     if (count($params)) {
       $pattern = $params[0];
     }
@@ -1006,9 +1000,9 @@ class RestApiElasticsearch {
       else {
         $r = [];
         foreach ($doc['location']['higher_geography'] as $loc) {
-          if (strcasecmp($loc['type'], $params[0]) === 0) {
+          if (strcasecmp($loc['type'] ?? '', $params[0]) === 0) {
             if (!empty($params[1])) {
-              $r[] = $loc[$params[1]];
+              $r[] = $loc[$params[1]] ?? '';
             }
             else {
               $r[] = $loc;
@@ -1085,9 +1079,10 @@ class RestApiElasticsearch {
     $topSuggestion = '';
     $topProbability = 0;
     foreach ($suggestions as $suggestion) {
-      if ($suggestion['probability_given'] > $topProbability) {
-        $topSuggestion = $suggestion['taxon_name_given'];
-        $topProbability = $suggestion['probability_given'];
+      $probability = $suggestion['probability_given'] ?? 0;
+      if ($probability > $topProbability) {
+        $topSuggestion = $suggestion['taxon_name_given'] ?? '';
+        $topProbability = $probability;
       }
     }
     return $topSuggestion;
@@ -1224,7 +1219,7 @@ class RestApiElasticsearch {
     }
     if (!empty($doc['location']['higher_geography'])) {
       foreach ($doc['location']['higher_geography'] as $loc) {
-        $info[] = "$loc[type]: $loc[name]";
+        $info[] = ($loc['type'] ?? '') . ': ' . ($loc['name'] ?? '');
       }
     }
     return implode('; ', $info);
@@ -1335,7 +1330,7 @@ class RestApiElasticsearch {
       $items = [];
       foreach ($doc['occurrence']['media'] as $m) {
         $item = [
-          $m['path'],
+          $m['path'] ?? '',
           empty($m['caption']) ? '' : $m['caption'],
           empty($m['licence']) ? '' : $m['licence'],
         ];
@@ -1584,7 +1579,8 @@ class RestApiElasticsearch {
   private function esGetSpecialFieldSitename(array $doc, array $params) {
     $format = !empty($params) ? $params[0] : '';
     $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
-    $shouldBlur = $doc['metadata']['sensitive'] === 'true' || $doc['metadata']['private'] === 'true';
+    $metadata = $doc['metadata'] ?? [];
+    $shouldBlur = ($metadata['sensitive'] ?? '') === 'true' || ($metadata['private'] ?? '') === 'true';
     switch ($format) {
       case 'obscureifsensitive':
         if ($shouldBlur && !empty($value)) {
@@ -1678,7 +1674,7 @@ class RestApiElasticsearch {
       'R5' => 'Not accepted as incorrect',
     ];
     if (!empty($doc['identification'])) {
-      $status = $doc['identification']['verification_status'];
+      $status = $doc['identification']['verification_status'] ?? '';
       if (!empty($doc['identification']['verification_substatus']) && $doc['identification']['verification_substatus'] !== 0) {
         $status .= $doc['identification']['verification_substatus'];
       }
@@ -1718,14 +1714,15 @@ class RestApiElasticsearch {
    *   Formatted value.
    */
   private function esGetSpecialFieldTaxonLabel(array $doc) {
-    $name = empty($doc['taxon']['accepted_name']) ? $doc['taxon']['taxon_name'] : $doc['taxon']['accepted_name'];
+    $taxon = $doc['taxon'] ?? [];
+    $name = empty($taxon['accepted_name']) ? ($taxon['taxon_name'] ?? '') : $taxon['accepted_name'];
     // Append vernacular when available.
-    if (!empty($doc['taxon']['vernacular_name']) && $doc['taxon']['vernacular_name'] !== $name) {
-      $name .= ' | ' . $doc['taxon']['vernacular_name'];
+    if (!empty($taxon['vernacular_name']) && $taxon['vernacular_name'] !== $name) {
+      $name .= ' | ' . $taxon['vernacular_name'];
     }
     // Prepend taxon rank if above species.
-    if (!empty($doc['taxon']['taxon_rank_sort_order']) && $doc['taxon']['taxon_rank_sort_order'] < 290) {
-      $name = $doc['taxon']['taxon_rank'] . " $name";
+    if (!empty($taxon['taxon_rank_sort_order']) && $taxon['taxon_rank_sort_order'] < 290) {
+      $name = ($taxon['taxon_rank'] ?? '') . " $name";
     }
     return $name;
   }
@@ -2602,7 +2599,7 @@ class RestApiElasticsearch {
       $file['state'] = $done ? 'done' : 'nextPage';
       $cache = Cache::instance();
       if ($done) {
-        $cache->delete("es-paging-$file[uniq_id]", $file);
+        $cache->delete("es-paging-$file[uniq_id]");
         unset($file['scroll_id']);
         $this->zip($file);
       }
