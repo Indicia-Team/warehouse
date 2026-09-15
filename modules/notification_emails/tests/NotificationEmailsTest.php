@@ -41,6 +41,41 @@ class Notification_Emails_Test extends TestCase {
     $this->assertSame($comment, notification_emails_safe_escape($comment));
   }
 
+  public function testSafeEscapePreservesConfiguredLink() {
+    $comment = '<a target="_blank" href="https://example.com/verification">Review records</a>';
+
+    $result = notification_emails_safe_escape($comment, ['https://example.com/verification']);
+
+    $this->assertSame(
+      '<a href="https://example.com/verification" target="_blank" rel="noopener noreferrer">Review records</a>',
+      $result
+    );
+  }
+
+  public function testSafeEscapePreservesConfiguredLinkPrefix() {
+    $comment = '<a href="https://example.com/record-details?id=123">View record</a>';
+
+    $result = notification_emails_safe_escape($comment, ['https://example.com/record-details*']);
+
+    $this->assertSame('<a href="https://example.com/record-details?id=123">View record</a>', $result);
+  }
+
+  public function testSafeEscapeEscapesUnconfiguredAndUnsafeLinks() {
+    $allowedUrls = ['https://example.com/verification'];
+
+    $this->assertSame(
+      '&lt;a href=&quot;https://example.com/verification-extra&quot;&gt;Wrong link&lt;/a&gt;',
+      notification_emails_safe_escape(
+        '<a href="https://example.com/verification-extra">Wrong link</a>',
+        $allowedUrls
+      )
+    );
+    $this->assertSame(
+      '&lt;a href=&quot;javascript:alert(1)&quot;&gt;Unsafe link&lt;/a&gt;',
+      notification_emails_safe_escape('<a href="javascript:alert(1)">Unsafe link</a>', ['javascript:*'])
+    );
+  }
+
   public function testNotificationTypesIncludeGroupUserNotifications() {
     $types = notification_emails::getNotificationTypes();
 

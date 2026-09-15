@@ -527,23 +527,28 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
 /**
  * Escapes a string while preserving a small allowlist of HTML elements.
  *
- * Allowed elements are br, em, p and strong. Attributes and all other HTML
- * elements remain escaped.
+ * Allowed elements are br, em, p and strong. Links are only preserved when
+ * their URL is configured as allowed. Attributes and all other HTML elements
+ * remain escaped.
  *
  * @param string $string
  *   String to escape.
  *
+ * @param array|null $allowedLinkUrls
+ *   Optional allowed link URLs. A trailing * allows a URL prefix. If omitted,
+ *   the notification email and verifier notification configuration is used.
+ *
  * @return string
  *   Escaped string with allowlisted elements preserved.
  */
-function notification_emails_safe_escape($string) {
+function notification_emails_safe_escape($string, ?array $allowedLinkUrls = NULL) {
   $escaped = html::specialchars($string);
   $allowedElements = ['br','em','p','strong'];
   $openElements = [];
   $pattern = '/&lt;\s*(\/?)\s*(' . implode('|', $allowedElements)
     . ')\s*(\/?)\s*&gt;/i';
 
-  return preg_replace_callback($pattern, function ($matches) use (&$openElements) {
+  $escaped = preg_replace_callback($pattern, function ($matches) use (&$openElements) {
     $element = strtolower($matches[2]);
     $isClosing = $matches[1] === '/';
     $isSelfClosing = $matches[3] === '/';
@@ -561,6 +566,98 @@ function notification_emails_safe_escape($string) {
     }
     return $isSelfClosing ? "<$element/>" : "<$element>";
   }, $escaped);
+
+  $allowedLinkUrls = $allowedLinkUrls ?? notification_emails_allowed_comment_link_urls();
+  return preg_replace_callback(
+    '/&lt;\s*a\s+(.+?)\s*&gt;(.*?)&lt;\s*\/\s*a\s*&gt;/is',
+    function ($matches) use ($allowedLinkUrls) {
+      $attributes = html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8');
+      $parsedAttributes = [];
+      $offset = 0;
+      $attributePattern = '/\G\s*([a-z]+)\s*=\s*(["\'])(.*?)\2/is';
+      while ($offset < strlen($attributes)
+          && preg_match($attributePattern, $attributes, $attributeMatches, 0, $offset)) {
+        $name = strtolower($attributeMatches[1]);
+        if (!in_array($name, ['href', 'target', 'title']) || isset($parsedAttributes[$name])) {
+          return $matches[0];
+        }
+        $parsedAttributes[$name] = $attributeMatches[3];
+        $offset += strlen($attributeMatches[0]);
+      }
+      if (trim(substr($attributes, $offset)) !== '' || empty($parsedAttributes['href'])
+          || !notification_emails_comment_link_url_allowed($parsedAttributes['href'], $allowedLinkUrls)
+          || (isset($parsedAttributes['target']) && $parsedAttributes['target'] !== '_blank')) {
+        return $matches[0];
+      }
+      $href = html::specialchars($parsedAttributes['href']);
+      $title = isset($parsedAttributes['title'])
+        ? ' title="' . html::specialchars($parsedAttributes['title']) . '"'
+        : '';
+      $target = isset($parsedAttributes['target'])
+        ? ' target="_blank" rel="noopener noreferrer"'
+        : '';
+      return "<a href=\"$href\"$title$target>$matches[2]</a>";
+    },
+    $escaped
+  );
+}
+
+/**
+ * Gets link URLs allowed in notification comments.
+ *
+ * @return array
+ *   Allowed URLs, optionally ending in * to allow a URL prefix.
+ */
+function notification_emails_allowed_comment_link_urls() {
+  try {
+    $allowedUrls = kohana::config('notification_emails.allowed_comment_link_urls');
+    $allowedUrls = is_array($allowedUrls) ? $allowedUrls : [];
+  }
+  catch (Exception $e) {
+    $allowedUrls = [];
+  }
+  foreach (['verification_urls', 'moderation_urls'] as $configKey) {
+    try {
+      $verifierUrls = kohana::config("verifier_notifications.$configKey");
+      if (is_array($verifierUrls)) {
+        foreach ($verifierUrls as $verifierUrl) {
+          if (!empty($verifierUrl['url'])) {
+            $allowedUrls[] = $verifierUrl['url'];
+          }
+        }
+      }
+    }
+    catch (Exception $e) {
+      // Verifier notifications config is optional.
+    }
+  }
+  return array_unique($allowedUrls);
+}
+
+/**
+ * Checks if a notification comment link URL is allowed.
+ *
+ * @param string $url
+ *   URL to check.
+ * @param array $allowedUrls
+ *   Allowed URLs, optionally ending in * to allow a URL prefix.
+ *
+ * @return bool
+ *   TRUE if the URL is valid and allowed.
+ */
+function notification_emails_comment_link_url_allowed($url, array $allowedUrls) {
+  if (filter_var($url, FILTER_VALIDATE_URL) === FALSE
+      || !in_array(strtolower(parse_url($url, PHP_URL_SCHEME)), ['http', 'https'])) {
+    return FALSE;
+  }
+  foreach ($allowedUrls as $allowedUrl) {
+    $prefixMatch = substr($allowedUrl, -1) === '*';
+    $allowedUrl = $prefixMatch ? substr($allowedUrl, 0, -1) : $allowedUrl;
+    if ($url === $allowedUrl || ($prefixMatch && strpos($url, $allowedUrl) === 0)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**

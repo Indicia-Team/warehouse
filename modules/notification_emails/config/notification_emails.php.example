@@ -26,6 +26,15 @@ $config['email_sender_address'] = 'sender@example.com';
 $config['notifications_page_url'] = 'http://example.com/my-notifications';
 $config['notifications_page_url_text'] = 'Click for notifications';
 
+// Links allowed in notification comment text. Add a trailing * to allow a URL
+// prefix, for example when a record ID is included in the query string.
+// Verification and moderation URLs from verifier_notifications are included
+// automatically.
+$config['allowed_comment_link_urls'] = [
+  'http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx',
+  'https://example.com/record-details?occurrence_id=*',
+];
+
 // Same again but for pending check/moderation tasks.
 $config['record_details_page_urls'] = [
   ['website_id' => 23, 'url' => 'http://www.brc.ac.uk/irecord/record-details?occurrence_id=#id#&commenting']
