@@ -545,7 +545,7 @@ class rest_spreadsheet_verify {
     $metadata['idColIndex'] = array_search('ID', $rowData);
     $metadata['statusColIndex'] = array_search('*Decision status*', $rowData);
     $metadata['commentColIndex'] = array_search('*Decision comment*', $rowData);
-    if ($metadata['idColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE) {
+    if ($metadata['idColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE || $metadata['commentColIndex'] === FALSE) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'The uploaded spreadsheet does not have the required columns.');
     }
   }
