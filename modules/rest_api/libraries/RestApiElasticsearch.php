@@ -2256,11 +2256,11 @@ class RestApiElasticsearch {
             $fields[] = $fieldToCheck;
           }
         }
-        elseif ($field === '#idenfication_classifier_agreement#') {
-          $fields[] = 'identification.classifiers.current_determination.classifier_chosen';
+        elseif ($field === '#identification_classifier_agreement#') {
+          $fields[] = 'identification.classifier.current_determination.classifier_chosen';
         }
-        elseif ($field === '#idenfication_classifier_suggestion#') {
-          $fields[] = 'identification.classifiers.suggestions';
+        elseif ($field === '#identification_classifier_suggestion#') {
+          $fields[] = 'identification.classifier.suggestions';
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.
