@@ -46,30 +46,73 @@ function get_discover_groups_metadata() {
 /**
  * Returns the query used to generate the index_group_discovery table.
  */
-function get_discover_groups_query() {
-  return <<<'QRY'
+function get_discover_groups_query($db) {
+  // Set to the location type to be used for geographic comparison - should be
+  // selected from spatial_index_builder config `group_location_types` setting.
+  $locationType = 'Vice County';
+  $locationTypeId = $db->query("select id from cache_termlists_terms where termlist_title='Location types' and term=?", $locationType)->current()->id;
+
+  return <<<SQL
     drop table if exists custom_cache_tables.index_group_discovery_build;
 
-    select g.id as group_id,
+    WITH eligible_groups AS (
+      SELECT g.id, g.website_id
+      FROM groups g
+      JOIN filters f ON f.id = g.filter_id AND f.deleted = false
+      WHERE g.deleted = false
+        AND g.joining_method IN ('P', 'R')
+        AND (g.to_date IS NULL OR g.to_date > now() - '1 day'::interval)
+        AND (g.from_date IS NULL OR g.from_date < now() + '5 days'::interval)
+    ),
+    location_stats AS (
+      SELECT
+        gl.group_id,
+        array_agg(DISTINCT gl.location_id)
+          FILTER (WHERE gl.location_type_id = $locationTypeId) AS location_ids,
+        count(DISTINCT gl.location_id)
+          FILTER (WHERE gl.location_type_id = $locationTypeId) AS location_count
+      FROM index_groups_locations gl
+      JOIN eligible_groups g ON g.id = gl.group_id
+      GROUP BY gl.group_id
+    ),
+    taxon_stats AS (
+      SELECT
+        gtg.group_id,
+        array_agg(DISTINCT gtg.taxon_group_id) AS taxon_group_ids,
+        count(DISTINCT gtg.taxon_group_id) AS taxon_group_count
+      FROM index_groups_taxon_groups gtg
+      JOIN eligible_groups g ON g.id = gtg.group_id
+      GROUP BY gtg.group_id
+    ),
+    occurrence_stats AS (
+      SELECT
+        o.group_id,
+        count(*) AS recent_records,
+        count(*) FILTER (
+          WHERE o.created_on > now() - interval '2 days'
+        ) AS recent_records_2_days
+      FROM cache_occurrences_functional o
+      JOIN eligible_groups g ON g.id = o.group_id
+      WHERE o.created_on > now() - interval '1 year'
+      GROUP BY o.group_id
+    )
+    SELECT
+      g.id AS group_id,
       g.website_id,
-      -- Indexed locations for finding geographic overlap with user's records.
-      array_agg(distinct gl.location_id) filter (where gl.location_type_id=(select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3')) as group_indexed_location_ids,
-      count(distinct case gl.location_type_id when (select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3') then gl.location_id else null end) as group_indexed_location_ids_count,
-      -- Taxon groups for finding taxonomic overlap with user's records.
-      array_agg(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids,
-      count(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids_count,
-      -- Recent records for promoting active groups.
-      count(o.*) as group_recent_records
-    into custom_cache_tables.index_group_discovery_build
-    from groups g
-    join filters f on f.id=g.filter_id and f.deleted=false
-    left join index_groups_locations gl on gl.group_id=g.id
-    left join index_groups_taxon_groups gtg on gtg.group_id=g.id
-    left join cache_occurrences_functional o on o.group_id=g.id and o.created_on>now() - '1 year'::interval and o.updated_on>now() - '1 year'::interval
-    where g.deleted=false
-    -- Only publicly discoverable groups.
-    and g.joining_method in ('P', 'R')
-    group by g.id, g.website_id, f.definition;
+      ls.location_ids AS group_indexed_location_ids,
+      coalesce(ls.location_count, 0) AS group_indexed_location_ids_count,
+      coalesce(ts.taxon_group_ids, '{}'::integer[])
+        AS group_indexed_taxon_group_ids,
+      coalesce(ts.taxon_group_count, 0)
+        AS group_indexed_taxon_group_ids_count,
+      coalesce(os.recent_records, 0) AS group_recent_records,
+      coalesce(os.recent_records_2_days, 0)
+        AS group_recent_records_2_days
+    INTO custom_cache_tables.index_group_discovery_build
+    FROM eligible_groups g
+    LEFT JOIN location_stats ls ON ls.group_id = g.id
+    LEFT JOIN taxon_stats ts ON ts.group_id = g.id
+    LEFT JOIN occurrence_stats os ON os.group_id = g.id;
 
     -- Tidy nulls from arrays.
     update custom_cache_tables.index_group_discovery_build set group_indexed_taxon_group_ids='{}' where group_indexed_taxon_group_ids=array[null]::integer[];
@@ -78,5 +121,5 @@ function get_discover_groups_query() {
 
     drop table if exists custom_cache_tables.index_group_discovery;
     alter table custom_cache_tables.index_group_discovery_build rename to index_group_discovery;
-QRY;
+  SQL;
 }

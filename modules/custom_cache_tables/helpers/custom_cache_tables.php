@@ -88,7 +88,7 @@ class custom_cache_tables {
    */
   private static function buildTable($db, $defname) {
     if (function_exists("get_{$defname}_query")) {
-      $qry = call_user_func("get_{$defname}_query");
+      $qry = call_user_func("get_{$defname}_query", $db);
       $db->query($qry);
     }
   }
