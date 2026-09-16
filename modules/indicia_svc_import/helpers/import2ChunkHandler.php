@@ -73,6 +73,8 @@ class import2ChunkHandler {
    */
   public static function importChunk($db, $params) {
     $benchmarkStartedAt = microtime(TRUE);
+    $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
+    $deadline = $benchmarkStartedAt + ($moduleConfig['chunk_time_limit'] ?? 20);
     $benchmarkStartIndex = count(Database::$benchmarks);
     $benchmarkLogged = FALSE;
     $workflowBulkModeEnabled = FALSE;
@@ -125,6 +127,7 @@ class import2ChunkHandler {
       $childEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
       $precheckRowIds = [];
       $occurrenceRowsProcessedThisRequest = 0;
+      $deadlineReached = FALSE;
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         $isContinuingParent = !empty($activeParent)
           && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
@@ -180,12 +183,14 @@ class import2ChunkHandler {
         );
         $childEntityDataRows = $childEntityData['rows'];
         $hasMoreChildRows = $childEntityData['hasMore'];
+        $processedChildRows = 0;
         if (count($parentErrors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
             // As we won't individually process the occurrences due to error in
             // the sample, add them to the count.
             $config['rowsProcessed'] += count($childEntityDataRows);
+            $processedChildRows = count($childEntityDataRows);
           }
           $keyFields = self::getDestFieldsForColumns($parentEntityColumns, $config);
           self::saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
@@ -269,11 +274,17 @@ class import2ChunkHandler {
             }
             $config['rowsProcessed']++;
             $occurrenceRowsProcessedThisRequest++;
+            $processedChildRows++;
+            if (microtime(TRUE) >= $deadline) {
+              $deadlineReached = TRUE;
+              break;
+            }
           }
         }
         if ($isPrecheck && !empty($precheckRowIds)) {
           self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
         }
+        $hasMoreChildRows = $hasMoreChildRows || $processedChildRows < count($childEntityDataRows);
         if ($hasMoreChildRows) {
           if (!$isPrecheck && count($parentErrors) === 0) {
             // Only saved samples can be resumed. Precheck uses a fake parent
@@ -290,7 +301,7 @@ class import2ChunkHandler {
         }
         unset($config['activeParent']);
         $config['parentEntityRowsProcessed']++;
-        if ($occurrenceRowsProcessedThisRequest >= self::$batchRowLimit) {
+        if ($deadlineReached || $occurrenceRowsProcessedThisRequest >= self::$batchRowLimit) {
           break;
         }
       }
