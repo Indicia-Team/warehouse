@@ -408,14 +408,15 @@ SQL;
       if (!$db) {
         $db = new Database();
       }
+      $dbConfig = kohana::config('database.default');
       $result = $db->query(<<<SQL
         SELECT column_name, column_default, is_nullable, data_type, udt_name,
           character_maximum_length, numeric_precision, numeric_precision_radix, numeric_scale
         FROM information_schema.columns
         WHERE table_name=?
-        AND table_schema<>'information_schema'
+        AND table_schema=?
         ORDER BY ordinal_position
-      SQL, [$entity]);
+      SQL, [$entity, $dbConfig['schema']]);
 
       $cols = $result->result_array(TRUE);
       $fieldInfo = [];
