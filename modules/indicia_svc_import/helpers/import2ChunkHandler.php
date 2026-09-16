@@ -91,6 +91,14 @@ class import2ChunkHandler {
       $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
+        if ($isPrecheck) {
+          $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
+          $db->query(<<<SQL
+            UPDATE import_temp.$dbIdentifiers[tempTableName]
+            SET checked=false, errors=NULL;
+          SQL);
+          $config['errorsCount'] = 0;
+        }
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
         unset($config['activeParent']);
