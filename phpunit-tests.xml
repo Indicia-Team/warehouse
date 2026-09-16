@@ -5,6 +5,7 @@
   </php>
   <testsuites>
     <testsuite name="Application tests">
+      <directory>./application/tests/controllers</directory>
       <directory>./application/tests/helpers</directory>
       <directory>./application/tests/models</directory>
     </testsuite>
@@ -13,6 +14,7 @@
       <directory>./modules/cache_builder/tests</directory>
       <directory>./modules/data_cleaner/tests</directory>
       <directory>./modules/indicia_svc_data/tests</directory>
+      <directory>./modules/indicia_svc_import/tests</directory>
       <directory>./modules/indicia_svc_security/tests</directory>
       <directory>./modules/notification_emails/tests</directory>
       <directory>./modules/phpUnit/tests</directory>
