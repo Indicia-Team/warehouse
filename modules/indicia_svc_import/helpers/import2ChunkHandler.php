@@ -333,7 +333,7 @@ class import2ChunkHandler {
         'errorsCount' => $config['errorsCount'],
       ];
     }
-    catch (Exception $e) {
+    catch (Throwable $e) {
       if (!$benchmarkLogged) {
         self::logBenchmark(
           $benchmarkStartIndex,
@@ -354,15 +354,7 @@ class import2ChunkHandler {
       }
       error_logger::log_error('Error in import_chunk', $e);
       kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
-      http_response_code(400);
-      if (!empty($isBackground)) {
-        // Error handling differs in background mode.
-        throw $e;
-      }
-      return [
-        'status' => 'error',
-        'msg' => $e->getMessage(),
-      ];
+      throw $e;
     }
     finally {
       if ($workflowBulkModeEnabled) {

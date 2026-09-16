@@ -1615,12 +1615,12 @@ SQL;
         'user_id' => $this->auth_user_id,
       ]);
       echo json_encode($r);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
       http_response_code(500);
       echo json_encode([
         'status' => 'error',
         'msg' => $e->getMessage(),
-        'rowErrorsCount' => $this->getRowErrorsCount() + 10,
+        'rowErrorsCount' => $this->getRowErrorsCount(),
       ]);
     }
   }
