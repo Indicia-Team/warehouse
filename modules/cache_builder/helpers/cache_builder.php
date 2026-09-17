@@ -383,7 +383,6 @@ SQL;
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
     $db->query("create temporary table $needsUpdateTable as $query");
-    echo "\ncreate temporary table $needsUpdateTable as $query\n";
     if (!variable::get("populated-$table")) {
       // As well as the changed records, pick up max 5000 previous records,
       // which is important for initial population. 5000 is an arbitrary number
