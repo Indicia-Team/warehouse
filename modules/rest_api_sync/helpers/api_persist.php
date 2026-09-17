@@ -565,11 +565,14 @@ SQL;
         // Use a search code lookup if available, in preference to a name
         // lookup.
         $lookup = ['search_code' => $results->mapped_search_code];
+        $mappedTaxon = self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+        if ($mappedTaxon) {
+          return $mappedTaxon;
+        }
       }
-      else {
-        $lookup = ['original' => $results->mapped_taxon_name];
-      }
-      return self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+      return self::findTaxon($db, $taxon_list_id, $survey_id, [
+        'original' => $results->mapped_taxon_name,
+      ]);
     }
     return NULL;
   }
