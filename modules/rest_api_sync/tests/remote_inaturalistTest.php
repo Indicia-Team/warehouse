@@ -105,6 +105,23 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
   }
 
   /**
+   * Checks that another retry failure updates rather than re-queues the row.
+   */
+  public function testRepeatedFailureUpdatesCurrentSkippedRecord() {
+    $skippedRecordId = $this->insertSkippedRecord('INAT', '101');
+
+    $this->updatePreviousErrors('INAT', 101, 'Latest error');
+
+    $rows = self::$db->query(
+      "SELECT id, error_message, current FROM rest_api_sync_skipped_records WHERE server_id='INAT' AND source_id='101'"
+    )->result_array(FALSE);
+    $this->assertCount(1, $rows);
+    $this->assertSame((int) $skippedRecordId, (int) $rows[0]['id']);
+    $this->assertSame('Latest error', $rows[0]['error_message']);
+    $this->assertSame('t', $rows[0]['current']);
+  }
+
+  /**
    * Inserts a current skipped occurrence for a test server.
    *
    * @param string $serverId
@@ -124,8 +141,10 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
         error_message,
         current,
         created_on,
-        created_by_id
-      ) VALUES (?, ?, 'occurrences', 'Test error', true, now(), 1)
+        created_by_id,
+        updated_on,
+        updated_by_id
+      ) VALUES (?, ?, 'occurrences', 'Test error', true, now(), 1, now(), 1)
     SQL, [$serverId, $sourceId]);
     return $result->insert_id();
   }
@@ -161,6 +180,17 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
       'lastSkippedRecordId'
     );
     return $property->getValue();
+  }
+
+  /**
+   * Invokes the private helper that updates a repeated retry failure.
+   */
+  private function updatePreviousErrors($serverId, $sourceId, $errorMessage) {
+    $method = new ReflectionMethod(
+      'rest_api_sync_remote_inaturalist',
+      'updatePreviousErrors'
+    );
+    $method->invoke(null, self::$db, $sourceId, ['redoServer' => $serverId], $errorMessage, 1);
   }
 
 }

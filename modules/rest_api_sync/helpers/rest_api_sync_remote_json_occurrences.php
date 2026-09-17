@@ -188,7 +188,9 @@ INSERT INTO rest_api_sync_skipped_records (
   error_message,
   current,
   created_on,
-  created_by_id
+  created_by_id,
+  updated_on,
+  updated_by_id
 )
 VALUES (
   ?,
@@ -197,10 +199,12 @@ VALUES (
   ?,
   true,
   now(),
+  ?,
+  now(),
   ?
 )
 QRY;
-        $db->query($sql, [$serverId, $record['occurrence']['occurrenceID'], $msg, $createdById]);
+        $db->query($sql, [$serverId, $record['occurrence']['occurrenceID'], $msg, $createdById, $createdById]);
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
