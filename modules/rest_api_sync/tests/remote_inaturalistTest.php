@@ -58,7 +58,7 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
     $sourceIds = $this->getNextPageOfSkippedRecords('INAT', 0);
 
     $this->assertSame(['101', '102'], $sourceIds);
-    $this->assertSame($lastId, $this->getLastSkippedRecordId());
+    $this->assertSame((int) $lastId, $this->getLastSkippedRecordId());
   }
 
   /**
@@ -72,7 +72,7 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
     $sourceIds = $this->getNextPageOfSkippedRecords('INAT', 0);
 
     $this->assertCount(INAT_PAGE_SIZE, $sourceIds);
-    $this->assertSame($lastId, $this->getLastSkippedRecordId());
+    $this->assertSame((int) $lastId, $this->getLastSkippedRecordId());
   }
 
   /**
@@ -86,7 +86,7 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
     $sourceIds = $this->getNextPageOfSkippedRecords('INAT', $firstId);
 
     $this->assertSame(['102', '103'], $sourceIds);
-    $this->assertSame($lastId, $this->getLastSkippedRecordId());
+    $this->assertSame((int) $lastId, $this->getLastSkippedRecordId());
   }
 
   /**
@@ -101,7 +101,7 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
     $sourceIds = $this->getNextPageOfSkippedRecords('INAT', 0);
 
     $this->assertSame(['101', '102'], $sourceIds);
-    $this->assertSame($lastId, $this->getLastSkippedRecordId());
+    $this->assertSame((int) $lastId, $this->getLastSkippedRecordId());
   }
 
   /**

@@ -345,13 +345,13 @@ QRY;
     SQL;
     $rows = $db->query($query)->result();
     $r = [];
-    foreach ($rows as $idx => $row) {
+    foreach ($rows as $row) {
       $r[] = $row->source_id;
-      if ($idx === $limit - 1) {
-        self::$lastSkippedRecordId = (integer) $row->id;
-      }
     }
-    return array_unique($r);
+    if (count($rows) > 0) {
+      self::$lastSkippedRecordId = (integer) $rows[count($rows) - 1]->id;
+    }
+    return array_values(array_unique($r));
   }
 
   /**
