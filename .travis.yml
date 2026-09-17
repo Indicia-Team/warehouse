@@ -14,7 +14,7 @@ services:
 php:
   # Consider testing oldest and newest maintained versions.
   # However testing a single version saves credits.
-  # 8.1 and 8.2 now work with Noble as of 22/7/25 but our dependencies 
+  # 8.1 and 8.2 now work with Noble as of 22/7/25 but our dependencies
   # require >=8.2.
   - '8.3'
 
@@ -83,6 +83,7 @@ before_script:
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
   - cp application/config/config.php.travis application/config/config.php
+  - cp application/config/email.php.travis application/config/email.php
   # Provide a config file for the rest_api, spatial_index_builder and request_logging modules
   - cp modules/rest_api/config/rest.php.travis  modules/rest_api/config/rest.php
   - cp modules/spatial_index_builder/config/spatial_index_builder.php.travis  modules/spatial_index_builder/config/spatial_index_builder.php

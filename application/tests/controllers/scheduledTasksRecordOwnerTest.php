@@ -97,7 +97,7 @@ class Controllers_Scheduled_Tasks_Record_Owner_Test extends Indicia_DatabaseTest
       'created_on' => date('Y-m-d H:i:s'),
     ], ['id' => $sampleId]);
     $this->addEmailAttributes($sampleId, ['missing-detail@example.com'], TRUE);
-    $this->db->update('occurrences', ['taxa_taxon_list_id' => 999999], ['id' => 3]);
+    $this->db->delete('cache_taxa_taxon_lists', ['id' => 1]);
 
     $emailer = new Scheduled_Tasks_Record_Owner_Test_Emailer();
     $this->invokeNotificationMethod($emailer);
@@ -173,6 +173,7 @@ class Controllers_Scheduled_Tasks_Record_Owner_Test extends Indicia_DatabaseTest
 
   private function enableWorkflowLogging() {
     $this->db->insert('workflow_metadata', [
+      'group_code' => 'TESTGROUP',
       'key_value' => 'TESTKEY',
       'entity' => 'occurrence',
       'key' => 'taxa_taxon_list_external_key',

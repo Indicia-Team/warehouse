@@ -1447,7 +1447,7 @@ SQL;
 
         SQL;
       }
-      if ($updates->append_comment) {
+      if (!empty($updates->append_comment)) {
         $comment = pg_escape_literal($db->getLink(), $updates->append_comment);
         $qry .= <<<SQL
           INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)

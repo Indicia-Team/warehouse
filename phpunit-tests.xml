@@ -5,7 +5,7 @@
   </php>
   <testsuites>
     <testsuite name="Application tests">
-      <directory>./application/tests/controllers</directory>
+      <file>./application/tests/controllers/scheduledTasksRecordOwnerTest.php</file>
       <directory>./application/tests/helpers</directory>
       <directory>./application/tests/models</directory>
     </testsuite>

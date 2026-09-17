@@ -28,7 +28,7 @@ docker-compose -f docker-compose-phpunit.yml build \
   --build-arg PHP_VERSION=8 \
   --build-arg PG_VERSION=13 \
   --build-arg PORT=$PORT
-# When the container is brought up, the database will start 
+# When the container is brought up, the database will start
 # followed by Apache which will respond to http requests.
 # This is performed in the background.
 docker-compose -f docker-compose-phpunit.yml up -d
@@ -59,7 +59,7 @@ done;
 # Enable the phpunit module in config.php (meaning initialise() is not tested)
 DIR=../application/config
 cp ${DIR}/config.php.travis ${DIR}/config.php
-# Alter site domain as apache is on a different port compared to Travis
+cp ${DIR}/email.php.travis ${DIR}/email.php# Alter site domain as apache is on a different port compared to Travis
 sed -i "s/127.0.0.1/127.0.0.1:${PORT}/" ${DIR}/config.php
 # Provide a config file for the rest_api, spatial_index_builder and request_logging modules
 DIR=../modules/rest_api/config
@@ -84,7 +84,7 @@ docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_w
     vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml
 '
 
-# Now the Indicia schema exists we can assign permissions to the 
+# Now the Indicia schema exists we can assign permissions to the
 # indicia_report_user.
 docker exec -t phpunit_warehouse_1 sh -c '
   runuser -u postgres -- psql indicia -c "
@@ -102,7 +102,7 @@ docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_w
 # Allow user a chance to modify code and rerun application/module tests.
 while true; do
   prompt="Would you like to re-run application and module tests (Y/n)?"
-  read -rs -n 1 -p "$prompt" 
+  read -rs -n 1 -p "$prompt"
   echo
   if [ "$REPLY" = "N" ] || [ "$REPLY" = "n" ]; then
     break

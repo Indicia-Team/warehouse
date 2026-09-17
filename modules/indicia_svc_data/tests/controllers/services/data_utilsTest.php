@@ -103,7 +103,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       helper_base::$base_url . 'index.php/services/data_utils/bulk_edit',
       array_merge([
         'updates' => json_encode($updates),
-        'options' => json_encode($options),
+        'options' => empty($options) ? '{}' : json_encode($options),
         'occurrence:ids' => is_array($occurrenceIds) ? implode(',', $occurrenceIds) : $occurrenceIds,
         'user_id' => 1,
       ], $this->auth['write_tokens'])
@@ -284,7 +284,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'report' => 'library/occurrences/filterable_explore_list',
       'user_id' => 1,
     ]);
-    $this->assertContains('Missing params parameter.', $response);
+    $this->assertStringContainsString('Missing params parameter.', $response);
   }
 
   public function testBulkVerifyRejectsInvalidParamsJson() {
@@ -293,7 +293,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'params' => '{',
       'user_id' => 1,
     ]);
-    $this->assertContains('valid JSON object', $response);
+    $this->assertStringContainsString('valid JSON object', $response);
   }
 
   public function testBulkVerifyDoesNotReverifyAlreadyVerifiedOccurrence() {
@@ -337,7 +337,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'occurrence:ids' => '1',
       'user_id' => 1,
     ]);
-    $this->assertContains('updates parameter must contain a valid JSON object', $response);
+    $this->assertStringContainsString('updates parameter must contain a valid JSON object', $response);
 
     $response = $this->bulkEditError([
       'updates' => '{}',
@@ -345,7 +345,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'occurrence:ids' => '1',
       'user_id' => 1,
     ]);
-    $this->assertContains('options parameter must contain a valid JSON object', $response);
+    $this->assertStringContainsString('options parameter must contain a valid JSON object', $response);
 
     $response = $this->bulkEditError([
       'updates' => '{}',
@@ -353,7 +353,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'occurrence:ids' => 'not-an-id',
       'user_id' => 1,
     ]);
-    $this->assertContains('Invalid format for occurrence:ids parameter', $response);
+    $this->assertStringContainsString('Invalid format for occurrence:ids parameter', $response);
   }
 
   public function testBulkEditUpdatesSampleAndResetsVerification() {
