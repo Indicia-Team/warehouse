@@ -118,6 +118,7 @@ class rest_api_sync_remote_inaturalist {
    */
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
+    $createdById = (int) isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
     api_persist::initDwcAttributes($db, $server['survey_id']);
     // FromID will be zero for first page in batch, but tracks the highest
     // record ID we got to as we page through.
@@ -250,7 +251,6 @@ class rest_api_sync_remote_inaturalist {
           "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
           $tracker
         );
-        $createdById = (int) isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         if ($redoingSkippedRecords) {
           self::updatePreviousErrors($db, $iNatRecord['id'], $server, $e->getMessage(), $createdById);
           continue;
