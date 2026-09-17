@@ -19,6 +19,7 @@
       <directory>./modules/notification_emails/tests</directory>
       <directory>./modules/phpUnit/tests</directory>
       <directory>./modules/rest_api/tests</directory>
+      <directory>./modules/rest_api_sync/tests</directory>
       <directory>./modules/spatial_index_builder/tests</directory>
       <directory>./modules/sref_mtb/tests</directory>
       <directory>./modules/species_alerts/tests</directory>
