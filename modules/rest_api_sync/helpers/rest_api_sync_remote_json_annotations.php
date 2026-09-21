@@ -119,25 +119,29 @@ class rest_api_sync_remote_json_annotations {
         $msg = pg_escape_string($db->getLink(), $e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
-INSERT INTO rest_api_sync_skipped_records (
-  server_id,
-  source_id,
-  dest_table,
-  error_message,
-  current,
-  created_on,
-  created_by_id
-)
-VALUES (
-  ?,
-  ?,
-  'occurrence_comments',
-  ?,
-  true,
-  now(),
-  ?
-)
-QRY;
+          INSERT INTO rest_api_sync_skipped_records (
+            server_id,
+            source_id,
+            dest_table,
+            error_message,
+            current,
+            created_on,
+            created_by_id,
+            updated_on,
+            updated_by_id
+          )
+          VALUES (
+            ?,
+            ?,
+            'occurrence_comments',
+            ?,
+            true,
+            now(),
+            ?,
+            now(),
+            ?
+          )
+        QRY;
         $db->query($sql, [$serverId, $annotation['id'], $msg, $createdById]);
       }
     }

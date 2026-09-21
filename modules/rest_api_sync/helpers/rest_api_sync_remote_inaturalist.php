@@ -118,6 +118,7 @@ class rest_api_sync_remote_inaturalist {
    */
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
+    $createdById = (int) isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
     api_persist::initDwcAttributes($db, $server['survey_id']);
     // FromID will be zero for first page in batch, but tracks the highest
     // record ID we got to as we page through.
@@ -168,7 +169,6 @@ class rest_api_sync_remote_inaturalist {
     $foundIds = [];
     foreach ($data['results'] as $iNatRecord) {
       try {
-        self::clearPreviousErrors($db, $iNatRecord['id'], $serverId, $server);
         $foundIds[] = $iNatRecord['id'];
         if (empty($iNatRecord['taxon']['name'])) {
           // Skip names with no identification.
@@ -243,6 +243,7 @@ class rest_api_sync_remote_inaturalist {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
+        self::clearPreviousErrors($db, $iNatRecord['id'], $serverId, $server);
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
@@ -250,28 +251,36 @@ class rest_api_sync_remote_inaturalist {
           "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
           $tracker
         );
-        $createdById = (int) isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
+        if ($redoingSkippedRecords) {
+          self::updatePreviousErrors($db, $iNatRecord['id'], $server, $e->getMessage(), $createdById);
+          continue;
+        }
+        self::clearPreviousErrors($db, $iNatRecord['id'], $serverId, $server);
         $sql = <<<QRY
-INSERT INTO rest_api_sync_skipped_records (
-  server_id,
-  source_id,
-  dest_table,
-  error_message,
-  current,
-  created_on,
-  created_by_id
-)
-VALUES (
-  ?,
-  ?,
-  'occurrences',
-  ?,
-  true,
-  now(),
-  ?
-)
-QRY;
-        $db->query($sql, [$serverId, $iNatRecord['id'], $e->getMessage(), $createdById]);
+          INSERT INTO rest_api_sync_skipped_records (
+            server_id,
+            source_id,
+            dest_table,
+            error_message,
+            current,
+            created_on,
+            created_by_id,
+            updated_on,
+            updated_by_id
+          )
+          VALUES (
+            ?,
+            ?,
+            'occurrences',
+            ?,
+            true,
+            now(),
+            ?,
+            now(),
+            ?
+          )
+        QRY;
+        $db->query($sql, [$serverId, $iNatRecord['id'], $e->getMessage(), $createdById, $createdById]);
       };
       $lastId = $iNatRecord['id'];
     }
@@ -282,8 +291,8 @@ QRY;
       if (strlen($unfoundRecords) > 0) {
         $serverName = pg_escape_literal($db->getLink(), $server['redoServer']);
         $db->query(<<<SQL
-          INSERT INTO rest_api_sync_skipped_records (server_id, source_id, dest_table, error_message, current, created_on, created_by_id)
-          SELECT DISTINCT server_id, source_id, dest_table, 'Record refetch attempted but no longer available.', false, now(), $createdById
+          INSERT INTO rest_api_sync_skipped_records (server_id, source_id, dest_table, error_message, current, created_on, created_by_id, updated_on, updated_by_id)
+          SELECT DISTINCT server_id, source_id, dest_table, 'Record refetch attempted but no longer available.', false, now(), $createdById, now(), $createdById
           FROM rest_api_sync_skipped_records
           WHERE server_id=$serverName AND source_id::integer IN ($unfoundRecords) AND dest_table='occurrences'
           AND current=true
@@ -345,13 +354,13 @@ QRY;
     SQL;
     $rows = $db->query($query)->result();
     $r = [];
-    foreach ($rows as $idx => $row) {
+    foreach ($rows as $row) {
       $r[] = $row->source_id;
-      if ($idx === $limit - 1) {
-        self::$lastSkippedRecordId = (integer) $row->id;
-      }
     }
-    return array_unique($r);
+    if (count($rows) > 0) {
+      self::$lastSkippedRecordId = (integer) $rows[count($rows) - 1]->id;
+    }
+    return array_values(array_unique($r));
   }
 
   /**
@@ -373,6 +382,28 @@ QRY;
       UPDATE rest_api_sync_skipped_records SET current=false
       WHERE server_id=$serverToClear AND source_id='$iNatId' AND dest_table='occurrences';
     SQL);
+  }
+
+  /**
+   * Updates the current error when a skipped record fails again.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param int $iNatId
+   *   iNat record ID whose error remains current.
+   * @param array $server
+   *   Server configuration.
+   * @param string $errorMessage
+   *   Error raised by the latest import attempt.
+   * @param int $createdById
+   *   User responsible for the retry.
+   */
+  private static function updatePreviousErrors($db, int $iNatId, array $server, string $errorMessage, int $createdById) {
+    $db->query(<<<SQL
+      UPDATE rest_api_sync_skipped_records
+      SET error_message=?, updated_on=now(), updated_by_id=?
+      WHERE server_id=? AND source_id=? AND dest_table='occurrences' AND current=true
+    SQL, [$errorMessage, $createdById, $server['redoServer'], (string) $iNatId]);
   }
 
   /**
