@@ -253,33 +253,56 @@ HTML;
    *   Record IDs to delete from the cache.
    */
   public static function delete($db, $table, array $ids) {
-    if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
-      self::delayChangesViaWorkQueue($db, $table, implode(',', $ids));
+    if (empty($ids)) {
+      return;
+    }
+    $idList = implode(',', $ids);
+    warehouse::validateIntCsvListParam($idList);
+    if ($table === 'samples') {
+      // Build a tree of child samples and occurrences.
+      $db->query('DROP TABLE IF EXISTS tmp_cache_builder_sample_tree');
+      $db->query(<<<SQL
+        CREATE TEMPORARY TABLE tmp_cache_builder_sample_tree AS
+          WITH RECURSIVE sample_tree(id) AS (
+          SELECT id
+          FROM samples
+          WHERE id IN ($idList)
+
+          UNION
+
+          SELECT child.id
+          FROM samples child
+          JOIN sample_tree parent ON parent.id=child.parent_id
+        )
+        SELECT id
+        FROM sample_tree
+      SQL);
+      // Delete cache entries for all samples in the tree.
+      $db->query('DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM tmp_cache_builder_sample_tree)');
+      $db->query('DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM tmp_cache_builder_sample_tree)');
+      $db->query('DELETE FROM cache_samples_sensitive WHERE id IN (SELECT id FROM tmp_cache_builder_sample_tree)');
+      // Delete cache entries for occurrences related to the samples in the
+      // tree.
+      $db->query(<<<SQL
+        DELETE FROM cache_occurrences_nonfunctional
+        WHERE id IN (
+          SELECT o.id
+          FROM occurrences o
+          JOIN tmp_cache_builder_sample_tree s ON s.id=o.sample_id
+        )
+      SQL);
+      $db->query(<<<SQL
+        DELETE FROM cache_occurrences_functional
+        WHERE sample_id IN (SELECT id FROM tmp_cache_builder_sample_tree)
+      SQL);
+      $db->query('DROP TABLE tmp_cache_builder_sample_tree');
+    }
+    elseif ($table === 'occurrences') {
+      $db->query("DELETE FROM cache_occurrences_functional WHERE id IN ($idList)");
+      $db->query("DELETE FROM cache_occurrences_nonfunctional WHERE id IN ($idList)");
     }
     else {
-      foreach ($ids as $id) {
-        if ($table === 'occurrences' || $table === 'samples') {
-          $db->delete("cache_{$table}_functional", ['id' => $id]);
-          $db->delete("cache_{$table}_nonfunctional", ['id' => $id]);
-          if ($table === 'samples') {
-            // Slightly more complex delete query to ensure indexes used.
-            $sql = <<<SQL
-DELETE FROM cache_occurrences_functional o
-USING samples s
-JOIN surveys su on su.id=s.survey_id
-WHERE s.id=$id
-AND o.sample_id=s.id
-AND o.survey_id=su.id
-AND o.website_id=su.website_id
-SQL;
-            $db->query($sql);
-            $db->query('delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=?)', [$id]);
-          }
-        }
-        else {
-          $db->delete("cache_$table", ['id' => $id]);
-        }
-      }
+      $db->query("DELETE FROM cache_$table WHERE id IN ($idList)");
     }
   }
 
