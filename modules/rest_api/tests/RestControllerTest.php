@@ -39,6 +39,7 @@ class RestControllerTest extends BaseRestClientTest {
   protected function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
+    $this->cleanSampleTreeTestData();
     // Remove created users from previous run if using PHP unit locally, so
     // they don't accumulate. Users and people can't be added by fixture due to
     // circular foreign key constraints on user 1, so this isn't automatic when
@@ -53,6 +54,27 @@ class RestControllerTest extends BaseRestClientTest {
       ['public_key' => self::$publicKey],
       ['id' => 1]
     );
+  }
+
+  protected function tearDown(): void {
+    $this->cleanSampleTreeTestData();
+    parent::tearDown();
+  }
+
+  private function cleanSampleTreeTestData(): void {
+    $db = new Database();
+    foreach ([
+      'DELETE FROM work_queue WHERE record_id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_occurrences_functional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_occurrences_nonfunctional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_functional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_nonfunctional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_sensitive WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM occurrences WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM samples WHERE id BETWEEN 920001 AND 920004',
+    ] as $query) {
+      $db->query($query);
+    }
   }
 
   /**
@@ -2092,10 +2114,10 @@ SQL;
 
     // The first three records form the tree; the fourth is an unrelated control.
     foreach ([
-      [920001, NULL, FALSE],
-      [920002, 920001, FALSE],
-      [920003, 920002, FALSE],
-      [920004, NULL, FALSE],
+      [920001, NULL, 'f'],
+      [920002, 920001, 'f'],
+      [920003, 920002, 'f'],
+      [920004, NULL, 'f'],
     ] as [$sampleId, $parentId, $deleted]) {
       $db->query(
         'INSERT INTO samples
