@@ -42,6 +42,15 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
   public function tearDown(): void {
     if ($this->db !== NULL) {
       $this->db->query('DELETE FROM work_queue');
+      foreach ([
+        'cache_samples_functional',
+        'cache_samples_nonfunctional',
+        'cache_samples_sensitive',
+        'cache_occurrences_functional',
+        'cache_occurrences_nonfunctional',
+      ] as $table) {
+        $this->db->query("DELETE FROM $table WHERE id BETWEEN 900001 AND 910004");
+      }
     }
     parent::tearDown();
   }
@@ -323,7 +332,7 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
           (id, survey_id, parent_id, date_start, date_end, date_type,
            created_on, created_by_id, updated_on, updated_by_id, deleted)
          VALUES (?, 1, ?, ?, ?, ?, ?, 1, ?, 1, ?)',
-        [$sampleId, $parentId, '2026-09-21', '2026-09-21', 'D', $timestamp, $timestamp, $sampleId !== 910004]
+        [$sampleId, $parentId, '2026-09-21', '2026-09-21', 'D', $timestamp, $timestamp, $sampleId !== 910004 ? 't' : 'f']
       );
     }
     // Mark source records as already deleted, as they would be when scheduled
@@ -334,7 +343,7 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
           (id, sample_id, created_on, created_by_id, updated_on, updated_by_id,
            website_id, taxa_taxon_list_id, record_status, deleted)
          VALUES (?, ?, ?, 1, ?, 1, 1, 1, ?, ?)',
-        [$occurrenceId, $occurrenceId, $timestamp, $timestamp, 'C', $occurrenceId !== 910004]
+        [$occurrenceId, $occurrenceId, $timestamp, $timestamp, 'C', $occurrenceId !== 910004 ? 't' : 'f']
       );
     }
 
@@ -397,6 +406,5 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
       )->current()->count, $table);
     }
   }
-
 
 }

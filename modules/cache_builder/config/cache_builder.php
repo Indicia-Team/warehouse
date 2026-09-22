@@ -927,6 +927,18 @@ $config['samples']['delete_query'] = [<<<SQL
     DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
     DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
     DELETE FROM cache_samples_sensitive WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
+    DELETE FROM cache_occurrences_functional
+    WHERE sample_id IN (
+      SELECT id FROM needs_update_samples WHERE deleted=true
+    );
+
+    DELETE FROM cache_occurrences_nonfunctional
+    WHERE id IN (
+      SELECT o.id
+      FROM occurrences o
+      JOIN needs_update_samples nu ON nu.id = o.sample_id
+      WHERE nu.deleted=true
+    );
   SQL,
 ];
 
