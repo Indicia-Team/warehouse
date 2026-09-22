@@ -933,7 +933,7 @@ SQL;
     if ($errorData) {
       $response['errorData'] = $errorData;
     }
-    kohana::log('alert', 'Data utils fail called: ' . $text);
+    kohana::log('error','Fail in data utils call at ' . $_SERVER['REQUEST_URI'] . ' with status: ' . $status . ', code: ' . $code . ', message: ' . $text);
     echo json_encode($response);
   }
 
@@ -1328,6 +1328,8 @@ SQL;
     $occurrenceIds = $_POST['occurrence:ids'];
     $options = json_decode($_POST['options'] ?? '{}');
     if (!is_object($options) || json_last_error() !== JSON_ERROR_NONE) {
+      kohana::log('error', 'Invalid JSON in options parameter: ' . json_last_error_msg());
+      kohana::log('error', 'Options parameter: ' . var_export($_POST['options'] ?? '{}', TRUE));
       $this->fail('Bad request', 400, 'The options parameter must contain a valid JSON object.');
       return;
     }
