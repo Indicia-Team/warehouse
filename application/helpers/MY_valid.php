@@ -189,9 +189,10 @@ SQL;
   /**
    * Validates that JSON string or array of values matches list of options.
    *
-   * The value can be provided as an array formatted as a JSON string, or a PHP
-   * array. Tests that all the provided values in the array are found in a list
-   * of options, provided as a | separated list.
+    * The value can be provided as an array formatted as a JSON string, a
+    * comma-separated string, or a PHP array. Tests that all the provided values
+    * in the array are found in a list of options, provided as a | separated
+    * list.
    *
    * @param string|array $value
    *   Array of options to validate, in PHP or JSON format.
@@ -211,8 +212,7 @@ SQL;
       }
     }
     elseif (is_string($value)) {
-      // Single value in simple string form.
-      $value = [$value];
+      $value = strpos($value, ',') === FALSE ? [$value] : array_map('trim', str_getcsv($value));
     }
     return !array_diff($value, $testArray);
   }

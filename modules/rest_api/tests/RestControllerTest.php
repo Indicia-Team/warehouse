@@ -39,6 +39,7 @@ class RestControllerTest extends BaseRestClientTest {
   protected function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
+    $this->cleanSampleTreeTestData();
     // Remove created users from previous run if using PHP unit locally, so
     // they don't accumulate. Users and people can't be added by fixture due to
     // circular foreign key constraints on user 1, so this isn't automatic when
@@ -53,6 +54,27 @@ class RestControllerTest extends BaseRestClientTest {
       ['public_key' => self::$publicKey],
       ['id' => 1]
     );
+  }
+
+  protected function tearDown(): void {
+    $this->cleanSampleTreeTestData();
+    parent::tearDown();
+  }
+
+  private function cleanSampleTreeTestData(): void {
+    $db = new Database();
+    foreach ([
+      'DELETE FROM work_queue WHERE record_id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_occurrences_functional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_occurrences_nonfunctional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_functional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_nonfunctional WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM cache_samples_sensitive WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM occurrences WHERE id BETWEEN 920001 AND 920004',
+      'DELETE FROM samples WHERE id BETWEEN 920001 AND 920004',
+    ] as $query) {
+      $db->query($query);
+    }
   }
 
   /**
@@ -2077,6 +2099,119 @@ SQL;
     ];
     $this->deleteTest('samples', $exampleSample);
     $this->doSiteRoleBasedPermissionsDeleteCheck('samples', $exampleSample);
+  }
+
+  /**
+   * Verify REST DELETE cascades through a sample tree and its cache work.
+   */
+  public function testJwtSampleDeleteCascadesTree() {
+    $timestamp = '2026-09-21 12:00:00';
+    $sampleIds = [920001, 920002, 920003, 920004];
+    $occurrenceIds = [920001, 920002, 920003, 920004];
+    $db = new Database();
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+
+    // The first three records form the tree; the fourth is an unrelated control.
+    foreach ([
+      [920001, NULL, 'f'],
+      [920002, 920001, 'f'],
+      [920003, 920002, 'f'],
+      [920004, NULL, 'f'],
+    ] as [$sampleId, $parentId, $deleted]) {
+      $db->query(
+        'INSERT INTO samples
+          (id, survey_id, parent_id, date_start, date_end, date_type,
+           created_on, created_by_id, updated_on, updated_by_id, deleted)
+         VALUES (?, 1, ?, ?, ?, ?, ?, 1, ?, 1, ?)',
+        [$sampleId, $parentId, '2026-09-21', '2026-09-21', 'D', $timestamp, $timestamp, $deleted]
+      );
+    }
+    foreach ($occurrenceIds as $occurrenceId) {
+      $db->query(
+        'INSERT INTO occurrences
+          (id, sample_id, created_on, created_by_id, updated_on, updated_by_id,
+           website_id, taxa_taxon_list_id, record_status, deleted)
+         VALUES (?, ?, ?, 1, ?, 1, 1, 1, ?, false)',
+        [$occurrenceId, $occurrenceId, $timestamp, $timestamp, 'C']
+      );
+    }
+    foreach ($sampleIds as $sampleId) {
+      foreach (['cache_samples_functional', 'cache_samples_nonfunctional', 'cache_samples_sensitive'] as $table) {
+        $db->query("INSERT INTO $table (id) VALUES (?)", [$sampleId]);
+      }
+    }
+    foreach ($occurrenceIds as $occurrenceId) {
+      $db->query(
+        'INSERT INTO cache_occurrences_functional (id, sample_id) VALUES (?, ?)',
+        [$occurrenceId, $occurrenceId]
+      );
+      $db->query(
+        'INSERT INTO cache_occurrences_nonfunctional (id) VALUES (?)',
+        [$occurrenceId]
+      );
+    }
+    foreach ([
+      ['sample', 920001],
+      ['sample', 920002],
+      ['sample', 920003],
+      ['sample', 920004],
+      ['occurrence', 920001],
+      ['occurrence', 920002],
+      ['occurrence', 920003],
+      ['occurrence', 920004],
+    ] as [$entity, $recordId]) {
+      $db->query(
+        'INSERT INTO work_queue
+          (task, entity, record_id, cost_estimate, priority, created_on)
+         VALUES (?, ?, ?, 10, 1, ?)',
+        ['task_cache_builder_update', $entity, $recordId, $timestamp]
+      );
+    }
+
+    $response = $this->callService('samples/920001', FALSE, NULL, [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode']);
+
+    foreach (['samples', 'occurrences'] as $table) {
+      $this->assertEquals(
+        '3',
+        (string) $db->query("SELECT count(*) AS count FROM $table WHERE id IN (920001, 920002, 920003) AND deleted=true")->current()->count,
+        "$table tree records were not deleted"
+      );
+      $this->assertEquals(
+        '1',
+        (string) $db->query("SELECT count(*) AS count FROM $table WHERE id=920004 AND deleted=false")->current()->count,
+        "$table control record was changed"
+      );
+    }
+    foreach ([
+      'cache_samples_functional',
+      'cache_samples_nonfunctional',
+      'cache_samples_sensitive',
+      'cache_occurrences_functional',
+      'cache_occurrences_nonfunctional',
+    ] as $table) {
+      $this->assertEquals(
+        '0',
+        (string) $db->query("SELECT count(*) AS count FROM $table WHERE id IN (920001, 920002, 920003)")->current()->count,
+        "$table retained a deleted tree row"
+      );
+      $this->assertEquals(
+        '1',
+        (string) $db->query("SELECT count(*) AS count FROM $table WHERE id=920004")->current()->count,
+        "$table changed the control row"
+      );
+    }
+    $this->assertEquals(
+      '0',
+      (string) $db->query(
+        "SELECT count(*) AS count FROM work_queue WHERE entity IN ('sample', 'occurrence') AND record_id IN (920001, 920002, 920003)"
+      )->current()->count,
+      'Queue work for the deleted tree was retained'
+    );
+    $this->assertEquals('2', (string) $db->query(
+      "SELECT count(*) AS count FROM work_queue WHERE entity IN ('sample', 'occurrence') AND record_id=920004"
+    )->current()->count, 'Queue work for the control record was changed');
   }
 
   /**

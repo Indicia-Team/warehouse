@@ -301,6 +301,7 @@ class Database_Pgsql_Driver extends Database_Driver {
         character_maximum_length, numeric_precision, numeric_precision_radix, numeric_scale
       FROM information_schema.columns
       WHERE table_name = \''. $this->escape_str($table) .'\'
+      AND table_schema = \''. $this->escape_str($this->db_config['schema']) .'\'
       ORDER BY ordinal_position
     ');
 

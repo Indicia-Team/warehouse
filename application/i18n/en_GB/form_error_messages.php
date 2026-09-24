@@ -3,12 +3,16 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 $lang = [
+  // Default fallback validation message.
+  'default_validation_message' => 'Invalid input.',
+  // Default fallback validation message for specific rules.
+  'required' => 'This field is required.',
+  // Validation messages for specific form fields.
   'address' => [
     'length' => 'The address must be a maximum of 200 characters in length.',
-    'default' => 'Invalid input.',
   ],
   'awarded_by' => [
-    'required' => 'Please specify the organisation awarding this milestone',
+    'required' => 'Please specify the organisation awarding this milestone.',
   ],
   'caption' => [
     'required' => 'The caption cannot be blank.',
@@ -31,7 +35,7 @@ $lang = [
   'csv_upload' => [
     'size' => 'The uploaded file is too large.',
     'required' => 'Missing upload file.',
-    'default' => 'Invalid file uploaded',
+    'default' => 'Invalid file uploaded.',
   ],
   'data_type' => [
     'required' => 'The data type must be supplied.',
@@ -44,7 +48,7 @@ $lang = [
   ],
   'date_type' => [
     'required' => 'Please supply a date for your observation.',
-    'default' => 'Unrecognised vague date type',
+    'default' => 'Unrecognised vague date type.',
   ],
   'deleted' => [
     'has_terms' => 'There are terms belonging to this list.',
@@ -52,11 +56,9 @@ $lang = [
   ],
   'description' => [
     'standard_text' => 'Only standard characters are allowed.',
-    'default' => 'Invalid input.',
   ],
   'determiner_id' => [
     'required' => 'The determiner cannot be blank.',
-    'default' => 'Invalid input.',
   ],
   'dna_sequence' => [
     'required' => 'Please provide a value for the DNA sequence.',
@@ -66,26 +68,21 @@ $lang = [
     'email' => 'This must be a valid email address.',
     'length' => 'The email address must be a maximum of 100 characters in length.',
     'unique' => 'This email address must be unique, i.e. not shared with another person.',
-    'default' => 'Invalid input.',
   ],
   'entered_sref' => [
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
-    'default' => 'Invalid input.',
   ],
   'entered_sref_system' => [
     'required' => 'The spatial reference system must be supplied.',
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
-    'default' => 'Invalid input.',
   ],
   'centroid_sref_system' => [
     'required' => 'The centroid spatial reference system must be supplied.',
-    'default' => 'Invalid input.',
   ],
   'first_name' => [
     'required' => 'The first name cannot be blank.',
     'length' => 'The first name must be between 1 and 50 letters.',
-    'default' => 'Invalid input.',
   ],
   'float_value' => [
     'default' => 'This must be a valid number.',
@@ -96,11 +93,9 @@ $lang = [
   ],
   'geom' => [
     'required' => 'The spatial reference must be supplied.',
-    'default' => 'Invalid input.',
   ],
   'initials' => [
     'length' => 'The initials must be a maximum of 6 characters in length.',
-    'default' => 'Invalid input.',
   ],
   'int_value' => [
     'digit' => 'This must be a valid whole number.',
@@ -140,7 +135,6 @@ $lang = [
     'length' => 'The password must be between 7 and 30 letters in length.',
     'matches' => 'The password and repeat password fields must match.',
     'matches_post' => 'The password and repeat password fields must match.',
-    'default' => 'Invalid input.',
   ],
   'path' => [
     'required' => 'The image file must be supplied.',
@@ -160,7 +154,6 @@ $lang = [
   'surname' => [
     'required' => 'The surname cannot be blank.',
     'length' => 'The surname must be between 1 and 50 letters.',
-    'default' => 'Invalid input.',
   ],
   'survey_id' => [
     'required' => 'The survey must be supplied.',
@@ -176,18 +169,15 @@ $lang = [
     'required' => 'The taxon is required.',
   ],
   'taxon_list_id' => [
-    'default' => 'Invalid input.',
     'required' => 'The taxon list must be specified.',
   ],
   'taxon_meaning_id' => [
     'required' => 'The taxon meaning is required.',
   ],
   'taxon_relation_type_id' => [
-    'default' => 'Invalid input.',
     'required' => 'The taxon relation_type must be specified.',
   ],
   'taxa_taxon_list_id' => [
-    'default' => 'Invalid input.',
     'required' => 'The taxon must be specified.',
   ],
   'text_value' => [
@@ -212,7 +202,6 @@ $lang = [
     // lengths, so can't be more specific.
     'length' => 'The title supplied is too long.',
     'unique' => 'This title must be unique.',
-    'default' => 'Invalid input.',
   ],
   'upper_value' => [
     'default' => 'Invalid upper value.',
@@ -224,7 +213,6 @@ $lang = [
   'url' => [
     'required' => 'The website URL cannot be blank.',
     'url' => 'This must be a valid URL including the http:// prefix.',
-    'default' => 'Invalid Input.',
   ],
   'staging_urls' => [
     'url_list' => 'The list of URLs supplied is not valid.',
@@ -233,7 +221,6 @@ $lang = [
     'required' => 'The username cannot be blank.',
     'length' => 'The username must be between 7 and 30 letters in length.',
     'unique' => 'This username must be unique, i.e. not shared with another user.',
-    'default' => 'Invalid input.',
   ],
   'website_id' => [
     'required' => 'The website cannot be blank.',
@@ -241,7 +228,6 @@ $lang = [
   'website_url' => [
     'url' => 'This must be a valid URL (if schema not provided, http:// is assumed).',
     'length' => 'The website URL must be a maximum of 1000 characters in length.',
-    'default' => 'Invalid input.',
   ],
   'media_upload' => [
     'valid' => 'The file is being tagged as invalid.',

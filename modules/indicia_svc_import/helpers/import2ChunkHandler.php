@@ -73,6 +73,8 @@ class import2ChunkHandler {
    */
   public static function importChunk($db, $params) {
     $benchmarkStartedAt = microtime(TRUE);
+    $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
+    $deadline = $benchmarkStartedAt + ($moduleConfig['chunk_time_limit'] ?? 20);
     $benchmarkStartIndex = count(Database::$benchmarks);
     $benchmarkLogged = FALSE;
     $workflowBulkModeEnabled = FALSE;
@@ -89,10 +91,7 @@ class import2ChunkHandler {
       $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
-        $config['rowsProcessed'] = 0;
-        $config['parentEntityRowsProcessed'] = 0;
-        unset($config['activeParent']);
-        self::saveConfig($configId, $config);
+        self::resetChunkProgress($db, $configId, $config, $isPrecheck);
       }
       self::getChunkSize($isBackground, $isPrecheck);
 
@@ -125,204 +124,41 @@ class import2ChunkHandler {
       $childEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
       $precheckRowIds = [];
       $occurrenceRowsProcessedThisRequest = 0;
+      $deadlineReached = FALSE;
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
-        $isContinuingParent = !empty($activeParent)
-          && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
-        // Reuse the saved parent when continuing a group across requests. The
-        // sample grouping remains based on the original parent field values.
-        $parent = $isContinuingParent
-          ? ORM::factory($config['parentEntity'], $activeParent['id'])
-          : ORM::factory($config['parentEntity']);
-        $submission = [];
-        self::applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
-        self::copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
-        $identifiers = [
-          'website_id' => $config['global-values']['website_id'],
-          'survey_id' => $submission['survey_id'] ?? NULL,
-        ];
-        $parent->setIdentifiers($identifiers);
-        if ($config['parentEntitySupportsImportGuid']) {
-          $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
-        }
-        $parent->set_submission_data($submission);
-        $parentErrors = [];
-        if ($isContinuingParent) {
-          $parent->set_submission_data($submission);
-        }
-        elseif ($isPrecheck) {
-          try {
-            $parentErrors = $parent->precheck($identifiers);
-          } catch (Exception $e) {
-            // If the parent entity crashes on checking, record the error.
-            $parentErrors['sample:general'] = $e->getMessage();
-          }
-          // A fake ID to allow check on children.
-          $parent->id = 1;
-        }
-        else {
-          try {
-            $parent->submit();
-            $parentErrors = $parent->getAllErrors();
-          } catch (Exception $e) {
-            // If the parent entity fails to save, record the error.
-            $parentErrors['sample:general'] = $e->getMessage();
-          }
-        }
-        $childEntityData = self::fetchChildEntityData(
+        if (self::processParentRow(
           $db,
+          $parentEntityDataRow,
           $parentEntityColumns,
+          $childEntityColumns,
+          $parentEntityCompoundFields,
+          $childEntityCompoundFields,
+          $dnaEntityColumns ?? [],
           $isPrecheck,
           $config,
-          $parentEntityDataRow,
-          // Use the existing chunk-size setting as the total per-request
-          // budget, regardless of how many parent groups it contains.
-          max(1, self::$batchRowLimit - $occurrenceRowsProcessedThisRequest)
-        );
-        $childEntityDataRows = $childEntityData['rows'];
-        $hasMoreChildRows = $childEntityData['hasMore'];
-        if (count($parentErrors) > 0) {
-          $config['errorsCount'] += count($childEntityDataRows);
-          if (!$isPrecheck) {
-            // As we won't individually process the occurrences due to error in
-            // the sample, add them to the count.
-            $config['rowsProcessed'] += count($childEntityDataRows);
-          }
-          $keyFields = self::getDestFieldsForColumns($parentEntityColumns, $config);
-          self::saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
-        }
-        // If sample saved OK, or we are just prechecking, process the matching
-        // occurrences.
-        if (count($parentErrors) === 0 || $isPrecheck) {
-          foreach ($childEntityDataRows as $childEntityDataRow) {
-            $child = ORM::factory($config['entity']);
-            $submission = [
-              'sample_id' => $parent->id,
-            ];
-            self::applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
-            self::copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission, $childEntityCompoundFields);
-            if ($config['entitySupportsImportGuid']) {
-              $submission["$config[entity]:import_guid"] = $config['importGuid'];
-            }
-            $child->set_submission_data($submission);
-            $child->setIdentifiers($identifiers);
-            $errors = [];
-            if ($isPrecheck) {
-              try {
-                $errors = $child->precheck($identifiers);
-              } catch (Exception $e) {
-                // If the child entity fails to precheck, record the error.
-                $errors['occurrence:general'] = $e->getMessage();
-              }
-            }
-            else {
-              try {
-                $child->submit();
-                $errors = $child->getAllErrors();
-              } catch (Exception $e) {
-                // If the child entity fails to save, record the error.
-                $errors['occurrence:general'] = $e->getMessage();
-              }
-            }
-            if (count($errors) > 0) {
-              // Register additional error row, but only if not already
-              // registered due to error in parent.
-              if (count($parentErrors) === 0) {
-                $config['errorsCount']++;
-              }
-              self::saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
-            }
-            else {
-              if ($isPrecheck) {
-                $precheckRowIds[] = (int) $childEntityDataRow->_row_id;
-                if (count($precheckRowIds) >= self::PRECHECK_ROW_UPDATE_BATCH_SIZE) {
-                  self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
-                }
-              }
-              else {
-                self::setRowDone($db, $childEntityDataRow->_row_id, FALSE, $config);
-              }
-              if (!$isPrecheck) {
-                if (!empty($submission['occurrence:id'])) {
-                  $config['rowsUpdated']++;
-                }
-                else {
-                  $config['rowsInserted']++;
-                }
-              }
-              if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $config['entity'] === 'occurrence') {
-                if (!self::importDnaIfValuesProvided(
-                  $db,
-                  $childEntityDataRow,
-                  $dnaEntityColumns,
-                  $child,
-                  $isPrecheck,
-                  $identifiers,
-                  $config
-                )) {
-                  // An error occurred saving the DNA occurrence. Increment the
-                  // overall error count if not already done for this row.
-                  if (count($parentErrors) + count($errors) === 0) {
-                    $config['errorsCount']++;
-                  }
-                }
-              }
-            }
-            $config['rowsProcessed']++;
-            $occurrenceRowsProcessedThisRequest++;
-          }
-        }
-        if ($isPrecheck && !empty($precheckRowIds)) {
-          self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
-        }
-        if ($hasMoreChildRows) {
-          if (!$isPrecheck && count($parentErrors) === 0) {
-            // Only saved samples can be resumed. Precheck uses a fake parent
-            // ID, so its rows must be completed in the current request.
-            $config['activeParent'] = [
-              'id' => $parent->id,
-              'data' => (array) $parentEntityDataRow,
-            ];
-          }
-          else {
-            unset($config['activeParent']);
-          }
-          break;
-        }
-        unset($config['activeParent']);
-        $config['parentEntityRowsProcessed']++;
-        if ($occurrenceRowsProcessedThisRequest >= self::$batchRowLimit) {
+          $activeParent,
+          $precheckRowIds,
+          $occurrenceRowsProcessedThisRequest,
+          $deadline,
+          $deadlineReached
+        )) {
           break;
         }
       }
 
-      $progress = $config['totalRows'] > 0
-        ? 100 * $config['rowsProcessed'] / $config['totalRows']
-        : 100;
-      if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
-        self::tidyUpAfterImport($db, $configId, $config);
-      }
-      else {
-        self::saveConfig($configId, $config);
-      }
-      if (!$isPrecheck) {
-        self::saveImportRecord($config);
-      }
-      self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck);
+      $response = self::finishChunk(
+        $db,
+        $configId,
+        $config,
+        $isPrecheck,
+        $parentEntityDataRows,
+        $benchmarkStartIndex,
+        $benchmarkStartedAt
+      );
       $benchmarkLogged = TRUE;
-      return [
-        // Additional check for count of parentDataEntityRows will apply if an
-        // import is restarted by refreshing the browser page, as the
-        // rowsProcessed won't reach the total rows in this case.
-        'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
-        'progress' => $config['totalRows'] > 0
-          ? 100 * $config['rowsProcessed'] / $config['totalRows']
-          : 100,
-        'rowsProcessed' => $config['rowsProcessed'],
-        'totalRows' => $config['totalRows'],
-        'errorsCount' => $config['errorsCount'],
-      ];
+      return $response;
     }
-    catch (Exception $e) {
+    catch (Throwable $e) {
       if (!$benchmarkLogged) {
         self::logBenchmark(
           $benchmarkStartIndex,
@@ -343,21 +179,330 @@ class import2ChunkHandler {
       }
       error_logger::log_error('Error in import_chunk', $e);
       kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
-      http_response_code(400);
-      if (!empty($isBackground)) {
-        // Error handling differs in background mode.
-        throw $e;
-      }
-      return [
-        'status' => 'error',
-        'msg' => $e->getMessage(),
-      ];
+      throw $e;
     }
     finally {
       if ($workflowBulkModeEnabled) {
         workflow::setBulkMode(FALSE);
       }
     }
+  }
+
+  /**
+   * Reset the persisted progress for a restarted import chunk.
+   *
+   * A precheck restart also clears the row-level validation state so that the
+   * next pass checks every row again.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $configId
+   *   Unique ID of the import configuration file.
+   * @param array $config
+   *   Import metadata configuration, updated by reference.
+   * @param bool $isPrecheck
+   *   TRUE when restarting validation rather than submission.
+   */
+  private static function resetChunkProgress($db, $configId, array &$config, $isPrecheck) {
+    if ($isPrecheck) {
+      $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
+      $db->query(<<<SQL
+        UPDATE import_temp.$dbIdentifiers[tempTableName]
+        SET checked=false, errors=NULL;
+      SQL);
+      $config['errorsCount'] = 0;
+    }
+    $config['rowsProcessed'] = 0;
+    $config['parentEntityRowsProcessed'] = 0;
+    unset($config['activeParent']);
+    self::saveConfig($configId, $config);
+  }
+
+  /**
+   * Process one grouped parent row and its child rows.
+   *
+   * The return value indicates whether the caller must stop processing the
+   * current chunk. All counters and continuation state are updated in the
+   * same order as the original chunk loop.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param object $parentEntityDataRow
+   *   Representative import row for the parent group.
+   * @param array $parentEntityColumns
+   *   Mapped parent entity columns.
+   * @param array $childEntityColumns
+   *   Mapped child entity columns.
+   * @param array $parentEntityCompoundFields
+   *   Compound parent fields to construct.
+   * @param array $childEntityCompoundFields
+   *   Compound child fields to construct.
+   * @param array $dnaEntityColumns
+   *   Mapped DNA occurrence columns.
+   * @param bool $isPrecheck
+   *   TRUE when validating rather than submitting.
+   * @param array $config
+   *   Import metadata configuration, updated by reference.
+   * @param array|null $activeParent
+   *   Saved parent group being continued, if any.
+   * @param array $precheckRowIds
+   *   Child row IDs pending a precheck status update, updated by reference.
+   * @param int $occurrenceRowsProcessedThisRequest
+   *   Number of child rows processed in this request, updated by reference.
+   * @param float $deadline
+   *   Timestamp at which processing should yield.
+   * @param bool $deadlineReached
+   *   Whether the deadline has been reached, updated by reference.
+   *
+   * @return bool
+   *   TRUE when processing of the outer parent loop should stop.
+   */
+  private static function processParentRow(
+    $db,
+    $parentEntityDataRow,
+    array $parentEntityColumns,
+    array $childEntityColumns,
+    array $parentEntityCompoundFields,
+    array $childEntityCompoundFields,
+    array $dnaEntityColumns,
+    $isPrecheck,
+    array &$config,
+    $activeParent,
+    array &$precheckRowIds,
+    &$occurrenceRowsProcessedThisRequest,
+    $deadline,
+    &$deadlineReached
+  ) {
+    $isContinuingParent = !empty($activeParent)
+      && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
+    // Reuse the saved parent when continuing a group across requests. The
+    // sample grouping remains based on the original parent field values.
+    $parent = $isContinuingParent
+      ? ORM::factory($config['parentEntity'], $activeParent['id'])
+      : ORM::factory($config['parentEntity']);
+    $submission = [];
+    self::applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
+    self::copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
+    $identifiers = [
+      'website_id' => $config['global-values']['website_id'],
+      'survey_id' => $submission['survey_id'] ?? NULL,
+    ];
+    $parent->setIdentifiers($identifiers);
+    if ($config['parentEntitySupportsImportGuid']) {
+      $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
+    }
+    $parent->set_submission_data($submission);
+    $parentErrors = [];
+    if ($isContinuingParent) {
+      $parent->set_submission_data($submission);
+    }
+    elseif ($isPrecheck) {
+      try {
+        $parentErrors = $parent->precheck($identifiers);
+      } catch (Exception $e) {
+        // If the parent entity crashes on checking, record the error.
+        $parentErrors['sample:general'] = $e->getMessage();
+      }
+      // A fake ID to allow check on children.
+      $parent->id = 1;
+    }
+    else {
+      try {
+        $parent->submit();
+        $parentErrors = $parent->getAllErrors();
+      } catch (Exception $e) {
+        // If the parent entity fails to save, record the error.
+        $parentErrors['sample:general'] = $e->getMessage();
+      }
+    }
+    $childEntityData = self::fetchChildEntityData(
+      $db,
+      $parentEntityColumns,
+      $isPrecheck,
+      $config,
+      $parentEntityDataRow,
+      // Use the existing chunk-size setting as the total per-request
+      // budget, regardless of how many parent groups it contains.
+      max(1, self::$batchRowLimit - $occurrenceRowsProcessedThisRequest)
+    );
+    $childEntityDataRows = $childEntityData['rows'];
+    $hasMoreChildRows = $childEntityData['hasMore'];
+    $processedChildRows = 0;
+    if (count($parentErrors) > 0) {
+      $config['errorsCount'] += count($childEntityDataRows);
+      if (!$isPrecheck) {
+        // As we won't individually process the occurrences due to error in
+        // the sample, add them to the count.
+        $config['rowsProcessed'] += count($childEntityDataRows);
+        $processedChildRows = count($childEntityDataRows);
+      }
+      $keyFields = self::getDestFieldsForColumns($parentEntityColumns, $config);
+      self::saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
+    }
+    // If sample saved OK, or we are just prechecking, process the matching
+    // occurrences.
+    if (count($parentErrors) === 0 || $isPrecheck) {
+      foreach ($childEntityDataRows as $childEntityDataRow) {
+        $child = ORM::factory($config['entity']);
+        $submission = [
+          'sample_id' => $parent->id,
+        ];
+        self::applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
+        self::copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission, $childEntityCompoundFields);
+        if ($config['entitySupportsImportGuid']) {
+          $submission["$config[entity]:import_guid"] = $config['importGuid'];
+        }
+        $child->set_submission_data($submission);
+        $child->setIdentifiers($identifiers);
+        $errors = [];
+        if ($isPrecheck) {
+          try {
+            $errors = $child->precheck($identifiers);
+          } catch (Exception $e) {
+            // If the child entity fails to precheck, record the error.
+            $errors['occurrence:general'] = $e->getMessage();
+          }
+        }
+        else {
+          try {
+            $child->submit();
+            $errors = $child->getAllErrors();
+          } catch (Exception $e) {
+            // If the child entity fails to save, record the error.
+            $errors['occurrence:general'] = $e->getMessage();
+          }
+        }
+        if (count($errors) > 0) {
+          // Register additional error row, but only if not already
+          // registered due to error in parent.
+          if (count($parentErrors) === 0) {
+            $config['errorsCount']++;
+          }
+          self::saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
+        }
+        else {
+          if ($isPrecheck) {
+            $precheckRowIds[] = (int) $childEntityDataRow->_row_id;
+            if (count($precheckRowIds) >= self::PRECHECK_ROW_UPDATE_BATCH_SIZE) {
+              self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
+            }
+          }
+          else {
+            self::setRowDone($db, $childEntityDataRow->_row_id, FALSE, $config);
+          }
+          if (!$isPrecheck) {
+            if (!empty($submission['occurrence:id'])) {
+              $config['rowsUpdated']++;
+            }
+            else {
+              $config['rowsInserted']++;
+            }
+          }
+          if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $config['entity'] === 'occurrence') {
+            if (!self::importDnaIfValuesProvided(
+              $db,
+              $childEntityDataRow,
+              $dnaEntityColumns,
+              $child,
+              $isPrecheck,
+              $identifiers,
+              $config
+            )) {
+              // An error occurred saving the DNA occurrence. Increment the
+              // overall error count if not already done for this row.
+              if (count($parentErrors) + count($errors) === 0) {
+                $config['errorsCount']++;
+              }
+            }
+          }
+        }
+        $config['rowsProcessed']++;
+        $occurrenceRowsProcessedThisRequest++;
+        $processedChildRows++;
+        if (microtime(TRUE) >= $deadline) {
+          $deadlineReached = TRUE;
+          break;
+        }
+      }
+    }
+    if ($isPrecheck && !empty($precheckRowIds)) {
+      self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
+    }
+    $hasMoreChildRows = $hasMoreChildRows || $processedChildRows < count($childEntityDataRows);
+    if ($hasMoreChildRows) {
+      if (!$isPrecheck && count($parentErrors) === 0) {
+        // Only saved samples can be resumed. Precheck uses a fake parent
+        // ID, so its rows must be completed in the current request.
+        $config['activeParent'] = [
+          'id' => $parent->id,
+          'data' => (array) $parentEntityDataRow,
+        ];
+      }
+      else {
+        unset($config['activeParent']);
+      }
+      return TRUE;
+    }
+    unset($config['activeParent']);
+    $config['parentEntityRowsProcessed']++;
+    return $deadlineReached || $occurrenceRowsProcessedThisRequest >= self::$batchRowLimit;
+  }
+
+  /**
+   * Persist the completed chunk state and construct its progress response.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $configId
+   *   Unique ID of the import configuration file.
+   * @param array $config
+   *   Import metadata configuration.
+   * @param bool $isPrecheck
+   *   TRUE when processing validation rows.
+   * @param array $parentEntityDataRows
+   *   Parent rows selected for this chunk.
+   * @param int $benchmarkStartIndex
+   *   Index of the first benchmark recorded for this chunk.
+   * @param float $benchmarkStartedAt
+   *   Chunk start timestamp used for benchmark logging.
+   *
+   * @return array
+   *   Progress response for the caller.
+   */
+  private static function finishChunk(
+    $db,
+    $configId,
+    array &$config,
+    $isPrecheck,
+    array $parentEntityDataRows,
+    $benchmarkStartIndex,
+    $benchmarkStartedAt
+  ) {
+    $progress = $config['totalRows'] > 0
+      ? 100 * $config['rowsProcessed'] / $config['totalRows']
+      : 100;
+    if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
+      self::tidyUpAfterImport($db, $configId, $config);
+    }
+    else {
+      self::saveConfig($configId, $config);
+    }
+    if (!$isPrecheck) {
+      self::saveImportRecord($config);
+    }
+    self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck);
+    return [
+      // Additional check for count of parentDataEntityRows will apply if an
+      // import is restarted by refreshing the browser page, as the
+      // rowsProcessed won't reach the total rows in this case.
+      'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
+      'progress' => $config['totalRows'] > 0
+        ? 100 * $config['rowsProcessed'] / $config['totalRows']
+        : 100,
+      'rowsProcessed' => $config['rowsProcessed'],
+      'totalRows' => $config['totalRows'],
+      'errorsCount' => $config['errorsCount'],
+    ];
   }
 
   /**

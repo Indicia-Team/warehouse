@@ -772,9 +772,12 @@ SQL;
     if (!$proceed) {
       self::checkForbiddenOrNotFound($obj, $preconditions);
     }
-    $obj->deleted = 't';
-    $obj->set_metadata();
-    $obj->save();
+    self::submit($entity, $obj, [
+      'values' => [
+        'id' => $id,
+        'deleted' => 't',
+      ],
+    ], FALSE);
     http_response_code(204);
   }
 
@@ -1295,8 +1298,10 @@ SQL;
    *   ORM object.
    * @param array $postObj
    *   Submission data.
+   * @param bool $addETag
+   *   Whether to add an ETag response header after a successful submission.
    */
-  private static function submit($entity, $obj, array $postObj) {
+  private static function submit($entity, $obj, array $postObj, $addETag = TRUE) {
     $obj->submission = self::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $obj->setIdentifiers(['website_id' => RestObjects::$clientWebsiteId]);
     $id = $obj->submit();
@@ -1310,10 +1315,12 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }
     if ($id) {
-      $table = pg_escape_identifier(RestObjects::$db->getLink(), inflector::plural($entity));
-      // ETag to provide version check on updates.
-      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=?", [$id])->current()->xmin;
-      header("ETag: $eTag");
+      if ($addETag) {
+        $table = pg_escape_identifier(RestObjects::$db->getLink(), inflector::plural($entity));
+        // ETag to provide version check on updates.
+        $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=?", [$id])->current()->xmin;
+        header("ETag: $eTag");
+      }
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
       return self::getResponseMetadata($responseMetadata);

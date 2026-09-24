@@ -51,6 +51,80 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     return $response;
   }
 
+  private function createOccurrence() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $submission = submission_builder::build_submission($array, $structure);
+    $response = data_entry_helper::forward_post_to('sample', $submission, $this->auth['write_tokens']);
+    $this->assertTrue(isset($response['success']), 'Submitting a sample did not return success response');
+    return (int) $response['success'];
+  }
+
+  private function bulkVerify($params, array $extra = []) {
+    return helper_base::http_post(
+      helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
+      array_merge([
+        'report' => 'library/occurrences/filterable_explore_list',
+        'params' => json_encode($params),
+        'user_id' => 1,
+      ], $extra, $this->auth['write_tokens'])
+    );
+  }
+
+
+  private function bulkVerifyError(array $params) {
+    try {
+      $response = helper_base::http_post(
+        helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
+        array_merge($params, $this->auth['write_tokens']),
+        FALSE
+      );
+      return $response['output'];
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      return $e->responseBody;
+    }
+  }
+
+  private function bulkEdit(array $updates, $occurrenceIds, array $options = []) {
+    $response = helper_base::http_post(
+      helper_base::$base_url . 'index.php/services/data_utils/bulk_edit',
+      array_merge([
+        'updates' => json_encode($updates),
+        'options' => empty($options) ? '{}' : json_encode($options),
+        'occurrence:ids' => is_array($occurrenceIds) ? implode(',', $occurrenceIds) : $occurrenceIds,
+        'user_id' => 1,
+      ], $this->auth['write_tokens'])
+    );
+    return json_decode($response['output'], TRUE);
+  }
+
+  private function bulkEditError(array $params) {
+    try {
+      $response = helper_base::http_post(
+        helper_base::$base_url . 'index.php/services/data_utils/bulk_edit',
+        array_merge($params, $this->auth['write_tokens']),
+        FALSE
+      );
+      return $response['output'];
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      return $e->responseBody;
+    }
+  }
+
   public function testVerifyOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data__Utils_Test::testVerifyOccurrence");
     $array = [
@@ -203,6 +277,112 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(NULL, $c[0]['record_substatus']);
     $this->assertEquals('admin, core', $c[0]['verifier']);
     $this->assertNotEquals(NULL, $c[0]['verified_on']);
+  }
+
+  public function testBulkVerifyRequiresParams() {
+    $response = $this->bulkVerifyError([
+      'report' => 'library/occurrences/filterable_explore_list',
+      'user_id' => 1,
+    ]);
+    $this->assertStringContainsString('Missing params parameter.', $response);
+  }
+
+  public function testBulkVerifyRejectsInvalidParamsJson() {
+    $response = $this->bulkVerifyError([
+      'report' => 'library/occurrences/filterable_explore_list',
+      'params' => '{',
+      'user_id' => 1,
+    ]);
+    $this->assertStringContainsString('valid JSON object', $response);
+  }
+
+  public function testBulkVerifyDoesNotReverifyAlreadyVerifiedOccurrence() {
+    $occurrenceId = $this->createOccurrence();
+    $params = ['occurrence_id' => $occurrenceId];
+
+    $response = $this->bulkVerify($params);
+    $this->assertEquals('1', $response['output']);
+
+    $response = $this->bulkVerify($params);
+    $this->assertEquals('0', $response['output']);
+
+    $db = new Database();
+    $commentCount = $db->query(
+      'SELECT count(*) FROM occurrence_comments WHERE occurrence_id=?',
+      [$occurrenceId]
+    )->current()->count;
+    $this->assertEquals('1', $commentCount);
+  }
+
+  public function testBulkVerifyAppliesSubstatus() {
+    $occurrenceId = $this->createOccurrence();
+    $response = $this->bulkVerify(
+      ['occurrence_id' => $occurrenceId],
+      ['record_substatus' => '2']
+    );
+    $this->assertEquals('1', $response['output']);
+
+    $occurrence = ORM::factory('occurrence', $occurrenceId);
+    $this->assertEquals('V', $occurrence->record_status);
+    $this->assertEquals('2', (string) $occurrence->record_substatus);
+    $comment = ORM::factory('occurrence_comment', ['occurrence_id' => $occurrenceId]);
+    $this->assertEquals('This record is accepted as considered correct', $comment->comment);
+    $this->assertEquals('2', (string) $comment->record_substatus);
+  }
+
+  public function testBulkEditRejectsMalformedInputs() {
+    $response = $this->bulkEditError([
+      'updates' => '{',
+      'options' => '{}',
+      'occurrence:ids' => '1',
+      'user_id' => 1,
+    ]);
+    $this->assertStringContainsString('updates parameter must contain a valid JSON object', $response);
+
+    $response = $this->bulkEditError([
+      'updates' => '{}',
+      'options' => '[true]',
+      'occurrence:ids' => '1',
+      'user_id' => 1,
+    ]);
+    $this->assertStringContainsString('options parameter must contain a valid JSON object', $response);
+
+    $response = $this->bulkEditError([
+      'updates' => '{}',
+      'options' => '{}',
+      'occurrence:ids' => 'not-an-id',
+      'user_id' => 1,
+    ]);
+    $this->assertStringContainsString('Invalid format for occurrence:ids parameter', $response);
+  }
+
+  public function testBulkEditUpdatesSampleAndResetsVerification() {
+    $occurrenceId = $this->createOccurrence();
+    $db = new Database();
+    $db->query("UPDATE occurrences SET record_status='V', verified_by_id=1, verified_on=now() WHERE id=?", [$occurrenceId]);
+
+    $response = $this->bulkEdit(['location_name' => 'Bulk edit test location'], $occurrenceId);
+    $this->assertEquals('records edited', $response['action']);
+    $this->assertEquals(1, $response['affected']['occurrences']);
+
+    $occurrence = ORM::factory('occurrence', $occurrenceId);
+    $this->assertEquals('C', $occurrence->record_status);
+    $sample = ORM::factory('sample', $occurrence->sample_id);
+    $this->assertEquals('Bulk edit test location', $sample->location_name);
+  }
+
+  public function testBulkEditCanSkipVerificationReset() {
+    $occurrenceId = $this->createOccurrence();
+    $db = new Database();
+    $db->query("UPDATE occurrences SET record_status='V', verified_by_id=1, verified_on=now() WHERE id=?", [$occurrenceId]);
+
+    $response = $this->bulkEdit(
+      ['location_name' => 'Bulk edit skip reverify', 'skip_reverify' => TRUE],
+      $occurrenceId
+    );
+    $this->assertEquals('records edited', $response['action']);
+
+    $this->assertEquals('V', ORM::factory('occurrence', $occurrenceId)->record_status);
   }
 
 }

@@ -137,6 +137,7 @@ $config['modules'] = [
   MODPATH.'data_cleaner_period_within_year',
 
   MODPATH.'rest_api',                // RESTful web service interface
+  MODPATH.'rest_api_sync',           // Synchronisation with other servers
   MODPATH.'spatial_index_builder',   // index of location occurrence overlaps
   MODPATH.'taxon_associations',      // data tables for associations between taxa
   MODPATH.'occurrence_associations', // associations between occurrences

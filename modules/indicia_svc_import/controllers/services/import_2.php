@@ -1615,11 +1615,12 @@ SQL;
         'user_id' => $this->auth_user_id,
       ]);
       echo json_encode($r);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
       http_response_code(500);
       echo json_encode([
         'status' => 'error',
         'msg' => $e->getMessage(),
+        'rowErrorsCount' => $this->getRowErrorsCount(),
       ]);
     }
   }
@@ -1695,6 +1696,26 @@ SQL;
       fputcsv($out, $row);
     }
     fclose($out);
+  }
+
+  /**
+   * Get a count of rows with errors.
+   *
+   * @return int
+   *   Count of rows with errors.
+   */
+  private function getRowErrorsCount() {
+    $configId = $this->getConfigId();
+    $config = import2ChunkHandler::getConfig($configId);
+    $db = new Database();
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $query = <<<SQL
+      SELECT COUNT(*) AS row_errors_count
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE errors IS NOT NULL;
+    SQL;
+    $result = $db->query($query)->current();
+    return $result ? (int) $result->row_errors_count : 0;
   }
 
   /**
@@ -1979,6 +2000,9 @@ SQL;
           }
           elseif ($destFieldParts[0] === 'sample' && $destFieldParts[1] === 'fk_location') {
             $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info);
+          }
+          elseif ($destFieldParts[0] === 'sample' && $destFieldParts[1] === 'fk_sample_method') {
+            $unmatchedInfo = $this->autofillSampleMethodIds($db, $config, $info);
           }
           else {
             $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info);
@@ -2378,6 +2402,65 @@ SQL;
       'values' => $values,
       'type' => 'location',
       'locationFilters' => $filterForLocationSearchAPI,
+    ];
+  }
+
+  /**
+   * Autofills the sample method ID foreign keys for lookup text values.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $config
+   *   Import configuration object.
+   * @param array $info
+   *   Column info data for the column being autofilled.
+   *
+   * @return array
+   *   Array containing information about the result.
+   */
+  private function autofillSampleMethodIds($db, array $config, array $info) {
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $fkField = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
+    $tempDbField = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $websiteId = (int) $config['global-values']['website_id'];
+    $sql = <<<SQL
+      UPDATE import_temp.$dbIdentifiers[tempTableName] i
+      SET $fkField=l.id
+      FROM cache_termlists_terms l
+      JOIN termlists t ON t.id=l.termlist_id AND t.external_key='indicia:sample_methods'
+      WHERE trim(lower(i.$tempDbField))=lower(l.term)
+      AND (l.website_id=$websiteId or l.website_id IS NULL);
+    SQL;
+    $db->query($sql);
+    // Find the unmatched values.
+    $sql = <<<SQL
+      SELECT DISTINCT trim(lower($tempDbField)) as value
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE $fkField IS NULL
+      AND $tempDbField <> ''
+      ORDER BY trim(lower($tempDbField));
+    SQL;
+    $values = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      $values[] = $row->value;
+    }
+    // Find the available sample method options.
+    $sql = <<<SQL
+      SELECT l.id, l.term
+      FROM cache_termlists_terms l
+      JOIN termlists t ON t.id=l.termlist_id AND t.external_key='indicia:sample_methods'
+      WHERE (l.website_id=$websiteId or l.website_id IS NULL);
+    SQL;
+    $rows = $db->query($sql)->result();
+    $matchOptions = [];
+    foreach ($rows as $row) {
+      $matchOptions[$row->id] = $row->term;
+    }
+    return [
+      'values' => $values,
+      'matchOptions' => $matchOptions,
+      'type' => 'sampleMethod',
     ];
   }
 

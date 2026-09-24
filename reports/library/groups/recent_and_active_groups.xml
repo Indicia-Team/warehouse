@@ -3,21 +3,21 @@
   <query website_filter_field="">
     create temporary table active_groups as
       select g.id, g.title,
-        count(o.id) + count(distinct case when o.created_on>now() - '2 days'::interval then o.id else null end) as activity_level,
+        igd.group_recent_records + igd.group_recent_records_2_days AS activity_level,
         null::double precision as activity_score
       from groups g
       left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
-      join cache_occurrences_functional o on o.group_id=g.id and o.updated_on>now() - '2 days'::interval
+      join custom_cache_tables.index_group_discovery igd on igd.group_id=g.id
       where g.deleted=false
+      and g.website_id in (#website_ids#)
       and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
       and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
       -- Not already a member.
       and gu.id is null
-      group by g.id, g.title
       order by 3 desc
       limit 30;
 
-    update active_groups set activity_score = activity_level::double precision / (select max(activity_level) from active_groups);
+    update active_groups set activity_score = activity_level::double precision / (select greatest(max(activity_level), 1) from active_groups);
 
     create temporary table recent_groups as
       select g.id, g.title,
@@ -25,6 +25,7 @@
       from groups g
       left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
       where g.deleted=false
+      and g.website_id in (#website_ids#)
       and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
       and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
       -- Limit to last 30 days.
@@ -43,6 +44,7 @@
     left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
     left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
     where g.deleted=false
+    and g.website_id in (#website_ids#)
     and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
     and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
     -- Not already a member.

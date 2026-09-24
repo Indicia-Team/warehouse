@@ -4,6 +4,46 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.27.0
+*2026-09-24*
+
+* Corrections to the synchronisation of sample deletes across child samples and occurrences as well
+  as across cache tables. This fixes a potential cause of the work queue processes blocking due to
+  inconsistent data state.
+* Prevent app submissions using stale lists containing deleted taxa from blocking the work queue.
+  See https://github.com/Indicia-Team/warehouse/issues/604.
+* Performance improvements for Group Discovery page reports, see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1681.
+* Fix display of OpenStreetMap tile layers on warehouse Edit pages in some browsers. See
+  https://github.com/Indicia-Team/warehouse/issues/606.
+* Improvements to the robustness and error handling of the import v2 code, including fixing
+  potential timeouts resulting in failed imports with blank error sheets. Also fixes mappings to
+  `sample.sample_method_id` field. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/2138.
+* Improvements to the robustness and error handling of bulk editing code.
+* Fixes and robustness improvements for offline verification code, see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/11.
+* Adds a new download format `easy-download-dna` which includes DNA derived occurrence data fields.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/2023.
+* Fix erroneous inclusion of ! suffix on record keys for occurrences downloaded when the data is a
+  full-precision copy of a sensitive record. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1877.
+* Bug fixes in the REST API Sync module, particularly around re-queueing of previously
+  failed-to-import records.
+* The REST API Sync module now tolerates unicode × characters when matching against species names
+  from systems like iNaturalist. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1222.
+* Fix update of cache tables when workflow changes applied to a record with a stage or similar
+  filter. See https://github.com/Indicia-Team/warehouse/issues/603.
+* Fix internal detection of database table column lists to be limited to the indicia schema, which
+  prevents the potential for incorrect mapping options appearing on the importers. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/2137.
+* Improves default error messages shown for database field validation failures when no specific
+  message available.
+* Internal database layer fix so that both unvalidated and validated fields are trimmed before
+  saving.
+* Other minor bugfixes.
+
 ## Version 9.26.1
 *2026-08-17*
 

@@ -78,9 +78,9 @@ class RestApiElasticsearch {
    * @var array
    */
   private $esCsvTemplates = [
-    "default" => [
+    'default' => [
       ['caption' => 'Record ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'Sample ID', 'field' => 'event.event_id'],
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date start', 'field' => 'event.date_start'],
@@ -140,9 +140,9 @@ class RestApiElasticsearch {
       ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
       ['caption' => 'Media', 'field' => '#occurrence_media#'],
     ],
-    "easy-download" => [
+    'easy-download' => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
       [
         'caption' => 'Source',
@@ -234,6 +234,160 @@ class RestApiElasticsearch {
         'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
       ],
     ],
+    'easy-download-dna' => [
+      ['caption' => 'ID', 'field' => 'id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
+      ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
+      [
+        'caption' => 'Source',
+        'field' => '#datasource_code:<wt> | <st> {|} <gt>#',
+      ],
+      ['caption' => 'Rank', 'field' => 'taxon.taxon_rank'],
+      ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
+      ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
+      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+      ['caption' => 'Kingdom', 'field' => 'taxon.kingdom'],
+      ['caption' => 'Order', 'field' => 'taxon.order'],
+      ['caption' => 'Family', 'field' => 'taxon.family'],
+      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.accepted_taxon_id'],
+      ['caption' => 'Site name', 'field' => '#sitename:obscureifsensitive#'],
+      ['caption' => 'Sensitive site', 'field' => '#sitename:showifsensitive#'],
+      ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
+      ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
+      ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
+      [
+        'caption' => 'Projection (input)',
+        'field' => '#sref_system:location.input_sref_system:alphanumeric#',
+      ],
+      [
+        'caption' => 'Precision',
+        'field' => 'location.coordinate_uncertainty_in_meters',
+      ],
+      ['caption' => 'Output map ref', 'field' => 'location.output_sref_blurred'],
+      [
+        'caption' => 'Projection (output)',
+        'field' => '#sref_system:location.output_sref_system_blurred:alphanumeric#',
+      ],
+      ['caption' => 'Sensitive output map ref', 'field' => '#conditional_value:location.output_sref:metadata.sensitivity_blur:=:F#'],
+      ['caption' => 'Biotope', 'field' => 'event.habitat'],
+      [
+        'caption' => 'VC number',
+        'field' => '#higher_geography:Vice County:code#',
+      ],
+      [
+        'caption' => 'Vice County',
+        'field' => '#higher_geography:Vice County:name#',
+      ],
+      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+      ['caption' => 'Date from', 'field' => 'event.date_start'],
+      ['caption' => 'Date to', 'field' => 'event.date_end'],
+      ['caption' => 'Date type', 'field' => 'event.date_type'],
+      ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
+      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
+      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
+      [
+        'caption' => 'Recorder certainty',
+        'field' => 'identification.recorder_certainty',
+      ],
+      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      [
+        'caption' => 'Count of sex or stage',
+        'field' => 'occurrence.organism_quantity',
+      ],
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
+      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+      ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
+      ['caption' => 'Images', 'field' => '#occurrence_media#'],
+      [
+        'caption' => 'Input on date',
+        'field' => '#datetime:metadata.created_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Last edited on date',
+        'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Verification status 1',
+        'field' => '#verification_status:astext#',
+      ],
+      [
+        'caption' => 'Verification status 2',
+        'field' => '#verification_substatus:astext#',
+      ],
+      ['caption' => 'Query', 'field' => '#query:astext#'],
+      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+      [
+        'caption' => 'Verified on',
+        'field' => '#datetime:identification.verified_on:d/m/Y H\:i#',
+      ],
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
+      [
+        'caption' => 'Automated checks',
+        'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
+      ],
+      [
+        'caption' => 'Associated sequences',
+        'field' => 'dna_derived_data.associated_sequences',
+      ],
+      [
+        'caption' => 'DNA sequence',
+        'field' => 'dna_derived_data.dna_sequence',
+      ],
+      [
+        'caption' => 'Target gene',
+        'field' => 'dna_derived_data.target_gene',
+      ],
+      [
+        'caption' => 'PCR primer reference',
+        'field' => 'dna_derived_data.pcr_primer_reference',
+      ],
+      [
+        'caption' => 'Environmental medium',
+        'field' => 'dna_derived_data.env_medium',
+      ],
+      [
+        'caption' => 'Environmental broad scale',
+        'field' => 'dna_derived_data.env_broad_scale',
+      ],
+      [
+        'caption' => 'OTU database',
+        'field' => 'dna_derived_data.otu_db',
+      ],
+      [
+        'caption' => 'OTU sequence comparison approach',
+        'field' => 'dna_derived_data.otu_seq_comp_appr',
+      ],
+      [
+        'caption' => 'OTU classification approach',
+        'field' => 'dna_derived_data.otu_class_appr',
+      ],
+      [
+        'caption' => 'DNA environmental local scale',
+        'field' => 'dna_derived_data.dna_env_local_scale',
+      ],
+      [
+        'caption' => 'Target subfragment',
+        'field' => 'dna_derived_data.target_subfragment',
+      ],
+      [
+        'caption' => 'PCR primer name forward',
+        'field' => 'dna_derived_data.pcr_primer_name_forward',
+      ],
+      [
+        'caption' => 'PCR primer forward',
+        'field' => 'dna_derived_data.pcr_primer_forward',
+      ],
+      [
+        'caption' => 'PCR primer name reverse',
+        'field' => 'dna_derived_data.pcr_primer_name_reverse',
+      ],
+      [
+        'caption' => 'PCR primer reverse',
+        'field' => 'dna_derived_data.pcr_primer_reverse',
+      ],
+    ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
@@ -257,7 +411,7 @@ class RestApiElasticsearch {
         'caption' => 'Comment',
         'field' => '#sample_occurrence_comment:nonewline:notab:addref#',
       ],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#record_key#'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       [
         'caption' => 'Source',
@@ -373,16 +527,14 @@ class RestApiElasticsearch {
       $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
+    return $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
   }
 
   /**
    * Retrieves the Elasticsearch major version number from the config.
    *
-   * If not specified returns null.
-   *
-   * @return int
-   *   Major version number.
+   * @return ?int
+   *   Major version number. If not specified in config returns null.
    */
   public function getMajorVersion() {
     $esVersion = kohana::config('rest.elasticsearch_version');
@@ -609,7 +761,7 @@ class RestApiElasticsearch {
     $output = [];
     if (isset($doc['occurrence']['associations'])) {
       foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc['accepted_name'];
+        $label = $assoc['accepted_name'] ?? '';
         if (!empty($assoc['vernacular_name'])) {
           $label = $assoc['vernacular_name'] . " ($label)";
         }
@@ -759,9 +911,9 @@ class RestApiElasticsearch {
    * Text representation of icons for download.
    */
   private function esGetSpecialFieldDataCleanerIcons(array $doc) {
-    $autoChecks = $doc['identification']['auto_checks'];
+    $autoChecks = $doc['identification']['auto_checks'] ?? [];
     $output = [];
-    if ($autoChecks['enabled'] === 'false') {
+    if (($autoChecks['enabled'] ?? NULL) === 'false') {
       $output[] = 'Automatic rule checks will not be applied to records in this dataset.';
     }
     elseif (isset($autoChecks['result'])) {
@@ -769,10 +921,10 @@ class RestApiElasticsearch {
         $output[] = 'All automatic rule checks passed.';
       }
       elseif ($autoChecks['result'] === 'false') {
-        if (count($autoChecks['output']) > 0) {
+        if (!empty($autoChecks['output'])) {
           // Add an icon for each rule violation.
           foreach ($autoChecks['output'] as $violation) {
-            $output[] = $violation['message'];
+            $output[] = $violation['message'] ?? '';
           }
         }
         else {
@@ -803,14 +955,10 @@ class RestApiElasticsearch {
     if (count($params) > 1) {
       return 'Incorrect params for datasource code field (must be 0 or 1)';
     }
-    $w = $doc['metadata']['website'];
-    $s = $doc['metadata']['survey'];
-    if (isset($doc['metadata']['group'])) {
-      $g = $doc['metadata']['group'];
-    }
-    else {
-      $g = ['title' => '', 'id' => ''];
-    }
+    $metadata = $doc['metadata'] ?? [];
+    $w = $metadata['website'] ?? ['title' => '', 'id' => ''];
+    $s = $metadata['survey'] ?? ['title' => '', 'id' => ''];
+    $g = $metadata['group'] ?? ['title' => '', 'id' => ''];
     if (count($params)) {
       $pattern = $params[0];
     }
@@ -1006,9 +1154,9 @@ class RestApiElasticsearch {
       else {
         $r = [];
         foreach ($doc['location']['higher_geography'] as $loc) {
-          if (strcasecmp($loc['type'], $params[0]) === 0) {
+          if (strcasecmp($loc['type'] ?? '', $params[0]) === 0) {
             if (!empty($params[1])) {
-              $r[] = $loc[$params[1]];
+              $r[] = $loc[$params[1]] ?? '';
             }
             else {
               $r[] = $loc;
@@ -1085,9 +1233,10 @@ class RestApiElasticsearch {
     $topSuggestion = '';
     $topProbability = 0;
     foreach ($suggestions as $suggestion) {
-      if ($suggestion['probability_given'] > $topProbability) {
-        $topSuggestion = $suggestion['taxon_name_given'];
-        $topProbability = $suggestion['probability_given'];
+      $probability = $suggestion['probability_given'] ?? 0;
+      if ($probability > $topProbability) {
+        $topSuggestion = $suggestion['taxon_name_given'] ?? '';
+        $topProbability = $probability;
       }
     }
     return $topSuggestion;
@@ -1224,7 +1373,7 @@ class RestApiElasticsearch {
     }
     if (!empty($doc['location']['higher_geography'])) {
       foreach ($doc['location']['higher_geography'] as $loc) {
-        $info[] = "$loc[type]: $loc[name]";
+        $info[] = ($loc['type'] ?? '') . ': ' . ($loc['name'] ?? '');
       }
     }
     return implode('; ', $info);
@@ -1335,7 +1484,7 @@ class RestApiElasticsearch {
       $items = [];
       foreach ($doc['occurrence']['media'] as $m) {
         $item = [
-          $m['path'],
+          $m['path'] ?? '',
           empty($m['caption']) ? '' : $m['caption'],
           empty($m['licence']) ? '' : $m['licence'],
         ];
@@ -1440,6 +1589,30 @@ class RestApiElasticsearch {
     else {
       return $value;
     }
+  }
+
+  /**
+   * Special field handler for Elasticsearch record keys.
+   *
+   * Returns the _id field which holds the globally unique record key,
+   * including warehouse prefix and record ID. Strips the ! used to indicate a
+   * sensitive record from the key if present.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *   Can be empty or a string to specify a format.
+   *
+   * @return string
+   *   Formatted record key.
+   */
+  private function esGetSpecialFieldRecordKey(array $doc, array $params) {
+    $key = $doc['_id'] ?? '';
+    if (substr($key, -1) === '!') {
+      $key = substr($key, 0, -1);
+    }
+    return $key;
   }
 
   /**
@@ -1560,7 +1733,8 @@ class RestApiElasticsearch {
   private function esGetSpecialFieldSitename(array $doc, array $params) {
     $format = !empty($params) ? $params[0] : '';
     $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
-    $shouldBlur = $doc['metadata']['sensitive'] === 'true' || $doc['metadata']['private'] === 'true';
+    $metadata = $doc['metadata'] ?? [];
+    $shouldBlur = ($metadata['sensitive'] ?? '') === 'true' || ($metadata['private'] ?? '') === 'true';
     switch ($format) {
       case 'obscureifsensitive':
         if ($shouldBlur && !empty($value)) {
@@ -1654,7 +1828,7 @@ class RestApiElasticsearch {
       'R5' => 'Not accepted as incorrect',
     ];
     if (!empty($doc['identification'])) {
-      $status = $doc['identification']['verification_status'];
+      $status = $doc['identification']['verification_status'] ?? '';
       if (!empty($doc['identification']['verification_substatus']) && $doc['identification']['verification_substatus'] !== 0) {
         $status .= $doc['identification']['verification_substatus'];
       }
@@ -1694,14 +1868,15 @@ class RestApiElasticsearch {
    *   Formatted value.
    */
   private function esGetSpecialFieldTaxonLabel(array $doc) {
-    $name = empty($doc['taxon']['accepted_name']) ? $doc['taxon']['taxon_name'] : $doc['taxon']['accepted_name'];
+    $taxon = $doc['taxon'] ?? [];
+    $name = empty($taxon['accepted_name']) ? ($taxon['taxon_name'] ?? '') : $taxon['accepted_name'];
     // Append vernacular when available.
-    if (!empty($doc['taxon']['vernacular_name']) && $doc['taxon']['vernacular_name'] !== $name) {
-      $name .= ' | ' . $doc['taxon']['vernacular_name'];
+    if (!empty($taxon['vernacular_name']) && $taxon['vernacular_name'] !== $name) {
+      $name .= ' | ' . $taxon['vernacular_name'];
     }
     // Prepend taxon rank if above species.
-    if (!empty($doc['taxon']['taxon_rank_sort_order']) && $doc['taxon']['taxon_rank_sort_order'] < 290) {
-      $name = $doc['taxon']['taxon_rank'] . " $name";
+    if (!empty($taxon['taxon_rank_sort_order']) && $taxon['taxon_rank_sort_order'] < 290) {
+      $name = ($taxon['taxon_rank'] ?? '') . " $name";
     }
     return $name;
   }
@@ -1710,7 +1885,7 @@ class RestApiElasticsearch {
    * Applies ES field values to a template.
    *
    * Field names can be supplied in [] inside the template and will be replaced
-   * by the respectiv values.
+   * by the respective values.
    *
    * @param array $doc
    *   Elasticsearch document.
@@ -1721,16 +1896,12 @@ class RestApiElasticsearch {
    *   Template with tokens replaced by values.
    */
   private function applyFieldReplacements(array $doc, $template) {
-    preg_match_all('/\[.*\]/', $template, $matches);
     $replaceKeys = [];
     $replaceValues = [];
-    foreach ($matches as $group) {
-      foreach ($group as $token) {
-        $fieldPath = str_replace(['[', ']'], '', $token);
-        $value = $this->getRawEsFieldValue($doc, $fieldPath);
-        $replaceKeys[] = $token;
-        $replaceValues[] = $value;
-      }
+    preg_match_all('/\[([a-z0-9_-]+(?:\.[a-z0-9_-]+)*)\]/', $template, $matches);
+    foreach ($matches[1] as $index => $fieldPath) {
+      $replaceKeys[] = $matches[0][$index];
+      $replaceValues[] = $this->getRawEsFieldValue($doc, $fieldPath);
     }
     return str_replace($replaceKeys, $replaceValues, $template);
   }
@@ -2232,20 +2403,17 @@ class RestApiElasticsearch {
             $fields[] = $fieldToCheck;
           }
         }
-        elseif ($field === '#idenfication_classifier_agreement#') {
-          $fields[] = 'identification.classifiers.current_determination.classifier_chosen';
+        elseif ($field === '#identification_classifier_agreement#') {
+          $fields[] = 'identification.classifier.current_determination.classifier_chosen';
         }
-        elseif ($field === '#idenfication_classifier_suggestion#') {
-          $fields[] = 'identification.classifiers.suggestions';
+        elseif ($field === '#identification_classifier_suggestion#') {
+          $fields[] = 'identification.classifier.suggestions';
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.
-          preg_match_all('/\[.*\]/', $field, $matches);
-          foreach ($matches as $group) {
-            foreach ($group as $token) {
-              $fieldPath = str_replace(['[', ']'], '', $token);
-              $fields[] = $fieldPath;
-            }
+          preg_match_all('/\[([a-z0-9_-]+(?:\.[a-z0-9_-]+)*)\]/', $field, $matches);
+          foreach ($matches[1] as $fieldPath) {
+            $fields[] = $fieldPath;
           }
           // Also 2nd parameter can be a path to a nested object.
           $tokens = explode(':', $field);
@@ -2585,7 +2753,7 @@ class RestApiElasticsearch {
       $file['state'] = $done ? 'done' : 'nextPage';
       $cache = Cache::instance();
       if ($done) {
-        $cache->delete("es-paging-$file[uniq_id]", $file);
+        $cache->delete("es-paging-$file[uniq_id]");
         unset($file['scroll_id']);
         $this->zip($file);
       }

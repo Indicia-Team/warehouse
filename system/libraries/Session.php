@@ -218,10 +218,10 @@ class Session_Core {
 	}
 
 	/**
-	 * Regenerates the global session id. 
-	 * 
+	 * Regenerates the global session id.
+	 *
 	 * This can be triggered by the Session::$config['regenerate'] value being reached, where automatic regeneration is
-	 * enabled, or logging in and logging out. 
+	 * enabled, or logging in and logging out.
 	 *
 	 * @return  void
 	 */
@@ -232,7 +232,12 @@ class Session_Core {
 		if ($run === NULL)
 		{
 			$run = TRUE;
-    
+
+			if (session_status() !== PHP_SESSION_ACTIVE)
+      {
+        session_start();
+      }
+
 			if (Session::$config['driver'] === 'native')
 			{
 				// Generate a new session id

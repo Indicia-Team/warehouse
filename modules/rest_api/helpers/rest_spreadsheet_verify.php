@@ -203,7 +203,7 @@ class rest_spreadsheet_verify {
       fputcsv($verificationsFile, $verificationData);
       $metadata['verificationsFound']++;
     }
-    self::checkAllIdsInFilter($ids, $metadata['warehouse_name'], $metadata);
+    self::checkAllIdsInFilter($ids, $metadata['id_prefix'], $metadata);
     fclose($errorsFile);
     fclose($verificationsFile);
   }
@@ -218,10 +218,10 @@ class rest_spreadsheet_verify {
    *
    * @param array $ids
    *   List of document ids to check.
-   * @param string $warehouseName
-   *   Warehouse name to filter to, in case multiple in the ES index.
+   * @param string $idPrefix
+   *   ID prefix to filter to, in case multiple warehouses in the ES index.
    */
-  private static function checkAllIdsInFilter(array $ids, $warehouseName, array $metadata) {
+  private static function checkAllIdsInFilter(array $ids, $idPrefix, array $metadata) {
     require_once 'client_helpers/ElasticsearchProxyHelper.php';
     require_once 'client_helpers/helper_base.php';
     $readAuth = helper_base::get_read_auth(0 - $metadata['user_id'], kohana::config('indicia.private_key'));
@@ -234,12 +234,10 @@ class rest_spreadsheet_verify {
         ],
         [
           'terms' => [
-            'id' => $ids,
-          ],
-        ],
-        [
-          'term' => [
-            'warehouse.keyword' => $warehouseName,
+            '_id' => array_map(
+              fn($id) => $idPrefix . $id,
+              $ids
+            )
           ],
         ],
       ],
@@ -325,10 +323,28 @@ class rest_spreadsheet_verify {
         'refresh' => 'true',
         'conflicts' => 'proceed',
       ];
-      $esApi->elasticRequest($doc, 'json', TRUE, '_update_by_query');
+      $docObject = json_decode(json_encode($doc));
+      self::checkEsUpdateResponse($esApi->elasticRequest($docObject, 'json', TRUE, '_update_by_query'));
       // Now normal records/blurred records.
-      $doc['query']['terms']['_id'] = $_ids;
-      $esApi->elasticRequest($doc, 'json', TRUE, '_update_by_query');
+      $docObject->query->terms->_id = $_ids;
+      self::checkEsUpdateResponse($esApi->elasticRequest($docObject, 'json', TRUE, '_update_by_query'));
+    }
+  }
+
+  /**
+   * Checks the response from an Elasticsearch update-by-query request.
+   *
+   * @param string $response
+   *   JSON response returned by Elasticsearch.
+   */
+  private static function checkEsUpdateResponse($response) {
+    $response = json_decode($response, TRUE);
+    if (!is_array($response) || !empty($response['failures'])) {
+      RestObjects::$apiResponse->fail(
+        'Internal Server Error',
+        500,
+        'Elasticsearch failed to apply one or more verification updates.'
+      );
     }
   }
 
@@ -440,8 +456,7 @@ class rest_spreadsheet_verify {
       'verificationsFound' => 0,
       'errorsFound' => 0,
       'state' => 'start',
-      'id_prefix' => $_POST['id_prefix'],
-      'warehouse_name' => $_POST['warehouse_name'],
+      'id_prefix' => $_POST['id_prefix']
     ];
     $file = fopen(DOCROOT . "import/{$fileId}-metadata.json", "w");
     fwrite($file, json_encode($metadata));
@@ -530,7 +545,7 @@ class rest_spreadsheet_verify {
     $metadata['idColIndex'] = array_search('ID', $rowData);
     $metadata['statusColIndex'] = array_search('*Decision status*', $rowData);
     $metadata['commentColIndex'] = array_search('*Decision comment*', $rowData);
-    if ($metadata['idColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE) {
+    if ($metadata['idColIndex'] === FALSE || $metadata['statusColIndex'] === FALSE || $metadata['commentColIndex'] === FALSE) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'The uploaded spreadsheet does not have the required columns.');
     }
   }

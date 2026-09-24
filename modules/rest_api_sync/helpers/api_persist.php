@@ -111,7 +111,7 @@ class api_persist {
     elseif (!empty($observation['taxonName'])) {
       $lookup = ['original' => $observation['taxonName']];
     }
-    $ttl_id = self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+    $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
     if (!$ttl_id && !empty($observation['taxonName'])) {
       // If looking up a taxon name but not found, there might be a resolution
       // in the mappings table.
@@ -466,9 +466,6 @@ SQL;
    *   Database instance.
    * @param int $taxon_list_id
    *   Taxon list to lookup against.
-   * @param int $survey_id
-   *   Survey being imported into, only used if a lookup mapping is used to
-   *   resolve duplicates.
    * @param array $lookup
    *   Array of field/value pairs look up (e.g
    *   ['external_key' => '<Taxon version key>'])
@@ -477,7 +474,7 @@ SQL;
    *   Taxa_taxon_list_id of the found record, or NULL if could not identify
    *   a unique taxon.
    */
-  private static function findTaxon($db, $taxon_list_id, $survey_id, array $lookup) {
+  private static function findTaxon($db, $taxon_list_id, array $lookup) {
     $filter = '';
     if (!empty($lookup['original'])) {
       // This facilitates use of an index on searchterm. Only search on first 2
@@ -488,18 +485,22 @@ SQL;
       // Now build a custom exact match filter that looks for alternative ssp.
       // annotations.
       $exactMatches = ["'" . pg_escape_string($db->getLink(), $lookup['original']) . "'"];
+      // Unicode x variations.
+      if (strpos($lookup['original'], '×') !== FALSE) {
+        $exactMatches[] = "'" . pg_escape_string($db->getLink(), str_replace('×', 'x', $lookup['original'])) . "'";
+      }
       if (count($words) === 3) {
         $exactMatches[] = "'" . pg_escape_string($db->getLink(), "$words[0] $words[1] subsp. $words[2]") . "'";
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
       $qry = <<<SQL
-SELECT taxon_meaning_id, taxa_taxon_list_id
-FROM cache_taxon_searchterms
-WHERE taxon_list_id=?
-AND simplified='f'
-$filter
-ORDER BY preferred DESC
-SQL;
+        SELECT taxon_meaning_id, taxa_taxon_list_id
+        FROM cache_taxon_searchterms
+        WHERE taxon_list_id=?
+        AND simplified='f'
+        $filter
+        ORDER BY preferred DESC
+      SQL;
     }
     else {
       // Add in the exact match filter for other search methods.
@@ -565,11 +566,14 @@ SQL;
         // Use a search code lookup if available, in preference to a name
         // lookup.
         $lookup = ['search_code' => $results->mapped_search_code];
+        $mappedTaxon = self::findTaxon($db, $taxon_list_id, $lookup);
+        if ($mappedTaxon) {
+          return $mappedTaxon;
+        }
       }
-      else {
-        $lookup = ['original' => $results->mapped_taxon_name];
-      }
-      return self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+      return self::findTaxon($db, $taxon_list_id, [
+        'original' => $results->mapped_taxon_name,
+      ]);
     }
     return NULL;
   }
