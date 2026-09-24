@@ -500,6 +500,7 @@ class Rest_Controller extends Controller {
             ],
           ],
         ],
+        'locations/{id}/media' => [],
       ],
       'POST' => [
         'locations' => [],
@@ -513,7 +514,13 @@ class Rest_Controller extends Controller {
     ],
     'location-media' => [
       'GET' => [
-        'location-media' => [],
+        'location-media' => [
+          'params' => [
+            'location_id' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
         'location-media/{id}' => [],
       ],
       'POST' => [
@@ -582,7 +589,13 @@ class Rest_Controller extends Controller {
     ],
     'occurrence-media' => [
       'GET' => [
-        'occurrence-media' => [],
+        'occurrence-media' => [
+          'params' => [
+            'occurrence_id' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
         'occurrence-media/{id}' => [],
       ],
       'POST' => [
@@ -611,6 +624,7 @@ class Rest_Controller extends Controller {
             ],
           ],
         ],
+        'occurrences/{id}/media' => [],
         'occurrences/check-newness' => [
           'params' => [
             'external_keys' => [
@@ -756,7 +770,13 @@ class Rest_Controller extends Controller {
     ],
     'sample-media' => [
       'GET' => [
-        'sample-media' => [],
+        'sample-media' => [
+          'params' => [
+            'sample_id' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
         'sample-media/{id}' => [],
       ],
       'POST' => [
@@ -785,6 +805,7 @@ class Rest_Controller extends Controller {
             ],
           ],
         ],
+        'samples/{id}/media' => [],
       ],
       'POST' => [
         'samples' => [],
@@ -3567,9 +3588,16 @@ SQL;
 
   /**
    * End-point to GET an list of occurrence_media.
+   *
+   * The occurrence_id query parameter can be used to limit the returned media
+   * to an occurrence while retaining the normal website and user filtering.
    */
   public function occurrenceMediaGet() {
-    rest_crud::readList('occurrence_medium', 't3.website_id=' . (int) RestObjects::$clientWebsiteId, $this->needToFilterToUser());
+    $extraFilter = 't3.website_id=' . (int) RestObjects::$clientWebsiteId;
+    if (isset($_GET['occurrence_id']) && $_GET['occurrence_id'] !== '') {
+      $extraFilter .= ' AND t1.occurrence_id=' . (int) $_GET['occurrence_id'];
+    }
+    rest_crud::readList('occurrence_medium', $extraFilter, $this->needToFilterToUser());
   }
 
   /**
@@ -3702,6 +3730,25 @@ SQL;
    */
   public function occurrencesGetId($id) {
     rest_crud::read('occurrence', $id, $this->getExtraFiltersForOccurrences(), $this->needToFilterToUser());
+  }
+
+  /**
+   * End-point to GET the media belonging to an occurrence.
+   *
+   * Returns the same data as occurrence-media?occurrence_id={id}.
+   *
+   * @param int $id
+   *   Occurrence ID.
+   */
+  public function occurrencesGetIdMedia($id) {
+    $occurrence = RestObjects::$db->query(
+      'SELECT id FROM occurrences WHERE id=? AND website_id=? AND deleted=false',
+      [$id, RestObjects::$clientWebsiteId]
+    )->current();
+    if (!$occurrence) {
+      RestObjects::$apiResponse->fail('Not Found', 404, 'Occurrence not found.');
+    }
+    rest_crud::readList('occurrence_medium', 't1.occurrence_id=' . (int) $id, $this->needToFilterToUser());
   }
 
   /**
@@ -4148,6 +4195,29 @@ SQL;
   }
 
   /**
+   * End-point to GET the media belonging to a location.
+   *
+   * Returns the same data as location-media?location_id={id}.
+   *
+   * @param int $id
+   *   Location ID.
+   */
+  public function locationsGetIdMedia($id) {
+    $location = RestObjects::$db->query(
+      'SELECT id FROM locations WHERE id=? AND deleted=false',
+      [$id]
+    )->current();
+    if (!$location) {
+      RestObjects::$apiResponse->fail('Not Found', 404, 'Location not found.');
+    }
+    rest_crud::readList(
+      'location_medium',
+      't1.location_id=' . (int) $id,
+      $this->needToFilterToUser()
+    );
+  }
+
+  /**
    * API end-point to POST a location to create.
    */
   public function locationsPost() {
@@ -4197,10 +4267,16 @@ SQL;
   }
 
   /**
-   * End-point to GET an list of sample_media.
+   * End-point to GET an list of location_media.
+   *
+   * The location_id query parameter can be used to limit the returned media
+   * to a location.
    */
   public function locationMediaGet() {
-    rest_crud::readList('location_medium');
+    $extraFilter = isset($_GET['location_id']) && $_GET['location_id'] !== ''
+      ? 't1.location_id=' . (int) $_GET['location_id']
+      : NULL;
+    rest_crud::readList('location_medium', $extraFilter);
   }
 
   /**
@@ -4334,9 +4410,15 @@ SQL;
 
   /**
    * End-point to GET an list of sample_media.
+   *
+   * The sample_id query parameter can be used to limit the returned media
+   * to a sample while retaining the normal user filtering.
    */
   public function sampleMediaGet() {
-    rest_crud::readList('sample_medium', NULL, $this->needToFilterToUser());
+    $extraFilter = isset($_GET['sample_id']) && $_GET['sample_id'] !== ''
+      ? 't1.sample_id=' . (int) $_GET['sample_id']
+      : NULL;
+    rest_crud::readList('sample_medium', $extraFilter, $this->needToFilterToUser());
   }
 
   /**
@@ -4354,6 +4436,26 @@ SQL;
       // else must belong to user.
       $this->needToFilterToUser()
     );
+  }
+
+  /**
+   * End-point to GET the media belonging to a sample.
+   *
+   * Returns the same data as sample-media?sample_id={id}.
+   *
+   * @param int $id
+   *   Sample ID.
+   */
+  public function samplesGetIdMedia($id) {
+    $sample = RestObjects::$db->query(
+      'SELECT s.id FROM samples s JOIN surveys su ON su.id=s.survey_id AND su.deleted=false ' .
+      'WHERE s.id=? AND su.website_id=? AND s.deleted=false',
+      [$id, RestObjects::$clientWebsiteId]
+    )->current();
+    if (!$sample) {
+      RestObjects::$apiResponse->fail('Not Found', 404, 'Sample not found.');
+    }
+    rest_crud::readList('sample_medium', 't1.sample_id=' . (int) $id, $this->needToFilterToUser());
   }
 
   /**

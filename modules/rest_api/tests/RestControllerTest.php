@@ -1424,6 +1424,29 @@ class RestControllerTest extends BaseRestClientTest {
       'media_type' => 'Image:Local',
     ]);
     $this->doSiteRoleBasedPermissionsGetCheck('sample_media', $id);
+
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $filteredList = $this->callService('sample_media', ['sample_id' => $sampleId]);
+    $this->assertResponseOk($filteredList, '/sample_media?sample_id=' . $sampleId . ' GET');
+    $filteredIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $filteredList['response']);
+    $this->assertContains((int) $id, $filteredIds);
+
+    $nestedList = $this->callService('samples/' . $sampleId . '/media');
+    $this->assertResponseOk($nestedList, '/samples/' . $sampleId . '/media GET');
+    $nestedIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $nestedList['response']);
+    $this->assertContains((int) $id, $nestedIds);
+
+    $emptyList = $this->callService('sample_media', ['sample_id' => 999999]);
+    $this->assertResponseOk($emptyList, '/sample_media?sample_id=999999 GET');
+    $this->assertEmpty($emptyList['response']);
+
+    $missingParent = $this->callService('samples/999999/media');
+    $this->assertEquals(404, $missingParent['httpCode']);
   }
 
   /**
@@ -1432,8 +1455,8 @@ class RestControllerTest extends BaseRestClientTest {
   public function testJwtSampleMediaGetList() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $this->getListTest('sample_media', [
-      'path' => 'a123.jpg',
       'sample_id' => $sampleId,
+      'path' => 'a123.jpg',
     ]);
   }
 
@@ -2363,6 +2386,29 @@ SQL;
       'media_type' => 'Image:Local',
     ]);
     $this->doSiteRoleBasedPermissionsGetCheck('location_media', $id);
+
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $filteredList = $this->callService('location_media', ['location_id' => 1]);
+    $this->assertResponseOk($filteredList, '/location_media?location_id=1 GET');
+    $filteredIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $filteredList['response']);
+    $this->assertContains((int) $id, $filteredIds);
+
+    $nestedList = $this->callService('locations/1/media');
+    $this->assertResponseOk($nestedList, '/locations/1/media GET');
+    $nestedIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $nestedList['response']);
+    $this->assertContains((int) $id, $nestedIds);
+
+    $emptyList = $this->callService('location_media', ['location_id' => 999999]);
+    $this->assertResponseOk($emptyList, '/location_media?location_id=999999 GET');
+    $this->assertEmpty($emptyList['response']);
+
+    $nestedList = $this->callService('locations/999999/media');
+    $this->assertEquals(404, $nestedList['httpCode']);
   }
 
   /**
@@ -2370,8 +2416,8 @@ SQL;
    */
   public function testJwtLocationMediaGetList() {
     $this->getListTest('location_media', [
-      'path' => 'a123.jpg',
       'location_id' => 1,
+      'path' => 'a123.jpg',
     ]);
   }
 
@@ -3119,6 +3165,29 @@ SQL;
       'media_type' => 'Image:Local',
     ]);
     $this->doSiteRoleBasedPermissionsGetCheck('occurrence_media', $id);
+
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $filteredList = $this->callService('occurrence_media', ['occurrence_id' => $occurrenceId]);
+    $this->assertResponseOk($filteredList, '/occurrence_media?occurrence_id=' . $occurrenceId . ' GET');
+    $filteredIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $filteredList['response']);
+    $this->assertContains((int) $id, $filteredIds);
+
+    $nestedList = $this->callService('occurrences/' . $occurrenceId . '/media');
+    $this->assertResponseOk($nestedList, '/occurrences/' . $occurrenceId . '/media GET');
+    $nestedIds = array_map(function ($item) {
+      return (int) $item['values']['id'];
+    }, $nestedList['response']);
+    $this->assertContains((int) $id, $nestedIds);
+
+    $emptyList = $this->callService('occurrence_media', ['occurrence_id' => 999999]);
+    $this->assertResponseOk($emptyList, '/occurrence_media?occurrence_id=999999 GET');
+    $this->assertEmpty($emptyList['response']);
+
+    $missingParent = $this->callService('occurrences/999999/media');
+    $this->assertEquals(404, $missingParent['httpCode']);
   }
 
   /**
@@ -3127,8 +3196,8 @@ SQL;
   public function testJwtOccurrenceMediaGetList() {
     $occurrenceId = $this->postOccurrenceToAddStuffTo();
     $this->getListTest('occurrence_media', [
-      'path' => 'a123.jpg',
       'occurrence_id' => $occurrenceId,
+      'path' => 'a123.jpg',
     ]);
   }
 
