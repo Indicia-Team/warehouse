@@ -297,6 +297,7 @@ Retrieves details of a single location. Users are allowed to access public locat
 they created; users with site editor or admin rights to the authenticated website are allowed to
 access details of any location belonging to the website.
 TXT;
+$lang['resources']['GET locations/{id}/media'] = 'Retrieve the location media belonging to the location identified by {id}. This returns the same data as GET location-media?location_id={id}.';
 $locationsPostExample = <<<TXT
 <p>Example:</p>
 <pre><code>
@@ -400,6 +401,7 @@ include the following: <ul>
   <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
 </ul>
 TXT;
+$lang['GET location-media']['location_id'] = 'Optionally limit the list to media belonging to the specified location ID.';
 $lang['resources']['GET location-media/{id}'] = <<<TXT
 Retrieve details of a location media item. Users are allowed to access details of media they
 created; users with site editor or admin rights to the authenticated website are allowed to access
@@ -804,6 +806,7 @@ include the following: <ul>
   <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
 </ul>
 TXT;
+$lang['GET occurrence-media']['occurrence_id'] = 'Optionally limit the list to media belonging to the specified occurrence ID.';
 $lang['resources']['GET occurrence-media/{id}'] = <<<TXT
 Retrieve details of an occurrence media item. Users are allowed to access details of media
 they created; users with site editor or admin rights to the authenticated website are allowed to
@@ -843,6 +846,7 @@ response values include the following: <ul>
   <li>taxa_taxon_list_external_key - key for the taxon</li>
 </ul>
 TXT;
+$lang['resources']['GET occurrences/{id}/media'] = 'Retrieve the occurrence media belonging to the occurrence identified by {id}. This returns the same data as GET occurrence-media?occurrence_id={id}.';
 $lang['resources']['POST occurrences'] = <<<HTML
 <p>Creates an occurrence on the system within an existing sample.</p>
 <p>A posted occurrence can include a many-to-one relationship to a single classification_event,
@@ -1119,6 +1123,7 @@ include the following: <ul>
   <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
 </ul>
 TXT;
+$lang['GET sample-media']['sample_id'] = 'Optionally limit the list to media belonging to the specified sample ID.';
 $lang['resources']['GET sample-media/{id}'] = <<<TXT
 Retrieve details of a sample media item. Users are allowed to access details of media they
 created; users with site editor or admin rights to the authenticated website are allowed to access
@@ -1190,6 +1195,7 @@ Response:
 }
 </code></pre>
 TXT;
+$lang['resources']['GET samples/{id}/media'] = 'Retrieve the sample media belonging to the sample identified by {id}. This returns the same data as GET sample-media?sample_id={id}.';
 $lang['resources']['POST samples'] = 'Create a new sample, associated occurrences and media. Posted values should
 match database fields in the samples table (or equivalent table for sub-models).
 
