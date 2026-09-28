@@ -700,7 +700,7 @@ class RestApiElasticsearch {
       foreach ($params as &$param) {
         $param = str_replace('EscapedColon', ':', $param);
       }
-      if ($matches['sourceType'] === 'id') {
+      if (in_array($matches['sourceType'], ['id', 'record_key'], TRUE)) {
         // Resets docSource to root if special function to format doc ID.
         $docSource = $doc;
       }
