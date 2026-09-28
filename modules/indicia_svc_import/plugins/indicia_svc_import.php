@@ -33,15 +33,20 @@ function indicia_svc_import_scheduled_task($timestamp, $db, $endtime) {
   // Keep tables and files that relate to existing background import work queue
   // items.
   $toKeep = _indicia_svc_import_get_stuff_to_keep($db);
-  // Query selects tables in the import_temp schema where the date in the
-  // name indicates > 1 day old (format is DHH for last 3 digits, hence 100 =
-  // 1 day).
+  // Materialise the import_temp table list before parsing timestamps. This
+  // prevents the date parsing expression being applied to other schemas.
   $sql = <<<SQL
-    SELECT
-      table_name
-    FROM information_schema.tables
-    WHERE table_schema= 'import_temp'
-    AND to_char(now(), 'YYYYMMDDHH24')::integer - ('0' || substring(regexp_replace(table_name, '[^0-9]', '', 'g') for 10))::integer > 100
+    WITH import_tables AS MATERIALIZED (
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'import_temp'
+    )
+    SELECT table_name
+    FROM import_tables
+    WHERE to_timestamp(
+      substring(table_name FROM 8 FOR 12),
+      'YYYYMMDDHH24MI'
+    ) < now() - interval '1 day'
     ORDER BY table_name ASC
     LIMIT 5;
   SQL;
