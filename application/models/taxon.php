@@ -88,7 +88,7 @@ class Taxon_Model extends ORM {
       }
     }
     $flagFields = ['marine_flag', 'freshwater_flag', 'terrestrial_flag', 'non_native_flag'];
-    if (array_intersect($flagFields, array_keys($this->submission['fields']))) {
+    if (isset($this->submission['fields']) && array_intersect($flagFields, array_keys($this->submission['fields']))) {
       foreach ($this->taxa_taxon_lists as $ttl) {
         if ($ttl->preferred) {
           $this->prefFlagsChangedForTaxonMeaningIds[$ttl->taxon_meaning_id] = TRUE;
