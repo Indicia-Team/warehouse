@@ -1086,7 +1086,7 @@ class Rest_Controller extends Controller {
         $es->checkResourceAllowed();
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
-          header('Allow: ' . strtoupper(implode(', ', ['GET', 'POST', 'OPTIONS'])));
+          header('Allow: ' . strtoupper(implode(', ', ['GET', 'POST', 'HEAD', 'OPTIONS'])));
         }
         else {
           $postRaw = file_get_contents('php://input');
@@ -2711,7 +2711,18 @@ class Rest_Controller extends Controller {
     }
     if (!$this->authenticated) {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
-      kohana::log('debug', "REST API request did not meet criteria for any valid authentication method");
+      $authHeader = $this->getAuthHeader();
+      $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      kohana::log('debug', sprintf(
+        'REST API request did not meet criteria for any valid authentication method: method=%s path=%s https=%s elasticProxy=%s authorizationHeader=%s configuredMethods=%s',
+        $_SERVER['REQUEST_METHOD'],
+        $path,
+        $this->isHttps ? 'yes' : 'no',
+        $this->elasticProxy ?: 'none',
+        $authHeader !== '' ? 'present' : 'missing',
+        implode(',', array_keys($methods))
+      ));
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
