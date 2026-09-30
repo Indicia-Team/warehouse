@@ -4189,6 +4189,7 @@ SQL;
     $response = $this->callService("groups/1/locations", []);
     $this->assertEquals(1, count($response['response']), 'Group 1 should have 1 location');
     $this->assertEquals(1, $response['response'][0]['values']['location_id'], 'Location ID 1 should be linked to group 1.');
+    $this->assertEquals(2, $response['response'][0]['values']['location_type_id'], 'Location type ID 2 should be returned.');
   }
 
   public function testGroups_postLocation() {
