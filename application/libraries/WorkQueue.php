@@ -217,7 +217,7 @@ SQL;
         throw new exception('Invalid max-cost parameter - integer from 1 to 100 expected.');
       }
       foreach ($maxCostByPriority as $priority => &$maxCost) {
-        $maxCost = min($maxCost, $params['max-cost']);
+        $maxCost = min($maxCost, (int) $params['max-cost']);
       }
     }
     // Allow URL parameters to limit the maximum priority.
@@ -600,8 +600,8 @@ SQL;
    */
   private function normaliseServerLoad($value) {
     return is_numeric($value) && is_finite((float) $value)
-      ? max(0, min(100, (float) $value))
-      : 0;
+      ? (float) max(0, min(100, (float) $value))
+      : 0.0;
   }
 
   /**
@@ -634,7 +634,7 @@ SQL;
   private function parseWindowsCpuLoad(array $output, $exitCode) {
     return $exitCode === 0 && isset($output[0])
       ? $this->normaliseServerLoad($output[0])
-      : 0;
+      : 0.0;
   }
 
   /**
@@ -721,6 +721,7 @@ SQL;
       $batchSize,
     ])->current()->count;
     // Track this procId for shutdown handler.
+    $claimedCount = (int) $claimedCount;
     if ($claimedCount > 0 && !in_array($procId, $this->claimedProcIds, TRUE)) {
       $this->claimedProcIds[] = $procId;
     }
