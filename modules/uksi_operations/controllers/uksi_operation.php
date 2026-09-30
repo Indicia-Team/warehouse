@@ -51,7 +51,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('uksi_operation');
     $this->model->reload_columns(TRUE);
     
-    $this->orderby = 'operation_processed, operation_priority ASC, sequence ASC';
+    $this->orderby = 'operation_processed DESC, operation_priority ASC, sequence ASC';
 
 
   }
@@ -88,6 +88,19 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   }
 
   public function process_next() {
+    try {
+      $this->processNextOperation();
+    }
+    catch (Exception $e) {
+      echo json_encode([
+      'error' => $e->getMessage(),
+      'file' => $e->getFile(),
+      'line' => $e->getLine()
+      ]);
+    }
+  }
+
+  private static function processNextOperation() {
     header('Content-type: application/json');
     $this->auto_render = FALSE;
     // Note operations processed in task type order.
@@ -128,6 +141,7 @@ SQL;
       ]);
       return;
     }
+
     $this->operationErrors = [];
     try {
       $message = $this->$fn($operation);
@@ -135,12 +149,13 @@ SQL;
     catch (Exception $e) {
       $this->operationErrors[] = $e->getMessage();
     }
+
     if (count($this->operationErrors) > 0) {
       http_response_code(400);
       $errors = pg_escape_literal($this->db->getLink(), implode("\n", array_unique($this->operationErrors)));
       $this->db
         ->query("UPDATE uksi_operations SET error_detail=$errors WHERE id=$operation->id;");
-      echo json_encode(['error' => "Operation $operationLink failed. More details provided in the error_detail field."]);
+      echo json_encode(['error' => "Operation $operationLink failed. More details provided in the error_detail field."] );
     }
     else {
       $this->db
