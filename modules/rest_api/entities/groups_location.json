@@ -16,6 +16,7 @@
       "sql": "JOIN locations t3 on t3.id=t1.location_id AND t3.deleted=false",
       "fields": [
         { "sql": "t3.id", "name": "location_id", "type": "integer" },
+        { "sql": "t3.location_type_id", "name": "location_type_id", "type": "integer" },
         { "sql": "t3.name", "name": "location_name", "type": "string" },
         { "sql": "t3.code", "name": "location_code", "type": "string" },
         { "sql": "t3.centroid_sref", "name": "location_centroid_sref", "type": "string" },
