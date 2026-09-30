@@ -482,10 +482,16 @@ class RestApiElasticsearch {
   public function checkResourceAllowed() {
     $esConfig = kohana::config('rest.elasticsearch');
     $thisProxyCfg = $esConfig[$this->elasticProxy];
-    $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
+    $root = "$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy";
+    $resource = trim(str_replace($root, '', $_SERVER['PHP_SELF']), '/');
     if (isset($thisProxyCfg['allowed'])) {
-      // OPTIONS request always allowed.
-      $allowed = $_SERVER['REQUEST_METHOD'] === 'OPTIONS';
+      // OPTIONS always allowed. Also allow HEAD request to root as this acts
+      // as a health check for the Elasticsearch service.
+      $allowed = $_SERVER['REQUEST_METHOD'] === 'OPTIONS'
+        || (
+          $_SERVER['REQUEST_METHOD'] === 'HEAD'
+          && $resource === ''
+        );
       if (!$allowed) {
         // Not options, so need to check config allows the method/resource
         // combination.
@@ -524,10 +530,12 @@ class RestApiElasticsearch {
     $esConfig = kohana::config('rest.elasticsearch');
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     if (!$resource) {
-      $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
+      $root = "$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy";
+      $resource = trim(str_replace($root, '', $_SERVER['PHP_SELF']), '/');
     }
-    $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    return $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
+    $url = rtrim("$thisProxyCfg[url]/$thisProxyCfg[index]/$resource", '/');
+    $isHealthCheck = $_SERVER['REQUEST_METHOD'] === 'HEAD' && $resource === '';
+    return $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString, $isHealthCheck);
   }
 
   /**
@@ -2587,8 +2595,10 @@ class RestApiElasticsearch {
    * @param bool $requestIsRawString
    *   Set to TRUE if the request is a raw string to be sent as-is rather than
    *   an object to be encoded as a string.
+  * @param bool $isHealthCheck
+  *   Set to TRUE when proxying the Elasticsearch root health check.
    */
-  private function proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString) {
+  private function proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString, $isHealthCheck = FALSE) {
     if ($requestIsRawString) {
       $postData = $requestBody;
     }
@@ -2619,7 +2629,10 @@ class RestApiElasticsearch {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }
-    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    if ($isHealthCheck) {
+      curl_setopt($session, CURLOPT_NOBODY, TRUE);
+    }
+    elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       curl_setopt($session, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
     }
     curl_setopt($session, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -2630,13 +2643,18 @@ class RestApiElasticsearch {
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($session);
+    if ($isHealthCheck && ($curlError !== '' || $httpCode !== 200)) {
+      kohana::log('error', 'Elasticsearch health check failed: ' . ($curlError ?: "HTTP $httpCode"));
+      RestObjects::$apiResponse->fail('Service Unavailable', 503, 'Elasticsearch service unavailable.');
+    }
     if ($httpCode !== 200) {
       $responseDecoded = json_decode($response, TRUE);
       if ($responseDecoded['error']['root_cause'][0]['reason'] ?? NULL) {
         $error = $responseDecoded['error']['root_cause'][0]['reason'];
       }
       else {
-        $error = curl_error($session);
+        $error = $curlError;
       }
       if (substr($error, 0, 21) === 'Failed to parse query') {
         $httpStatus = ['Bad Request', 400];
