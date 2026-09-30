@@ -983,13 +983,16 @@ SQL;
   private static function splitSamplesFromOtherOccurrences($db, $occurrenceIdList) {
     // First find a list of sample IDs that need to be duplicated.
     $qry = <<<SQL
-      SELECT DISTINCT o2.sample_id AS old_sample_id, nextval('samples_id_seq'::regclass) as new_sample_id
+      SELECT old_sample_id, nextval('samples_id_seq'::regclass) as new_sample_id
       INTO TEMPORARY samples_to_clone
-      FROM occurrences o
-      JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
-      WHERE o.id IN ($occurrenceIdList)
-      AND o2.id NOT IN ($occurrenceIdList)
-      AND o.deleted=false;
+      FROM (
+        SELECT DISTINCT o2.sample_id AS old_sample_id
+        FROM occurrences o
+        JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
+        WHERE o.id IN ($occurrenceIdList)
+        AND o2.id NOT IN ($occurrenceIdList)
+        AND o.deleted=false
+      ) samples_to_split;
 
       INSERT INTO samples(id, survey_id, location_id, date_start, date_end, date_type, entered_sref, entered_sref_system,
         location_name, created_on, created_by_id, updated_on, updated_by_id, comment, external_key, sample_method_id, deleted,

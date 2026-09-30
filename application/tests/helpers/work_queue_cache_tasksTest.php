@@ -269,4 +269,52 @@ class Helper_Work_Queue_Cache_Tasks_Integration_Test extends Indicia_DatabaseTes
     }
   }
 
+  public function testCostLimitsFilterQueuedTaskTypes() {
+    $this->db->query(<<<SQL
+      INSERT INTO work_queue
+        (task, entity, record_id, cost_estimate, priority, created_on)
+      VALUES
+        ('task_priority_group', 'occurrence', 1, 10, 1, now()),
+        ('task_priority_group', 'occurrence', 2, 11, 1, now()),
+        ('task_priority_group', 'sample', 3, 20, 2, now()),
+        ('task_priority_group', 'sample', 4, 21, 2, now()),
+        ('task_priority_group', 'taxon', 5, 30, 3, now()),
+        ('task_priority_group', 'taxon', 6, 31, 3, now())
+    SQL);
+    $queue = new WorkQueue();
+    $reflectionClass = new ReflectionClass('WorkQueue');
+    $dbProperty = $reflectionClass->getProperty('db');
+    $dbProperty->setAccessible(TRUE);
+    $dbProperty->setValue($queue, $this->db);
+    $method = $reflectionClass->getMethod('getTaskTypesToDo');
+    $method->setAccessible(TRUE);
+    $taskTypes = $method->invoke($queue, [1 => 10, 2 => 20, 3 => 30]);
+    $counts = [];
+    $claimMethod = $reflectionClass->getMethod('claim');
+    $claimMethod->setAccessible(TRUE);
+    foreach ($taskTypes as $taskType) {
+      $counts[$taskType->entity] = (int) $taskType->count;
+      $procId = 'cost-limit-' . $taskType->entity;
+      $claimed = $claimMethod->invoke(
+        $queue,
+        $taskType,
+        10,
+        $procId,
+        [1 => 10, 2 => 20, 3 => 30]
+      );
+      $this->assertSame(1, $claimed);
+      $remaining = $this->db->query(
+        'SELECT count(*) AS count FROM work_queue WHERE entity=? AND claimed_by IS NULL',
+        [$taskType->entity]
+      )->current();
+      $this->assertSame('1', (string) $remaining->count);
+    }
+    ksort($counts);
+    $this->assertSame([
+      'occurrence' => 1,
+      'sample' => 1,
+      'taxon' => 1,
+    ], $counts);
+  }
+
 }
