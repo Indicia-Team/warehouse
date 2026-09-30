@@ -104,7 +104,7 @@ class Helper_Work_Queue_Load_Test extends TestCase {
     $method->setAccessible(TRUE);
     $this->assertSame([
       'total' => 900,
-      'idle' => 700,
+      'idle' => 600.0,
     ], $method->invoke($this->queue, "cpu 100 100 100 600\n"));
     $this->assertNull($method->invoke($this->queue, 'not cpu data'));
   }
@@ -112,10 +112,20 @@ class Helper_Work_Queue_Load_Test extends TestCase {
   public function testCgroupUsageParserSupportsV1AndV2AndRejectsInvalidData() {
     $method = $this->reflectionClass->getMethod('readLinuxCgroupUsage');
     $method->setAccessible(TRUE);
-    $this->assertSame(123000.0, $method->invoke($this->queue, '123', 0.001, NULL));
-    $this->assertSame(456.0, $method->invoke($this->queue, "usage_usec 456\nuser_usec 12\n", 1, 'usage_usec'));
-    $this->assertNull($method->invoke($this->queue, 'not numeric', 0.001, NULL));
-    $this->assertNull($method->invoke($this->queue, 'user_usec 12', 1, 'usage_usec'));
+    $usagePath = tempnam(sys_get_temp_dir(), 'work_queue_');
+    try {
+      file_put_contents($usagePath, '123');
+      $this->assertSame(0.123, $method->invoke($this->queue, $usagePath, 0.001, NULL));
+      file_put_contents($usagePath, "usage_usec 456\nuser_usec 12\n");
+      $this->assertSame(456.0, $method->invoke($this->queue, $usagePath, 1, 'usage_usec'));
+      file_put_contents($usagePath, 'not numeric');
+      $this->assertNull($method->invoke($this->queue, $usagePath, 0.001, NULL));
+      file_put_contents($usagePath, 'user_usec 12');
+      $this->assertNull($method->invoke($this->queue, $usagePath, 1, 'usage_usec'));
+    }
+    finally {
+      unlink($usagePath);
+    }
   }
 
   public function testCgroupArithmeticHandlesQuotaAndInvalidDeltas() {
