@@ -4,6 +4,10 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.28.0
+
+* Adds GET support to the REST API for retrieving media for a given location, sample or occurrence.
+
 ## Version 9.27.0
 *2026-09-24*
 
