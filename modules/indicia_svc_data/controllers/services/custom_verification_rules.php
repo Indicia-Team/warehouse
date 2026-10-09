@@ -193,10 +193,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           }
           // Validate geography limits.
           $this->validateGridRefFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid refs', 'grid ref system');
-          $this->validateLocationIdFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid ids');
+          $this->validateLocationIdFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to location ids');
           $reverseRule = $this->getValue($row, $titleIndexes, 'reverse rule');
           if (!in_array($reverseRule, ['yes', 'no', NULL])) {
-            $errors[] = "Invalid value $reverseRule for rule type on row $spreadsheetRow";
+            $errors[] = "Invalid value $reverseRule for reverse rule on row $spreadsheetRow";
           }
           switch (strtolower($this->getValue($row, $titleIndexes, 'rule type'))) {
             case 'abundance':
@@ -351,7 +351,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
     if (!empty($maxMonth) && ($maxMonth < 1 || $maxMonth > 12)) {
       $errors[] = "Invalid month number for max month in row $spreadsheetRow.";
     }
-    if (!empty($maxDay) && empty($maxMonth)) {
+    if (!empty($minDay) && empty($minMonth)) {
       $errors[] = "Row $spreadsheetRow specifies a min day, but does not specify the min month so it is meaningless.";
     }
     if (!empty($maxDay) && empty($maxMonth)) {
@@ -422,8 +422,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function getValueAsArray(array $row, array $titleIndexes, $col) {
     $value = $this->getValue($row, $titleIndexes, $col);
     if (!empty($value)) {
-      $valueArr = explode(';', $value);
-      array_walk($valueArr, 'trim');
+      $valueArr = array_map('trim', explode(';', $value));
       return $valueArr;
     }
     else {
@@ -532,7 +531,8 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         $reason = empty($taxonId)
           ? count($rows) . " taxa were found with the same synonym name ($taxon)."
           : count($rows) . " taxa were found with the same synonym name TVK ($taxonId).";
-        throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
+        $msg = "Failed to find a unique taxon using the information given for row $spreadsheetRow because $reason";
+        throw new ValueError($msg);
       }
       elseif (count($rows) === 1) {
         return $rows->current()->external_key;
@@ -584,7 +584,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function validateFloats(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, array $cols) {
     foreach ($cols as $col) {
       $value = $this->getValue($row, $titleIndexes, $col);
-      if (!empty($value) && !preg_match('/^\-?\d+(.\d+)?$/', $value)) {
+      if (!empty($value) && !preg_match('/^\-?\d+(\.\d+)?$/', $value)) {
         $errors[] = "Number required for the $col value on row $spreadsheetRow.";
       }
     }
@@ -845,6 +845,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *   Definition data.
    */
   private function getPeriodDefinition(array $row, array $titleIndexes) {
+    $definition = [];
     if ($minYear = $this->getValue($row, $titleIndexes, 'min year')) {
       $definition['min_year'] = $minYear;
     }
