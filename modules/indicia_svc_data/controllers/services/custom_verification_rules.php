@@ -458,7 +458,8 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       return 'ARRAY[' . implode(',', $valueArr) . ']';
     }
     else {
-      return NULL;
+      // PostgreSQL format for a null array value.
+      return 'null';
     }
   }
 
