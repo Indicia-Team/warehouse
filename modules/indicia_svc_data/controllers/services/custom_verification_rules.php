@@ -32,7 +32,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * The uploaded file should be in a field called media_upload.
    */
   public function upload_file() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -57,13 +57,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * Handle validation of the structure of a rule import file.
    *
    * Checks the columns in the import file are valid. Controller action for a
-   * web request so the respose is echoed.
+   * web request so the response is echoed.
    */
   public function validate_structure() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -141,13 +141,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * Handle validation of the contents of a rule import file.
    *
    * Checks the rows in the import file are valid. Controller action for a
-   * web request so the respose is echoed.
+   * web request so the response is echoed.
    */
   public function validate_contents() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -310,7 +310,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * @param array $titleIndexes
    *   Array of column position indexes by column title.
    * @param string $locationIdsColTitle
-   *   Title of the column holding the location Ids.
+   *   Title of the column holding the location IDs.
    */
   private function validateLocationIdFields(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, $locationIdsColTitle) {
     $locationIds = $this->getValue($row, $titleIndexes, $locationIdsColTitle);
@@ -416,13 +416,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * @param string $col
    *   Column title.
    *
-   * @return array
-   *   Data array.
+   * @return ?array
+   *   Data array or NULL.
    */
   private function getValueAsArray(array $row, array $titleIndexes, $col) {
     $value = $this->getValue($row, $titleIndexes, $col);
     if (!empty($value)) {
-      $valueArr = explode(";", $value);
+      $valueArr = explode(';', $value);
       array_walk($valueArr, 'trim');
       return $valueArr;
     }
@@ -436,7 +436,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *
    * If the column is missing, or the value empty, returns null. Array values
    * in the import value are in a single semi-colon separated string which is
-   * reformatted as a PostreSQL format array for an SQL statement.
+   * reformatted as a PostgreSQL format array for an SQL statement.
    *
    * @param array $row
    *   Row data.
@@ -451,7 +451,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function getValueAsPgArray($db, array $row, array $titleIndexes, $col) {
     $value = $this->getValue($row, $titleIndexes, $col);
     if (!empty($value)) {
-      $valueArr = explode(";", $value);
+      $valueArr = explode(';', $value);
       foreach ($valueArr as &$item) {
         $item = pg_escape_literal($db->getLink(), trim($item));
       }
@@ -632,17 +632,18 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         return;
       }
     }
-    $errors[] = "Value required for at least one of the values for fields " . implode(';', $cols) . " on row $spreadsheetRow.";
+    $colsList = implode(';', $cols);
+    $errors[] = "Value required for at least one of the values for fields $colsList on row $spreadsheetRow.";
   }
 
   /**
    * Controller method to import the contents of a rules spreadsheet.
    */
   public function import_contents() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -685,7 +686,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
               break;
 
             default:
-              throw new Exception("Missing or invalid rule type.");
+              throw new Exception('Missing or invalid rule type.');
           }
           // Reformat the limit to stages value ready for SQL insert query.
           $limitToStages = $this->getValueAsPgArray($db, $row, $titleIndexes, 'limit to stages');
