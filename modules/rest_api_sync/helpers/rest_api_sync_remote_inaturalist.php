@@ -96,9 +96,12 @@ class rest_api_sync_remote_inaturalist {
       // skipped records which never does delta mode).
       variable::set("rest_api_sync_{$serverId}_mode", 'delta');
     }
-    // Batch finished successfully so cleanup.
-    variable::delete("rest_api_sync_{$serverId}_last_id");
-    variable::delete("rest_api_sync_{$serverId}_last_run");
+    if (!$syncStatus['moreToDo']) {
+      // Only clear the cursor once the batch has completed. An initial
+      // population is deliberately limited to one page per run.
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+      variable::delete("rest_api_sync_{$serverId}_last_run");
+    }
   }
 
   /**
