@@ -10,13 +10,14 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
   private $controller;
 
   protected function setUp(): void {
+    require_once 'modules/indicia_svc_data/controllers/services/custom_verification_rules.php';
     $reflection = new ReflectionClass('Custom_verification_rules_Controller');
     $this->controller = $reflection->newInstanceWithoutConstructor();
   }
 
   public function testGetValueAsArrayTrimsValues(): void {
     $result = $this->invoke('getValueAsArray', [
-      ['values' => ' first ; second '],
+      [' first ; second '],
       ['values' => 0],
       'values',
     ]);
@@ -38,7 +39,7 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $errors = [];
     $this->invoke('validateRequired', [
       &$errors,
-      ['present' => 'value'],
+      ['value'],
       4,
       ['present' => 0],
       ['present', 'missing'],
@@ -53,7 +54,7 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $errors = [];
     $this->invoke('validateAnyRequired', [
       &$errors,
-      ['second' => 'value'],
+      ['value'],
       4,
       ['second' => 0],
       ['first', 'second'],
@@ -67,8 +68,8 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $this->invoke('validatePhenology', [
       &$errors,
       [
-        'min day' => '10',
-        'max month' => '6',
+        '10',
+        '6',
       ],
       7,
       [
@@ -87,8 +88,8 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $this->invoke('validatePhenology', [
       &$errors,
       [
-        'min month' => '2',
-        'min day' => '30',
+        '2',
+        '30',
       ],
       8,
       [
@@ -106,10 +107,10 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $this->invoke('validatePhenology', [
       &$errors,
       [
-        'min month' => '9',
-        'min day' => '1',
-        'max month' => '3',
-        'max day' => '31',
+        '9',
+        '1',
+        '3',
+        '31',
       ],
       9,
       [
@@ -128,7 +129,7 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $errors = [];
     $this->invoke('validateGridRefFields', [
       &$errors,
-      ['grid refs' => 'SU1234'],
+      ['SU1234'],
       10,
       ['grid refs' => 0],
       'grid refs',
@@ -143,7 +144,7 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
     $errors = [];
     $this->invoke('validateLocationIdFields', [
       &$errors,
-      ['location ids' => '1;two'],
+      ['1;two'],
       11,
       ['location ids' => 0],
       'location ids',
@@ -167,6 +168,7 @@ class Controllers_Services_Custom_Verification_Rules_Test extends TestCase {
       'max year' => '2020',
     ];
     $indexes = array_flip(array_keys($row));
+    $row = array_values($row);
 
     $this->assertSame(
       ['max_individual_count' => '5'],
