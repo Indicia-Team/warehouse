@@ -32,7 +32,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * The uploaded file should be in a field called media_upload.
    */
   public function upload_file() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -57,13 +57,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * Handle validation of the structure of a rule import file.
    *
    * Checks the columns in the import file are valid. Controller action for a
-   * web request so the respose is echoed.
+   * web request so the response is echoed.
    */
   public function validate_structure() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -141,13 +141,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * Handle validation of the contents of a rule import file.
    *
    * Checks the rows in the import file are valid. Controller action for a
-   * web request so the respose is echoed.
+   * web request so the response is echoed.
    */
   public function validate_contents() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -193,10 +193,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           }
           // Validate geography limits.
           $this->validateGridRefFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid refs', 'grid ref system');
-          $this->validateLocationIdFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid ids');
+          $this->validateLocationIdFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to location ids');
           $reverseRule = $this->getValue($row, $titleIndexes, 'reverse rule');
           if (!in_array($reverseRule, ['yes', 'no', NULL])) {
-            $errors[] = "Invalid value $reverseRule for rule type on row $spreadsheetRow";
+            $errors[] = "Invalid value $reverseRule for reverse rule on row $spreadsheetRow";
           }
           switch (strtolower($this->getValue($row, $titleIndexes, 'rule type'))) {
             case 'abundance':
@@ -310,7 +310,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * @param array $titleIndexes
    *   Array of column position indexes by column title.
    * @param string $locationIdsColTitle
-   *   Title of the column holding the location Ids.
+   *   Title of the column holding the location IDs.
    */
   private function validateLocationIdFields(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, $locationIdsColTitle) {
     $locationIds = $this->getValue($row, $titleIndexes, $locationIdsColTitle);
@@ -351,7 +351,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
     if (!empty($maxMonth) && ($maxMonth < 1 || $maxMonth > 12)) {
       $errors[] = "Invalid month number for max month in row $spreadsheetRow.";
     }
-    if (!empty($maxDay) && empty($maxMonth)) {
+    if (!empty($minDay) && empty($minMonth)) {
       $errors[] = "Row $spreadsheetRow specifies a min day, but does not specify the min month so it is meaningless.";
     }
     if (!empty($maxDay) && empty($maxMonth)) {
@@ -416,14 +416,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    * @param string $col
    *   Column title.
    *
-   * @return array
-   *   Data array.
+   * @return ?array
+   *   Data array or NULL.
    */
   private function getValueAsArray(array $row, array $titleIndexes, $col) {
     $value = $this->getValue($row, $titleIndexes, $col);
     if (!empty($value)) {
-      $valueArr = explode(";", $value);
-      array_walk($valueArr, 'trim');
+      $valueArr = array_map('trim', explode(';', $value));
       return $valueArr;
     }
     else {
@@ -436,7 +435,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *
    * If the column is missing, or the value empty, returns null. Array values
    * in the import value are in a single semi-colon separated string which is
-   * reformatted as a PostreSQL format array for an SQL statement.
+   * reformatted as a PostgreSQL format array for an SQL statement.
    *
    * @param array $row
    *   Row data.
@@ -451,14 +450,15 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function getValueAsPgArray($db, array $row, array $titleIndexes, $col) {
     $value = $this->getValue($row, $titleIndexes, $col);
     if (!empty($value)) {
-      $valueArr = explode(";", $value);
+      $valueArr = explode(';', $value);
       foreach ($valueArr as &$item) {
         $item = pg_escape_literal($db->getLink(), trim($item));
       }
       return 'ARRAY[' . implode(',', $valueArr) . ']';
     }
     else {
-      return NULL;
+      // PostgreSQL format for a null array value.
+      return 'null';
     }
   }
 
@@ -531,7 +531,8 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         $reason = empty($taxonId)
           ? count($rows) . " taxa were found with the same synonym name ($taxon)."
           : count($rows) . " taxa were found with the same synonym name TVK ($taxonId).";
-        throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
+        $msg = "Failed to find a unique taxon using the information given for row $spreadsheetRow because $reason";
+        throw new ValueError($msg);
       }
       elseif (count($rows) === 1) {
         return $rows->current()->external_key;
@@ -583,7 +584,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function validateFloats(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, array $cols) {
     foreach ($cols as $col) {
       $value = $this->getValue($row, $titleIndexes, $col);
-      if (!empty($value) && !preg_match('/^\-?\d+(.\d+)?$/', $value)) {
+      if (!empty($value) && !preg_match('/^\-?\d+(\.\d+)?$/', $value)) {
         $errors[] = "Number required for the $col value on row $spreadsheetRow.";
       }
     }
@@ -631,17 +632,18 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         return;
       }
     }
-    $errors[] = "Value required for at least one of the values for fields " . implode(';', $cols) . " on row $spreadsheetRow.";
+    $colsList = implode(';', $cols);
+    $errors[] = "Value required for at least one of the values for fields $colsList on row $spreadsheetRow.";
   }
 
   /**
    * Controller method to import the contents of a rules spreadsheet.
    */
   public function import_contents() {
-    header("Content-Type: application/json");
+    header('Content-Type: application/json');
     try {
       if (empty($_POST['uploadedFile'])) {
-        throw new exception('Parameter for uploadedFile is required.');
+        throw new Exception('Parameter for uploadedFile is required.');
       }
       // Ensure we have write permissions.
       $this->authenticate('write');
@@ -684,7 +686,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
               break;
 
             default:
-              throw new Exception("Missing or invalid rule type.");
+              throw new Exception('Missing or invalid rule type.');
           }
           // Reformat the limit to stages value ready for SQL insert query.
           $limitToStages = $this->getValueAsPgArray($db, $row, $titleIndexes, 'limit to stages');
@@ -843,6 +845,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *   Definition data.
    */
   private function getPeriodDefinition(array $row, array $titleIndexes) {
+    $definition = [];
     if ($minYear = $this->getValue($row, $titleIndexes, 'min year')) {
       $definition['min_year'] = $minYear;
     }
