@@ -316,8 +316,14 @@ class rest_api_sync_remote_inaturalist {
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
     $recordsToGo = $data['total_results'] - count($data['results']);
+    $moreToDo = count($data['results']) === INAT_PAGE_SIZE || $redoingSkippedRecords;
+    if ($mode === 'initialPopulate' && !$moreToDo && !$redoingSkippedRecords) {
+      // The UI processes one page per request, so complete the mode transition
+      // here rather than relying on syncServer().
+      variable::set("rest_api_sync_{$serverId}_mode", 'delta');
+    }
     $r = [
-      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE || $redoingSkippedRecords,
+      'moreToDo' => $moreToDo,
       'pagesToGo' => ceil($recordsToGo / INAT_PAGE_SIZE),
       'recordsToGo' => $recordsToGo,
     ];
