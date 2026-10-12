@@ -260,7 +260,7 @@ SQL;
         $sql = <<<SQL
 -- insert if not already exists
 INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-SELECT DISTINCT 'task_cache_builder_attrs_$entity', '$entity', v.{$entity}_id, 2, 60, now()
+SELECT DISTINCT 'task_cache_builder_attrs_$entity', '$entity', v.{$entity}_id, 60, 2, now()
 FROM {$entity}_attribute_values v
 LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_$entity'
   AND q.entity='$entity' AND q.record_id=v.{$entity}_id AND q.params IS NULL
