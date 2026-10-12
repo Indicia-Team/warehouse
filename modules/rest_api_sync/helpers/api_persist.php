@@ -115,7 +115,7 @@ class api_persist {
     if (!$ttl_id && !empty($observation['taxonName'])) {
       // If looking up a taxon name but not found, there might be a resolution
       // in the mappings table.
-      $ttl_id = self::findMappedTaxon($db, $taxon_list_id, $survey_id, $observation['taxonName']);
+      $ttl_id = self::findMappedTaxon($db, $taxon_list_id, $survey_id, $observation['taxonName'], $observation['taxonRank'] ?? '');
     }
     if (!$ttl_id) {
       throw new exception("Could not find taxon for observation $observation[id] using lookup " . json_encode($lookup));
@@ -545,21 +545,24 @@ SQL;
    *   resolve duplicates.
    * @param string $taxonName
    *   Provided name of the taxon to resolve.
+   * @param string $taxonRank
+   *   Provided rank of the taxon to resolve, if present else empty string.
    *
    * @return int
    *   Taxa_taxon_list_id of the found record, or NULL if could not identify
    */
-  private static function findMappedTaxon($db, int $taxon_list_id, int $survey_id, $taxonName) {
+  private static function findMappedTaxon($db, int $taxon_list_id, int $survey_id, $taxonName, $taxonRank) {
     $sql = <<<SQL
 SELECT mapped_taxon_name, mapped_search_code
 FROM rest_api_sync_taxon_mappings
 WHERE mapped_taxon_list_id=?
 AND other_taxon_name=?
+AND (other_taxon_rank IS NULL OR other_taxon_rank=?)
 AND (restrict_to_survey_id IS NULL OR restrict_to_survey_id=?)
-ORDER BY restrict_to_survey_id IS NULL ASC, mapped_search_code IS NULL ASC;
+ORDER BY restrict_to_survey_id IS NULL ASC, other_taxon_rank IS NULL ASC, mapped_search_code IS NULL ASC;
 SQL;
 
-    $results = $db->query($sql, [$taxon_list_id, $taxonName, $survey_id])->current();
+    $results = $db->query($sql, [$taxon_list_id, $taxonName, $taxonRank, $survey_id])->current();
     if ($results) {
       // Use the mapping details to do a new lookup.
       if (!empty($results->mapped_search_code)) {

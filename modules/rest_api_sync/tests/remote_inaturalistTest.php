@@ -166,6 +166,27 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
   }
 
   /**
+   * Checks that an exact source rank takes precedence over rankless fallback.
+   */
+  public function testRankSpecificTaxonMappingTakesPrecedenceOverFallback() {
+    self::$db->query(
+      "UPDATE taxa SET search_code=? WHERE taxon=?",
+      ['FALLBACKCODE', 'Test taxon']
+    );
+    $this->insertTaxonMapping('Ranked iNat taxon', 'Test taxon', NULL, 'FALLBACKCODE');
+    $this->insertTaxonMapping('Ranked iNat taxon', 'Test taxon 2', NULL, NULL, 'species');
+
+    $this->assertSame(
+      '2',
+      (string) $this->findMappedTaxon(1, 1, 'Ranked iNat taxon', 'species')
+    );
+    $this->assertSame(
+      '1',
+      (string) $this->findMappedTaxon(1, 1, 'Ranked iNat taxon', 'complex')
+    );
+  }
+
+  /**
    * Inserts a current skipped occurrence for a test server.
    *
    * @param string $serverId
@@ -240,26 +261,27 @@ class RestApiSyncRemoteInaturalistTest extends Indicia_DatabaseTestCase {
   /**
    * Invokes the private helper that resolves a mapped taxon.
    */
-  private function findMappedTaxon($taxonListId, $surveyId, $taxonName) {
+  private function findMappedTaxon($taxonListId, $surveyId, $taxonName, $taxonRank = NULL) {
     $method = new ReflectionMethod('api_persist', 'findMappedTaxon');
-    return $method->invoke(null, self::$db, $taxonListId, $surveyId, $taxonName);
+    return $method->invoke(null, self::$db, $taxonListId, $surveyId, $taxonName, $taxonRank);
   }
 
   /**
    * Inserts a taxon mapping for the resolver tests.
    */
-  private function insertTaxonMapping($otherTaxonName, $mappedTaxonName, $surveyId = NULL, $searchCode = NULL) {
+  private function insertTaxonMapping($otherTaxonName, $mappedTaxonName, $surveyId = NULL, $searchCode = NULL, $sourceRank = NULL) {
     self::$db->query(<<<SQL
       INSERT INTO rest_api_sync_taxon_mappings (
         restrict_to_survey_id,
         other_taxon_name,
+        other_taxon_rank,
         mapped_taxon_list_id,
         mapped_taxon_name,
         mapped_search_code,
         created_on,
         created_by_id
-      ) VALUES (?, ?, 1, ?, ?, now(), 1)
-    SQL, [$surveyId, $otherTaxonName, $mappedTaxonName, $searchCode]);
+      ) VALUES (?, ?, ?, 1, ?, ?, now(), 1)
+    SQL, [$surveyId, $otherTaxonName, $sourceRank, $mappedTaxonName, $searchCode]);
   }
 
 }

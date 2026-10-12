@@ -96,9 +96,12 @@ class rest_api_sync_remote_inaturalist {
       // skipped records which never does delta mode).
       variable::set("rest_api_sync_{$serverId}_mode", 'delta');
     }
-    // Batch finished successfully so cleanup.
-    variable::delete("rest_api_sync_{$serverId}_last_id");
-    variable::delete("rest_api_sync_{$serverId}_last_run");
+    if (!$syncStatus['moreToDo']) {
+      // Only clear the cursor once the batch has completed. An initial
+      // population is deliberately limited to one page per run.
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+      variable::delete("rest_api_sync_{$serverId}_last_run");
+    }
   }
 
   /**
@@ -182,6 +185,7 @@ class rest_api_sync_remote_inaturalist {
         $observation = [
           'id' => "iNat:$iNatRecord[id]",
           'taxonName' => $iNatRecord['taxon']['name'],
+          'taxonRank' => $iNatRecord['taxon']['rank'] ?? NULL,
           'startDate' => $iNatRecord['observed_on'],
           'endDate' => $iNatRecord['observed_on'],
           'dateType' => 'D',
@@ -316,8 +320,14 @@ class rest_api_sync_remote_inaturalist {
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
     $recordsToGo = $data['total_results'] - count($data['results']);
+    $moreToDo = count($data['results']) === INAT_PAGE_SIZE || $redoingSkippedRecords;
+    if ($mode === 'initialPopulate' && !$moreToDo && !$redoingSkippedRecords) {
+      // The UI processes one page per request, so complete the mode transition
+      // here rather than relying on syncServer().
+      variable::set("rest_api_sync_{$serverId}_mode", 'delta');
+    }
     $r = [
-      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE || $redoingSkippedRecords,
+      'moreToDo' => $moreToDo,
       'pagesToGo' => ceil($recordsToGo / INAT_PAGE_SIZE),
       'recordsToGo' => $recordsToGo,
     ];
