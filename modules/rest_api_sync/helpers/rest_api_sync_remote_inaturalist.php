@@ -185,6 +185,7 @@ class rest_api_sync_remote_inaturalist {
         $observation = [
           'id' => "iNat:$iNatRecord[id]",
           'taxonName' => $iNatRecord['taxon']['name'],
+          'taxonRank' => $iNatRecord['taxon']['rank'] ?? NULL,
           'startDate' => $iNatRecord['observed_on'],
           'endDate' => $iNatRecord['observed_on'],
           'dateType' => 'D',
