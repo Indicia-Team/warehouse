@@ -470,9 +470,11 @@ SQL;
    *   Array of field/value pairs look up (e.g
    *   ['external_key' => '<Taxon version key>'])
    *
-   * @return int
+   * @return ?int
    *   Taxa_taxon_list_id of the found record, or NULL if could not identify
-   *   a unique taxon.
+   *   a unique taxon. Redundant (allow_data_entry=false) names are ignored.
+   *   Misidentified names are allowed, but are not counted as a duplicate if
+   *   there is a non-misidentified name available.
    */
   private static function findTaxon($db, $taxon_list_id, array $lookup) {
     $filter = '';
@@ -494,12 +496,12 @@ SQL;
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
       $qry = <<<SQL
-        SELECT taxon_meaning_id, taxa_taxon_list_id
+        SELECT taxon_meaning_id, taxa_taxon_list_id, COALESCE(authority like 'auct\., non %', false) as misidentified
         FROM cache_taxon_searchterms
         WHERE taxon_list_id=?
         AND simplified='f'
         $filter
-        ORDER BY preferred DESC
+        ORDER BY COALESCE(authority like 'auct\., non %', false),preferred DESC
       SQL;
     }
     else {
@@ -508,24 +510,33 @@ SQL;
         $filter .= 'AND t.' . pg_escape_identifier($db->getLink(), $key) . '=' . pg_escape_literal($db->getLink(), $value) . "\n";
       }
       $qry = <<<SQL
-SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id
-FROM taxa_taxon_lists ttl
-JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
-WHERE ttl.taxon_list_id=?
-AND ttl.deleted=false
-$filter
-ORDER BY ttl.preferred DESC
-SQL;
+        SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id, COALESCE(t.authority like 'auct\., non %', false) as misidentified
+        FROM taxa_taxon_lists ttl
+        JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+        WHERE ttl.taxon_list_id=?
+        AND ttl.deleted=false
+        AND ttl.allow_data_entry=true
+        $filter
+        ORDER BY COALESCE(t.authority like 'auct\., non %', false), ttl.preferred DESC
+      SQL;
     }
     $taxa = $db->query($qry, [$taxon_list_id])->result_array(FALSE);
     // Need to know if the search found a single unique taxon concept so count
     // the taxon meanings.
-    $uniqueConcepts = [];
+    $uniqueValidConcepts = [];
+    $uniqueMisidents = [];
     foreach ($taxa as $taxon) {
-      $uniqueConcepts[$taxon['taxon_meaning_id']] = $taxon['taxon_meaning_id'];
+      if ($taxon['misidentified'] === 'f') {
+        $uniqueValidConcepts[$taxon['taxon_meaning_id']] = $taxon['taxon_meaning_id'];
+      }
+      else {
+        $uniqueMisidents[$taxon['taxon_meaning_id']] = $taxon['taxon_meaning_id'];
+      }
     }
-    if (count($uniqueConcepts) === 1) {
-      // If we found 1 concept, then the first match will be fine.
+    if (count($uniqueValidConcepts) === 1 || (count($uniqueValidConcepts) === 0 && count($uniqueMisidents) === 1)) {
+      // If we found 1 valid concept, then the first match will be fine. We
+      // also (reluctantly) accept the match if there is a single concept
+      // matched by misidentified name.
       return $taxa[0]['taxa_taxon_list_id'];
     }
     else {
