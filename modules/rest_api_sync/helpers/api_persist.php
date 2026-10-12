@@ -496,12 +496,12 @@ SQL;
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
       $qry = <<<SQL
-        SELECT taxon_meaning_id, taxa_taxon_list_id, COALESCE(authority like 'auct\., non %', false) as misidentified
+        SELECT taxon_meaning_id, taxa_taxon_list_id, COALESCE(authority SIMILAR TO 'auct\.,{0,1} non %', false) as misidentified
         FROM cache_taxon_searchterms
         WHERE taxon_list_id=?
         AND simplified='f'
         $filter
-        ORDER BY COALESCE(authority like 'auct\., non %', false),preferred DESC
+        ORDER BY COALESCE(authority SIMILAR TO 'auct\.,{0,1} non %', false), preferred DESC
       SQL;
     }
     else {
@@ -510,14 +510,14 @@ SQL;
         $filter .= 'AND t.' . pg_escape_identifier($db->getLink(), $key) . '=' . pg_escape_literal($db->getLink(), $value) . "\n";
       }
       $qry = <<<SQL
-        SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id, COALESCE(t.authority like 'auct\., non %', false) as misidentified
+        SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id, COALESCE(t.authority SIMILAR TO 'auct\.,{0,1} non %', false) as misidentified
         FROM taxa_taxon_lists ttl
         JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
         WHERE ttl.taxon_list_id=?
         AND ttl.deleted=false
         AND ttl.allow_data_entry=true
         $filter
-        ORDER BY COALESCE(t.authority like 'auct\., non %', false), ttl.preferred DESC
+        ORDER BY COALESCE(t.authority SIMILAR TO 'auct\.,{0,1} non %', false), ttl.preferred DESC
       SQL;
     }
     $taxa = $db->query($qry, [$taxon_list_id])->result_array(FALSE);
