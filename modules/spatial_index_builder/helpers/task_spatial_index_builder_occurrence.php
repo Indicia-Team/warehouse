@@ -113,7 +113,7 @@ class task_spatial_index_builder_occurrence {
     // reason. The occurrences should then be picked up next time around.
     $qry = <<<SQL
       INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-      SELECT DISTINCT 'task_spatial_index_builder_sample', 'sample', o.sample_id, 2, 30, now()
+      SELECT DISTINCT 'task_spatial_index_builder_sample', 'sample', o.sample_id, 30, 2, now()
       FROM cache_occurrences_functional o
       JOIN cache_samples_functional s ON s.id=o.sample_id
         AND s.location_ids IS NULL
