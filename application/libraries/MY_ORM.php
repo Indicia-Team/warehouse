@@ -462,8 +462,10 @@ class ORM extends ORM_Core {
     }
     $modelFields = $array->as_array();
     // Normalize all submitted nullable model fields, including validated fields.
+    // The client helpers encode NULL as the string "null" when serialising
+    // submissions, so handle that representation as well as empty strings.
     foreach ($modelFields as $field => $value) {
-      if ($value === ''
+      if (($value === '' || ($value === 'null' && $this->table_columns[$field]['type'] !== 'string'))
           && isset($this->table_columns[$field]['null'])
           && $this->table_columns[$field]['null'] == 1) {
         $array[$field] = NULL;
