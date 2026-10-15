@@ -29,14 +29,14 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-$config['version'] = '9.27.10';
+$config['version'] = '9.27.11';
 
 /**
  * Version release date.
  *
  * @var string
  */
-$config['release_date'] = '2026-10-12';
+$config['release_date'] = '2026-10-15';
 
 /**
  * Link to the code repository downloads page.
