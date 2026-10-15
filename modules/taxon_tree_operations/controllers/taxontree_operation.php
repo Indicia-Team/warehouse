@@ -259,13 +259,21 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         t.organism_key,
         t.updated_on,
         t.name_form,
-        l.iso,
+        l.iso as language_iso,
+        l.language as language,
         tr.rank,
         ttl.taxon_meaning_id,
         ttl.preferred::boolean AS preferred,
         t.scientific::boolean AS scientific,
         t.name_deprecated::boolean AS name_deprecated,
-        t.organism_deprecated::boolean AS organism_deprecated
+        t.organism_deprecated::boolean AS organism_deprecated,
+        CASE
+          WHEN l.iso = 'lat'
+            AND ttl.id = preferred_ttl.id THEN 'Latin'
+          WHEN l.iso = 'lat'
+            AND ttl.id <> preferred_ttl.id THEN 'Synonym'
+          ELSE 'Vernacular'
+        END AS name_type        
       FROM taxa t
       JOIN taxa_taxon_lists ttl
         ON ttl.taxon_id = t.id
@@ -273,6 +281,11 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         ON tr.id = t.taxon_rank_id
       LEFT JOIN languages l
         ON l.id = t.language_id
+      LEFT JOIN taxa_taxon_lists preferred_ttl
+        ON preferred_ttl.taxon_meaning_id = ttl.taxon_meaning_id
+        AND preferred_ttl.taxon_list_id = ttl.taxon_list_id
+        AND preferred_ttl.preferred = true
+        AND preferred_ttl.deleted = false   
       WHERE ttl.taxon_meaning_id = $taxonMeaningId
         AND ttl.taxon_list_id = $taxonListId
         AND NOT t.deleted
@@ -295,9 +308,7 @@ class Taxontree_operation_Controller extends Indicia_Controller {
     foreach ($rows as $row) {
       $row = (array) $row;
 
-      $row['name_type'] = $row['scientific']
-        ? 'Scientific'
-        : 'Vernacular';
+    // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
 
       $row['deprecated'] =
         $row['name_deprecated'] ||
