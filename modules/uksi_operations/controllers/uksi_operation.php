@@ -255,19 +255,20 @@ SQL;
         return "Synonym $operation->taxon_name already exists.";
       }
     }
-    $allExistingNames->rewind();
+    $preferredName = reset($allExistingNames);
+
     // Copy over details from the preferred taxon to define a synonym.
-    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
-    $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
-    $fields['taxa_taxon_list:common_taxon_id'] = $allExistingNames->current()->common_taxon_id;
-    $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
-    $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
-    $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
-    $fields['taxon:freshwater_flag'] = $allExistingNames->current()->freshwater_flag;
-    $fields['taxon:terrestrial_flag'] = $allExistingNames->current()->terrestrial_flag;
-    $fields['taxon:non_native_flag'] = $allExistingNames->current()->non_native_flag;
-    $fields['taxon:organism_key'] = $allExistingNames->current()->organism_key;
-    $fields['taxon:external_key'] = $allExistingNames->current()->external_key;
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames[0]->taxon_meaning_id;
+    $fields['taxa_taxon_list:parent_id'] = $allExistingNames[0]->parent_id;
+    $fields['taxa_taxon_list:common_taxon_id'] = $allExistingNames[0]->common_taxon_id;
+    $fields['taxon:taxon_rank_id'] = $allExistingNames[0]->taxon_rank_id;
+    $fields['taxon:taxon_group_id'] = $allExistingNames[0]->taxon_group_id;
+    $fields['taxon:marine_flag'] = $allExistingNames[0]->marine_flag;
+    $fields['taxon:freshwater_flag'] = $allExistingNames[0]->freshwater_flag;
+    $fields['taxon:terrestrial_flag'] = $allExistingNames[0]->terrestrial_flag;
+    $fields['taxon:non_native_flag'] = $allExistingNames[0]->non_native_flag;
+    $fields['taxon:organism_key'] = $allExistingNames[0]->organism_key;
+    $fields['taxon:external_key'] = $allExistingNames[0]->external_key;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
@@ -541,17 +542,21 @@ SQL;
       'synonym',
     ]);
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
-    $allNamesToMerge = $this->getTaxaForKeys(['organism_key' => $operation->synonym]);
+    
+    $allNamesToMerge = $this->getTaxaForKeys(['organism_key' => trim($operation->synonym)]);
+
     if (count($allNamesToMerge) === 0) {
-      $this->operationErrors[] = 'Synonym (organism key) not found';
+      $this->operationErrors[] = 'Synonym (organism key) not found '.$operation->synonym.' '.json_encode($operation).' '.$this->db->last_query(). 'data='.json_encode($allNamesToMerge);
     }
+
     if (count($namesToKeep) === 0) {
       $this->operationErrors[] = 'Could not find existing organisms using current_organism_key';
     }
+
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, $namesToKeep[0], $operation);
   }
 
   /**
@@ -582,7 +587,7 @@ SQL;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, $namesToKeep[0], $operation);
   }
 
   /**
@@ -696,7 +701,7 @@ SQL;
     }
     foreach ($namesForOrganismKey as $nameInfo) {
       // Don't redo the promoted name.
-      if ($nameInfo->search_code !== $operation->synonym ) {
+      if ($nameInfo->search_code !== $operation->synonym) {
         $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
       }
     }
@@ -731,7 +736,7 @@ SQL;
       return 'Error';
     }
     // All existing names sorted so preferred name is first.
-    $previousPreferredName = $allExistingNames->current();
+   $previousPreferredName = reset($allExistingNames);
     $originalName = $previousPreferredName->taxon;
     $this->applyTaxonDefaultsToOperation($previousPreferredName, $operation);
     // Add the taxon as per new taxon, using the existing taxon meaning Id.
@@ -873,7 +878,7 @@ SQL;
    */
   private function moveNames($names, $linkToName, $operation) {
     $seniorName = $linkToName->taxon;
-    $juniorName = $names->current()->taxon;
+    $juniorName = $names[0]->taxon;
     $taxonMeaningId = $linkToName->taxon_meaning_id;
     $externalKey = $linkToName->external_key;
     $parentId = $linkToName->parent_id;
@@ -1024,7 +1029,8 @@ SQL;
       // Table alias defaults to t.
       $where[strpos($key, '.') === FALSE ? "t.$key" : $key] = $value;
     }
-    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ttl.common_taxon_id, ' .
+
+    $result = $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ttl.common_taxon_id, ' .
         't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
         't.taxon_group_id, t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag, ' .
         't.organism_deprecated, t.name_deprecated, ttl.manually_entered')
@@ -1033,6 +1039,16 @@ SQL;
       ->where($where)
       ->orderby('preferred', 'DESC')
       ->get()->result_array();
+
+      $this->operationErrors[] =
+    'GetTaxaForKeys where=' . json_encode($where) .
+    ' result_count=' . count($result) .
+    ' result=' . json_encode($result) .
+    ' sql=' . $this->db->last_query();
+
+    
+    return $result ;
+
   }
 
   /**
@@ -1064,7 +1080,7 @@ SQL;
     // it. This allows ad-hoc addition of new taxa without breaking the sync.
     // So return it to allow the IDs to be used for update.
     if (count($existing) > 0) {
-      return ((array) $existing)[0];
+      return $existing[0];
     }
     return NULL;
   }
@@ -1101,7 +1117,7 @@ SQL;
    * @return int
    *   Taxa_taxon_lists.id.
    */
-  private function getParentTtlId($operation, $preferAllowDataEntry = FALSE) {
+  private function getParentTtlId($operation, $preferAllowDataEntry = TRUE ) {
     if (!empty($operation->parent_name) && empty($operation->parent_organism_key)) {
       // Parent identified by name which must refer to the last added taxa with
       // the given name. So use the new taxon operation to find the parent's
@@ -1137,6 +1153,7 @@ SQL;
         ])
         ->where('t.search_code IS NOT NULL')
         ->orderby('allow_data_entry', 'DESC')
+        ->orderby('ttl.created_on', 'DESC')        
         ->limit(2)
         ->get()->result_array(TRUE);
       if (count($parent) === 1) {
@@ -1150,13 +1167,18 @@ SQL;
             return $parent[0]->id;
           }
         }
-        $this->operationErrors[] = "Identified multiple possible parents.";
+        /*  Some UKSI imports create multiple preferred TTLs for the same
+            organism key with allow_data_entry=false on all rows. In that case
+            choose the most recently created TTL. */
+         return $parent[0]->id;
+       // $this->operationErrors[] = "Identified multiple possible parents. ".json_encode($parent);
       }
       elseif (count($parent) === 0) {
-        $this->operationErrors[] = "Could not find parent to link to.";
+        $this->operationErrors[] = "Could not find parent to link to. ". json_encode($operation);
       }
     }
     return NULL;
+
   }
 
   /**
