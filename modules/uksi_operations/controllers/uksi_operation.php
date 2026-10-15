@@ -100,7 +100,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     }
   }
 
-  private static function processNextOperation() {
+  private function processNextOperation() {
     header('Content-type: application/json');
     $this->auto_render = FALSE;
     // Note operations processed in task type order.
@@ -124,6 +124,7 @@ SQL;
       echo json_encode(['message' => $msg]);
       return;
     }
+
     $operationLink = '<a href="' . url::base(TRUE) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on : $operation->sequence ($operation->operation)</a>";
     if (!empty($operation->error_detail)) {
       http_response_code(400);
@@ -695,7 +696,7 @@ SQL;
     }
     foreach ($namesForOrganismKey as $nameInfo) {
       // Don't redo the promoted name.
-      if ($nameInfo->search_code !== $operation['synonym']) {
+      if ($nameInfo->search_code !== $operation->synonym ) {
         $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
       }
     }
