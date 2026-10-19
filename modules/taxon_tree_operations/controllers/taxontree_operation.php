@@ -249,7 +249,163 @@ class Taxontree_operation_Controller extends Indicia_Controller {
 
     $db = Database::instance();
 
+    $where = " WHERE ttl.taxon_meaning_id = $taxonMeaningId
+        AND ttl.taxon_list_id = $taxonListId
+        AND NOT t.deleted
+        AND NOT ttl.deleted ";
+
+    $sql = $this->detailSQL($where);
+
+    $rows = $db->query($sql);
+
+    $occurrenceStats = $this->getOccurrenceStats($taxonMeaningId);
+   
+    $groups = $this->getGroups($taxonMeaningId);
+    $designations = $this->getDesignations($taxonMeaningId); 
+
+    $parentRow=$this->getParents(
+          $taxonMeaningId,
+          $taxonListId
+    );
+
+    if ($parentRow) {
+        $path = explode(',', trim($parentRow->path, '{}'));
+        $taxonPath = explode(',', trim($parentRow->taxon_path, '{}'));
+    } else {
+        $path = [];
+        $taxonPath = [];
+    }
+
+    $data = [];
+
+    foreach ($rows as $row) {
+      $row = (array) $row;
+
+    // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
+
+      $row['deprecated'] =
+        $row['name_deprecated'] ||
+        $row['organism_deprecated'];       
+
+      $data[] = $row;
+    }
+
+    header('Content-Type: application/json');
+
+    echo json_encode([
+      'taxon_list_id' => (int)$taxonListId,
+      'taxon_meaning_id' => (int)$taxonMeaningId,
+      'occurrence_count' => (int)$occurrenceStats['occurrence_count'],   
+      'min_date' => $occurrenceStats['min_date'],
+      'max_date' => $occurrenceStats['max_date'],         
+      'groups' => (array)$groups,
+      'designations' => (array)$designations,
+      'names' => (array)$data,
+      'taxon_path' => $taxonPath
+    ]);
+  }
+
+  public function search() {
+    $this->auto_render = FALSE;
+    $db = Database::instance();
+
+    $taxon = $this->input->post('taxon');
+    $taxonListId = (int)$this->input->Post('taxon_list_id');
+
+    $where = "      WHERE t.taxon Ilike '%$taxon%' 
+        AND ttl.taxon_list_id = $taxonListId
+        AND NOT t.deleted
+        AND NOT ttl.deleted ";
+
+    $sql = $this->detailSQL($where);
+
+    $rows = $db->query($sql);
+
+    $data = [];
+
+    foreach ($rows as $row) {
+      $row = (array) $row;
+
+    // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
+
+      $row['deprecated'] =
+        $row['name_deprecated'] ||
+        $row['organism_deprecated'];       
+
+        $parentRow=$this->getParents(
+          $row['taxon_meaning_id'],
+          $taxonListId
+        );
+
+        if ($parentRow) {
+            $row['path'] = explode(',', trim($parentRow->path, '{}'));
+            $row['taxonPath'] = explode(',', trim($parentRow->taxon_path, '{}'));
+        } else {
+            $row['path'] = [];
+            $row['taxonPath'] = [];
+        }
+
+
+        $data[] = $row;
+    }
+
+    header('Content-Type: application/json');
+
+    echo json_encode([
+      'taxon_list_id' =>  $taxonListId,
+      'searchterm' => $taxon,
+      'data' => $data,
+       'sql' => $sql
+    ]);
+
+  }
+
+  private function getParents( $taxonMeaningId,$taxonListId ) {
+    
+    $db = Database::instance();
+
     $sql = "
+        WITH RECURSIVE parents AS (
+          SELECT
+            ttl.id,
+            ttl.parent_id,
+            t.taxon,
+            0 AS level
+          FROM taxa_taxon_lists ttl
+          JOIN taxa t
+            ON t.id = ttl.taxon_id
+          WHERE ttl.taxon_meaning_id = $taxonMeaningId
+            AND ttl.taxon_list_id = $taxonListId
+            AND ttl.preferred = true
+            AND NOT ttl.deleted
+          UNION ALL
+          SELECT
+            p.id,
+            p.parent_id,
+            t.taxon,
+            parents.level + 1
+          FROM taxa_taxon_lists p
+          JOIN taxa t
+            ON t.id = p.taxon_id
+          JOIN parents
+            ON parents.parent_id = p.id
+          WHERE NOT p.deleted
+        )
+        SELECT
+          array_agg(id ORDER BY level DESC) AS path,
+          array_agg(taxon ORDER BY level DESC) AS taxon_path
+        FROM parents;
+    ";
+
+
+    $row = $db->query($sql)->current();
+
+    return $row;
+    
+  }
+
+  private function detailSQL ($where) {
+   $sql = "
       SELECT
         t.id,
         t.taxon,
@@ -286,55 +442,14 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND preferred_ttl.taxon_list_id = ttl.taxon_list_id
         AND preferred_ttl.preferred = true
         AND preferred_ttl.deleted = false   
-      WHERE ttl.taxon_meaning_id = $taxonMeaningId
-        AND ttl.taxon_list_id = $taxonListId
-        AND NOT t.deleted
-        AND NOT ttl.deleted
+      
+      $where
       ORDER BY
         ttl.preferred DESC,
         t.scientific DESC,
         t.taxon ASC
     ";
-
-    $rows = $db->query($sql);
-
-    $occurrenceStats = $this->getOccurrenceStats($taxonMeaningId);
-   
-    $groups = $this->getGroups($taxonMeaningId);
-    $designations = $this->getDesignations($taxonMeaningId); 
-
-    $data = [];
-
-    foreach ($rows as $row) {
-      $row = (array) $row;
-
-    // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
-
-      $row['deprecated'] =
-        $row['name_deprecated'] ||
-        $row['organism_deprecated'];       
-
-      $data[] = $row;
-    }
-
-    header('Content-Type: application/json');
-
-    echo json_encode([
-      'taxon_list_id' => (int)$taxonListId,
-      'taxon_meaning_id' => (int)$taxonMeaningId,
-      'occurrence_count' => (int)$occurrenceStats['occurrence_count'],   
-      'min_date' => $occurrenceStats['min_date'],
-      'max_date' => $occurrenceStats['max_date'],         
-      'groups' => (array)$groups,
-      'designations' => (array)$designations,
-      'names' => (array)$data
-
-    ]);
-  }
-
-  private function getParent($parentid) {
-
-
+    return $sql;
   }
 
   private function getOccurrenceStats($taxonMeaningId) {
@@ -466,5 +581,8 @@ class Taxontree_operation_Controller extends Indicia_Controller {
 
       echo json_encode($results);  
   }
+
+
+
 
 }
