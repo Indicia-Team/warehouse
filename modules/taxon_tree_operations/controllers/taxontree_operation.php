@@ -317,6 +317,16 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND NOT t.deleted
         AND NOT ttl.deleted ";
 
+    $where = "WHERE (
+          t.taxon ILIKE '%$taxon%'
+          OR t.search_code ILIKE '%$taxon%'
+          OR t.organism_key ILIKE '%$taxon%'
+        )
+        AND ttl.taxon_list_id = $taxonListId
+        AND NOT t.deleted
+        AND NOT ttl.deleted";
+
+
     $sql = $this->detailSQL($where);
 
     $rows = $db->query($sql);
