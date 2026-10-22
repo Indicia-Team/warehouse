@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -25,19 +24,41 @@
  */
 class Taxontree_operation_Controller extends Indicia_Controller {
 
-  public function index()
-  {
+/**
+ * Displays the Taxon Tree user interface.
+ *
+ * Loads the Taxon Tree view and sets the page title.
+ *
+ * @return void
+ *   Renders the Taxon Tree page.
+ */
+  public function index() {
         $view = new View('taxontree');
       $view->title = 'Taxon Tree';
       $this->template->content = $view;
       $this->template->title = 'Taxon Tree';
   }
 
-
+ /**
+ * Returns summary information for a taxon list.
+ *
+ * Retrieves the total number of taxa and the most recent update date
+ * for taxa associated with the supplied taxon list. Results are
+ * returned as a JSON response for use by the Taxon Tree user interface.
+ *
+ * @param int $taxonListId
+ *   The taxon list identifier. Defaults to 15.
+ *
+ * @return void
+ *   Outputs a JSON response containing:
+ *   - taxon_list_id: The taxon list identifier.
+ *   - last_updated: Most recent taxon update timestamp.
+ *   - count: Number of taxa in the taxon list.
+ */
   public function info($taxonListId = 15) {
     $this->auto_render = FALSE;
 
-    $taxonListId = (int)$taxonListId;
+    $taxonListId = (int) $taxonListId;
     $db = Database::instance();
 
     $sql = "
@@ -51,7 +72,7 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND NOT ttl.deleted
     ";
 
-    $row = (array)$db->query($sql)->current();
+    $row = (array) $db->query($sql)->current();
 
     $row['taxon_list_id'] = $taxonListId;
 
@@ -59,6 +80,19 @@ class Taxontree_operation_Controller extends Indicia_Controller {
     echo json_encode($row);
   }
 
+ /**
+ * Returns a list of available taxon lists.
+ *
+ * Retrieves all non-deleted taxon lists and returns their identifiers,
+ * titles and descriptions as a JSON response. The results are ordered
+ * alphabetically by title for display within the Taxon Tree interface.
+ *
+ * @return void
+ *   Outputs a JSON array containing:
+ *   - id: Taxon list identifier.
+ *   - title: Taxon list title.
+ *   - description: Taxon list description.
+ */
   public function taxonlists() {
     $this->auto_render = FALSE;
 
@@ -84,25 +118,52 @@ class Taxontree_operation_Controller extends Indicia_Controller {
     echo json_encode($data);
   }
 
-  public function tree($parentId = null, $taxonListId = 15 , $prefererd = FALSE )
-  {
-
+ /**
+ * Returns taxon tree nodes for display in the Taxon Tree browser.
+ *
+ * Builds a hierarchical view of scientific taxa within a taxon list,
+ * returning either the root nodes or the immediate children of a
+ * specified parent node. Results are formatted for consumption by
+ * the jsTree control, including child node indicators, icons and
+ * tooltip attributes.
+ *
+ * Optionally restricts the hierarchy to preferred taxa only.
+ *
+ * @param int|NULL $parentId
+ *   Parent taxon list node identifier. Set to NULL or 0 to retrieve
+ *   root-level taxa.
+ * @param int $taxonListId
+ *   Taxon list identifier. Defaults to 15.
+ * @param bool $preferred
+ *   If TRUE, only preferred taxa are returned. If FALSE, both
+ *   preferred and non-preferred taxa are included.
+ *
+ * @return void
+ *   Outputs a JSON array of jsTree node objects containing:
+ *   - id: Taxon list node identifier.
+ *   - parent: Parent node identifier or '#'.
+ *   - text: Taxon name.
+ *   - children: Indicates whether child nodes exist.
+ *   - icon: CSS class used to display the node icon.
+ *   - a_attr: Additional node attributes including tooltip text.
+ */
+  public function tree($parentId = NULL, $taxonListId = 15, $preferred = TRUE) {
     $this->auto_render = FALSE;
-
     $db = Database::instance();
-
     $taxonListId = (int) $taxonListId;
-
-    if ($parentId === null || $parentId == 0) {
+    if ($parentId === NULL || $parentId == 0) {
       $where = 'parent_id IS NULL';
     } else {
       $parentId = (int) $parentId;
       $where = "parent_id = $parentId";
     }
 
-
-    //$where = "parent_id IS NOT NULL";
-
+    $preferredWhereA = "";
+    $preferredWhereB = "";
+    if ($preferred) {
+      $preferredWhereA = " AND ttl.preferred = true";
+      $preferredWhereB = " AND c.preferred = true";
+    }
     $sql = "
       WITH RECURSIVE taxon_tree AS (
         SELECT
@@ -125,12 +186,12 @@ class Taxontree_operation_Controller extends Indicia_Controller {
           ttl.taxon_meaning_id as meaning_id
         FROM taxa_taxon_lists ttl
         JOIN taxa t ON t.id = ttl.taxon_id
-        WHERE ttl.taxon_list_id = $taxonListId
+        WHERE ttl.taxon_list_id = ?
           AND ttl.parent_id IS NULL
           AND NOT ttl.deleted
           AND NOT t.deleted
           AND t.scientific = true
-          AND ttl.preferred = true
+          $preferredWhereA
         UNION ALL
         SELECT
           t.taxon,
@@ -155,24 +216,13 @@ class Taxontree_operation_Controller extends Indicia_Controller {
           ON c.parent_id = p.id
         JOIN taxa t
           ON t.id = c.taxon_id
-        WHERE c.taxon_list_id = $taxonListId
+        WHERE c.taxon_list_id = ?
           AND NOT c.deleted
           AND NOT t.deleted
           AND t.scientific = true
-          AND c.preferred = true
+          $preferredWhereB
       )
     ";
-    /*
- ,
-          (
-              SELECT ct.taxon
-              FROM taxa_taxon_lists cttl
-              JOIN taxa ct
-                ON ct.id = cttl.common_taxon_id
-              WHERE cttl.id = p.id 
-              LIMIT 1
-          ) AS common_name
-    */
     $sql = $sql . "
       SELECT
         id::text AS id,
@@ -193,32 +243,25 @@ class Taxontree_operation_Controller extends Indicia_Controller {
          meaning_id
       FROM taxon_tree 
       WHERE $where
-      ORDER BY path
-        
+      ORDER BY path      
     ";
-
-// $sql .= " LIMIT 10";   REMEMBER PREFERRED
-
-    $start = microtime(true);
-    
-    $rows = $db->query($sql);
-
+    $rows = $db->query($sql,
+      $taxonListId,
+      $taxonListId
+    );
     $data = [];
     foreach ($rows as $row) {
       $row = (array) $row;
-
-      $row['children'] = ((int)$row['child_count'] > 0);
-
+      $row['children'] = ((int) $row['child_count'] > 0);
       if ($row['level'] == 0) {
         $row['icon'] = 'glyphicon glyphicon-globe root-icon';        
       }
-      elseif ($row['children']) {
+      else if ($row['children']) {
         $row['icon'] = 'glyphicon glyphicon-folder-open branch-icon';
       }
       else {
         $row['icon'] = 'glyphicon glyphicon-leaf leaf-icon';
       }
-
       $row['a_attr'] = [
         'title' =>
           "TVK: {$row['search_code']}\n" .
@@ -228,46 +271,61 @@ class Taxontree_operation_Controller extends Indicia_Controller {
           "Path: {$row['namepath']}\n" . 
           "Meaning Id: {$row['meaning_id']}\n"
       ];
-
       $data[] = $row;
     }
-
-    $count = count($data);
-
     header('Content-Type: application/json');
-
     echo json_encode($data);
   }
 
 
-  public function details($taxonMeaningId = 0, $taxonListId = 15)
-  {
+ /**
+ * Returns detailed information for a taxon meaning.
+ *
+ * Retrieves taxon names associated with the supplied taxon meaning,
+ * together with occurrence statistics, taxonomic groups,
+ * conservation designations and the taxonomic hierarchy path within
+ * the selected taxon list.
+ *
+ * @param int $taxonMeaningId
+ *   The taxon meaning identifier.
+ * @param int $taxonListId
+ *   The taxon list identifier. Defaults to 15.
+ *
+ * @return void
+ *   Outputs a JSON response containing:
+ *   - taxon_list_id: Taxon list identifier.
+ *   - taxon_meaning_id: Taxon meaning identifier.
+ *   - occurrence_count: Number of associated occurrences.
+ *   - min_date: Earliest occurrence date.
+ *   - max_date: Latest occurrence date.
+ *   - groups: Associated taxon groups.
+ *   - designations: Associated taxon designations.
+ *   - names: Taxon names, synonyms and vernacular names.
+ *   - path: Hierarchical path ids for the requested taxon
+ *   - taxon_path: Hierarchical path from the root taxon to the
+ *     requested taxon.
+ */
+  public function details($taxonMeaningId = 0, $taxonListId = 15) {
     $this->auto_render = FALSE;
-
     $taxonMeaningId = (int) $taxonMeaningId;
     $taxonListId = (int) $taxonListId;
-
     $db = Database::instance();
-
-    $where = " WHERE ttl.taxon_meaning_id = $taxonMeaningId
-        AND ttl.taxon_list_id = $taxonListId
+    $where = " WHERE ttl.taxon_meaning_id = ?
+        AND ttl.taxon_list_id = ?
         AND NOT t.deleted
         AND NOT ttl.deleted ";
-
     $sql = $this->detailSQL($where);
-
-    $rows = $db->query($sql);
-
+    $rows = $db->query($sql,
+      $taxonMeaningId,
+      $taxonListId
+    );
     $occurrenceStats = $this->getOccurrenceStats($taxonMeaningId);
-   
     $groups = $this->getGroups($taxonMeaningId);
     $designations = $this->getDesignations($taxonMeaningId); 
-
     $parentRow=$this->getParents(
           $taxonMeaningId,
           $taxonListId
     );
-
     if ($parentRow) {
         $path = explode(',', trim($parentRow->path, '{}'));
         $taxonPath = explode(',', trim($parentRow->taxon_path, '{}'));
@@ -275,78 +333,87 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         $path = [];
         $taxonPath = [];
     }
-
     $data = [];
-
     foreach ($rows as $row) {
       $row = (array) $row;
-
     // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
-
       $row['deprecated'] =
         $row['name_deprecated'] ||
         $row['organism_deprecated'];       
-
       $data[] = $row;
     }
-
     header('Content-Type: application/json');
-
     echo json_encode([
-      'taxon_list_id' => (int)$taxonListId,
-      'taxon_meaning_id' => (int)$taxonMeaningId,
-      'occurrence_count' => (int)$occurrenceStats['occurrence_count'],   
+      'taxon_list_id' => (int) $taxonListId,
+      'taxon_meaning_id' => (int) $taxonMeaningId,
+      'occurrence_count' => (int) $occurrenceStats['occurrence_count'],   
       'min_date' => $occurrenceStats['min_date'],
       'max_date' => $occurrenceStats['max_date'],         
-      'groups' => (array)$groups,
-      'designations' => (array)$designations,
-      'names' => (array)$data,
-      'taxon_path' => $taxonPath
+      'groups' => (array) $groups,
+      'designations' => (array) $designations,
+      'names' => (array) $data,
+      'path' => $path,
+      'taxon_path' => $taxonPath,
     ]);
   }
 
+ /**
+ * Searches for taxa within a taxon list.
+ *
+ * Searches taxon names, TVKs and organism keys for records matching
+ * the supplied search term. Matching taxa are returned together with
+ * their taxonomic hierarchy to allow the client to locate and display
+ * results within the Taxon Tree.
+ *
+ * Expected POST parameters:
+ * - taxon: Search term.
+ * - taxon_list_id: Taxon list identifier.
+ *
+ * @return void
+ *   Outputs a JSON response containing:
+ *   - taxon_list_id: Taxon list identifier.
+ *   - searchterm: The submitted search term.
+ *   - data: Array of matching taxa.
+ *     - taxon_meaning_id: Taxon meaning identifier.
+ *     - taxon: Taxon name.
+ *     - preferred: Indicates whether the name is preferred.
+ *     - deprecated: Indicates whether the name or organism is
+ *       deprecated.
+ *     - path: Taxonomic path expressed as a hierarchy of node IDs.
+ *     - taxonPath: Taxonomic path expressed as a hierarchy of taxon
+ *       names.
+ */
   public function search() {
     $this->auto_render = FALSE;
     $db = Database::instance();
-
     $taxon = $this->input->post('taxon');
-    $taxonListId = (int)$this->input->Post('taxon_list_id');
-
-    $where = "      WHERE t.taxon Ilike '%$taxon%' 
-        AND ttl.taxon_list_id = $taxonListId
-        AND NOT t.deleted
-        AND NOT ttl.deleted ";
-
+    $taxonListId = (int) $this->input->post('taxon_list_id');
     $where = "WHERE (
-          t.taxon ILIKE '%$taxon%'
-          OR t.search_code ILIKE '%$taxon%'
-          OR t.organism_key ILIKE '%$taxon%'
+          t.taxon ILIKE ? 
+          OR t.search_code ILIKE ?
+          OR t.organism_key ILIKE ?
         )
-        AND ttl.taxon_list_id = $taxonListId
+        AND ttl.taxon_list_id = ?
         AND NOT t.deleted
         AND NOT ttl.deleted";
-
-
     $sql = $this->detailSQL($where);
-
-    $rows = $db->query($sql);
-
+    $rows = $db->query($sql, 
+      $taxon,
+      $taxon,
+      $taxon,
+      $taxonListId
+    );
     $data = [];
-
     foreach ($rows as $row) {
       $row = (array) $row;
-
     // L - Latin S - Synonym V - vernacular  O - other C - Code A - Abbreviation
-
       $row['deprecated'] =
         $row['name_deprecated'] ||
         $row['organism_deprecated'];       
-
         $parentRow=$this->getParents(
           $row['taxon_meaning_id'],
           $taxonListId
         );
-
         if ($parentRow) {
             $row['path'] = explode(',', trim($parentRow->path, '{}'));
             $row['taxonPath'] = explode(',', trim($parentRow->taxon_path, '{}'));
@@ -354,26 +421,40 @@ class Taxontree_operation_Controller extends Indicia_Controller {
             $row['path'] = [];
             $row['taxonPath'] = [];
         }
-
-
         $data[] = $row;
     }
-
     header('Content-Type: application/json');
-
     echo json_encode([
       'taxon_list_id' =>  $taxonListId,
       'searchterm' => $taxon,
-      'data' => $data,
-       'sql' => $sql
+      'data' => $data
     ]);
-
   }
 
-  private function getParents( $taxonMeaningId,$taxonListId ) {
-    
+ /**
+ * Retrieves the taxonomic hierarchy for a taxon meaning.
+ *
+ * Builds the ancestry of the preferred taxon within the specified
+ * taxon list, returning both the hierarchy of taxon list node IDs
+ * and the corresponding hierarchy of taxon names from the root taxon
+ * to the selected taxon.
+ *
+ * @param int $taxonMeaningId
+ *   The taxon meaning identifier.
+ * @param int $taxonListId
+ *   The taxon list identifier.
+ *
+ * @return object|NULL
+ *   Database record containing:
+ *   - path: Array of taxon list node identifiers representing the
+ *     hierarchy from the root taxon to the selected taxon.
+ *   - taxon_path: Array of taxon names representing the hierarchy
+ *     from the root taxon to the selected taxon.
+ *
+ *   Returns NULL if no matching preferred taxon is found.
+ */
+  private function getParents($taxonMeaningId, $taxonListId) {
     $db = Database::instance();
-
     $sql = "
         WITH RECURSIVE parents AS (
           SELECT
@@ -406,15 +487,32 @@ class Taxontree_operation_Controller extends Indicia_Controller {
           array_agg(taxon ORDER BY level DESC) AS taxon_path
         FROM parents;
     ";
-
-
     $row = $db->query($sql)->current();
-
     return $row;
-    
   }
 
-  private function detailSQL ($where) {
+ /**
+ * Builds the SQL query used to retrieve taxon names and metadata.
+ *
+ * Constructs the base query used by the details and search methods
+ * to retrieve taxon names, synonyms and vernacular names associated
+ * with a taxon meaning. The supplied WHERE clause is appended to
+ * apply context-specific filtering.
+ *
+ * The query also determines:
+ * - Whether a name is preferred.
+ * - Whether data entry is permitted.
+ * - Whether a name is scientific.
+ * - Whether a name is deprecated.
+ * - The name type (Latin, Synonym or Vernacular).
+ *
+ * @param string $where
+ *   SQL WHERE clause used to filter the result set.
+ *
+ * @return string
+ *   The completed SQL query.
+ */
+  private function detailSQL($where) {
    $sql = "
       SELECT
         t.id,
@@ -430,6 +528,7 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         tr.rank,
         ttl.taxon_meaning_id,
         ttl.preferred::boolean AS preferred,
+        ttl.allow_data_entry::boolean AS allow_data_entry,
         t.scientific::boolean AS scientific,
         t.name_deprecated::boolean AS name_deprecated,
         t.organism_deprecated::boolean AS organism_deprecated,
@@ -452,7 +551,6 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND preferred_ttl.taxon_list_id = ttl.taxon_list_id
         AND preferred_ttl.preferred = true
         AND preferred_ttl.deleted = false   
-      
       $where
       ORDER BY
         ttl.preferred DESC,
@@ -462,6 +560,22 @@ class Taxontree_operation_Controller extends Indicia_Controller {
     return $sql;
   }
 
+ /**
+ * Retrieves occurrence statistics for a taxon meaning.
+ *
+ * Calculates the number of associated occurrences together with the
+ * earliest and latest occurrence creation dates for the supplied
+ * taxon meaning.
+ *
+ * @param int $taxonMeaningId
+ *   The taxon meaning identifier.
+ *
+ * @return array
+ *   An associative array containing:
+ *   - occurrence_count: Total number of occurrences.
+ *   - min_date: Earliest occurrence creation date.
+ *   - max_date: Latest occurrence creation date.
+ */
   private function getOccurrenceStats($taxonMeaningId) {
     $db = Database::instance();
     $sql = "
@@ -473,19 +587,30 @@ class Taxontree_operation_Controller extends Indicia_Controller {
           AND NOT o.deleted
           AND NOT ttl.deleted;
     ";
-
     $row = $db->query($sql)->current();
-
     return [
-      'occurrence_count' => (int)$row->occurrence_count,
+      'occurrence_count' => (int) $row->occurrence_count,
       'min_date' => $row->min_date,
       'max_date' => $row->max_date,
     ];
   }
 
+ /**
+ * Retrieves the taxon groups associated with a taxon meaning.
+ *
+ * Identifies all non-deleted taxon groups linked to taxa within the
+ * supplied taxon meaning and returns them in alphabetical order.
+ *
+ * @param int $taxonMeaningId
+ *   The taxon meaning identifier.
+ *
+ * @return array
+ *   An array of taxon groups, where each item contains:
+ *   - id: Taxon group identifier.
+ *   - title: Taxon group title.
+ */
   private function getGroups($taxonMeaningId) {
     $db = Database::instance();
-
     $sql = "
       SELECT DISTINCT
         tg.id,
@@ -499,20 +624,32 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND NOT tg.deleted
       ORDER BY tg.title
     ";
-
     $rows = $db->query($sql);
-
     $data = [];
     foreach ($rows as $row) {
-      $data[] = (array)$row;
+      $data[] = (array) $row;
     }
-
     return $data;
   }
 
+ /**
+ * Retrieves taxon designations associated with a taxon meaning.
+ *
+ * Identifies all distinct designations linked to taxa within the
+ * supplied taxon meaning and returns them in alphabetical order.
+ * Examples of designations include conservation, legal or status
+ * classifications applied to a taxon.
+ *
+ * @param int $taxonMeaningId
+ *   The taxon meaning identifier.
+ *
+ * @return array
+ *   An array of taxon designations, where each item contains:
+ *   - id: Taxon designation identifier.
+ *   - title: Taxon designation title.
+ */
   private function getDesignations($taxonMeaningId) {
     $db = Database::instance();
-
     $sql = "
       SELECT DISTINCT
         td.id,
@@ -526,24 +663,39 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         AND NOT ttd.deleted
       ORDER BY td.title
     ";
-
     $rows = $db->query($sql);
-
     $data = [];
     foreach ($rows as $row) {
-      $data[] = (array)$row;
+      $data[] = (array) $row;
     }
-
     return $data;
   }
 
+ /**
+ * Retrieves occurrence records for a taxon meaning.
+ *
+ * Queries the Elasticsearch occurrence index for records associated
+ * with the supplied taxon meaning and returns a simplified list of
+ * occurrence details ordered by observation date, most recent first.
+ *
+ * Results are limited to the first 100 matching records.
+ *
+ * @param int $meaningId
+ *   The taxon meaning identifier.
+ *
+ * @return void
+ *   Outputs a JSON array of occurrence records containing:
+ *   - id: Occurrence identifier.
+ *   - date: Occurrence start date.
+ *   - location: Location name.
+ *   - gridref: Grid reference.
+ *   - verified: Verification status.
+ *   - taxon: Accepted taxon name.
+ */
   public function fetchOccurrences($meaningId) {
     $this->auto_render = FALSE;
-
     $es = new RestApiElasticsearch('es-occurrences');
-
     $query = (object) [
-      'size' => 100,
       '_source' => [
         'id',
         'event.date_start',
@@ -566,33 +718,24 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         ]
       ]
     ];
-
     header('Content-Type: application/json');
-
       $data = json_decode(
         $es->elasticRequest($query, 'json', TRUE),
         TRUE
       );
-
       $results = [];
-
       foreach ($data['hits']['hits'] as $hit) {
         $source = $hit['_source'];
-
         $results[] = [
           'id' => $source['id'],
-          'date' => $source['event']['date_start'] ?? null,
+          'date' => $source['event']['date_start'] ?? NULL,
           'location' => $source['location']['name'] ?? '',
           'gridref' => $source['location']['output_sref'] ?? '',
           'verified' => $source['identification']['verification_status'] ?? '',
           'taxon' => $source['taxon']['accepted_name'] ?? ''
         ];
       }
-
       echo json_encode($results);  
   }
-
-
-
 
 }
