@@ -1,86 +1,70 @@
 <?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Session cookie driver.
+ * Session driver interface
  *
- * $Id: Cookie.php 3769 2008-12-15 00:48:56Z zombor $
+ * $Id: Session.php 3769 2008-12-15 00:48:56Z zombor $
  *
  * @package    Core
  * @author     Kohana Team
  * @copyright  (c) 2007-2008 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Session_Cookie_Driver implements Session_Driver, SessionHandlerInterface {
+interface Session_Driver extends SessionHandlerInterface {
 
-	protected $cookie_name;
-	protected $encrypt; // Library
+	/**
+	 * Opens a session.
+	 *
+	 * @param   string   save path
+	 * @param   string   session name
+	 * @return  boolean
+	 */
+	public function open($path, $name);
 
-	public function __construct()
-	{
-		$this->cookie_name = Kohana::config('session.name').'_data';
+	/**
+	 * Closes a session.
+	 *
+	 * @return  boolean
+	 */
+	public function close();
 
-		if (Kohana::config('session.encryption'))
-		{
-			$this->encrypt = Encrypt::instance();
-		}
+	/**
+	 * Reads a session.
+	 *
+	 * @param   string  session id
+	 * @return  string
+	 */
+	public function read($id);
 
-		Kohana::log('debug', 'Session Cookie Driver Initialized');
-	}
+	/**
+	 * Writes a session.
+	 *
+	 * @param   string   session id
+	 * @param   string   session data
+	 * @return  boolean
+	 */
+	public function write($id, $data);
 
-	public function open($path, $name)
-	{
-		return TRUE;
-	}
+	/**
+	 * Destroys a session.
+	 *
+	 * @param   string   session id
+	 * @return  boolean
+	 */
+	public function destroy($id);
 
-	public function close()
-	{
-		return TRUE;
-	}
+	/**
+	 * Regenerates the session id.
+	 *
+	 * @return  string
+	 */
+	public function regenerate();
 
-	public function read($id)
-	{
-		$data = (string) cookie::get($this->cookie_name);
+	/**
+	 * Garbage collection.
+	 *
+	 * @param   integer  session expiration period
+	 * @return  boolean
+	 */
+	public function gc($maxlifetime);
 
-		if ($data == '')
-			return $data;
-
-		return empty($this->encrypt) ? base64_decode($data) : $this->encrypt->decode($data);
-	}
-
-	public function write($id, $data)
-	{
-		$data = empty($this->encrypt) ? base64_encode($data) : $this->encrypt->encode($data);
-
-		if (strlen($data) > 4048)
-		{
-			Kohana::log('error', 'Session ('.$id.') data exceeds the 4KB limit, ignoring write.');
-			return FALSE;
-		}
-
-		return cookie::set($this->cookie_name, $data, Kohana::config('session.expiration'));
-	}
-
-	public function destroy($id)
-	{
-		if ( ! isset($_COOKIE[$this->cookie_name])) {
-			// Cookie is already destroyed
-			return TRUE;
-		}
-		else {
-			return cookie::delete($this->cookie_name);
-		}
-	}
-
-	public function regenerate()
-	{
-		session_regenerate_id(TRUE);
-
-		// Return new id
-		return session_id();
-	}
-
-	public function gc($maxlifetime)
-	{
-		return TRUE;
-	}
-
-} // End Session Cookie Driver Class
+} // End Session Driver Interface
