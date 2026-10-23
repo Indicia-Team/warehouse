@@ -1016,6 +1016,52 @@ WHERE s.id=u.id
 AND (u.location_id IS NOT NULL OR u.location_name IS NOT NULL)
 ";
 
+$srefOutputSizesSql = "
+CROSS JOIN LATERAL (
+  SELECT
+    ROUND(SQRT(ST_Area(ST_Transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer AS entered_square_size,
+    -- Map the precision attribute to the minimum supported output square size.
+    CASE
+      WHEN coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 THEN 1000000
+      WHEN coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 THEN 100000
+      WHEN coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 THEN 10000
+      WHEN coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) BETWEEN 51 AND 500 THEN 1000
+      WHEN coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) BETWEEN 6 AND 50 THEN 100
+      ELSE 10
+    END AS attribute_square_size
+) sref_output
+";
+
+$sampleOutputSrefSql = "
+CASE
+  WHEN s.privacy_precision IS NULL
+    AND occurrence_stats.sensitivity_precision IS NULL
+    AND occurrence_stats.confidential IS NOT TRUE
+    AND NULLIF(s.entered_sref, '') IS NOT NULL
+    AND s.entered_sref_system=get_output_system(coalesce(s.geom, l.centroid_geom))
+    AND sref_output.entered_square_size >= sref_output.attribute_square_size
+  THEN s.entered_sref
+  ELSE get_output_sref(
+    GREATEST(
+      sref_output.entered_square_size,
+      occurrence_stats.sensitivity_precision,
+      CASE s.privacy_precision WHEN 0 THEN 10000 ELSE s.privacy_precision END,
+      sref_output.attribute_square_size,
+      10
+    ),
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      occurrence_stats.confidential,
+      GREATEST(
+        occurrence_stats.sensitivity_precision,
+        CASE s.privacy_precision WHEN 0 THEN 10000 ELSE s.privacy_precision END
+      )
+    )
+  )
+END
+";
+$occurrenceOutputSrefSql = str_replace('occurrence_stats.', 'o.', $sampleOutputSrefSql);
+
 $config['samples']['update']['nonfunctional'] = "
 WITH full_name_smp_attrs AS (SELECT id FROM sample_attributes WHERE system_function='full_name' AND deleted=false),
   biotope_smp_attrs AS (SELECT id, data_type FROM sample_attributes WHERE system_function='biotope' AND deleted=false)
@@ -1070,30 +1116,7 @@ SET website_title=w.title,
       coalesce(s.entered_sref, l.centroid_sref)
     end
   end,
-  output_sref=get_output_sref(
-    greatest(
-      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      occurrence_stats.sensitivity_precision,
-      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      -- work out best square size to reflect a lat long's true precision
-      case
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
-        else 10
-      end,
-      10 -- default minimum square size
-    ), reduce_precision(
-      coalesce(s.geom, l.centroid_geom),
-      occurrence_stats.confidential,
-      greatest(
-        occurrence_stats.sensitivity_precision,
-        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
-      )
-    )
-  ),
+  output_sref=$sampleOutputSrefSql,
   output_sref_system=get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
@@ -1192,6 +1215,7 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+$srefOutputSizesSql
 LEFT JOIN (sample_attribute_values v_sample_method
   JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
   LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
@@ -1297,18 +1321,10 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
       OR occurrence_stats.confidential IS TRUE then
       get_output_sref(
         greatest(
-          round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+          sref_output.entered_square_size,
           occurrence_stats.sensitivity_precision,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-          -- work out best square size to reflect a lat long's true precision
-          case
-            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
-            else 10
-          end,
+          sref_output.attribute_square_size,
           CASE occurrence_stats.confidential WHEN true THEN 100000 ELSE 0 END,
           10 -- default minimum square size
         ), reduce_precision(
@@ -1346,37 +1362,14 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
     WHEN 'L'::bpchar THEN t_sref_precision.sort_order
     ELSE NULL::double precision
   END,
-  get_output_sref(
-    greatest(
-      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      occurrence_stats.sensitivity_precision,
-      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      -- work out best square size to reflect a lat long's true precision
-      case
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
-        else 10
-      end,
-      10 -- default minimum square size
-    ), reduce_precision(
-      coalesce(s.geom, l.centroid_geom),
-      occurrence_stats.confidential,
-      greatest(
-        occurrence_stats.sensitivity_precision,
-        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
-      )
-    )
-  ),
+  $sampleOutputSrefSql,
   get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
       occurrence_stats.confidential,
       greatest(
         occurrence_stats.sensitivity_precision,
-        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+        CASE s.privacy_precision WHEN 0 THEN 10000 ELSE s.privacy_precision END
       )
     )
   ),
@@ -1399,6 +1392,7 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+$srefOutputSizesSql
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 LEFT JOIN users uv on uv.id=s.verified_by_id and uv.deleted=false
 LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
@@ -1929,30 +1923,7 @@ SET comment=o.comment,
       WHERE oc.occurrence_id=o.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END,
-  output_sref=get_output_sref(
-    greatest(
-      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      o.sensitivity_precision,
-      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      -- work out best square size to reflect a lat long's true precision
-      case
-        when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
-        when coalesce(spv.int_value, spv.float_value)>=5001 then 100000
-        when coalesce(spv.int_value, spv.float_value)>=501 then 10000
-        when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
-        when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100
-        else 10
-      end,
-      10 -- default minimum square size
-    ), reduce_precision(
-      coalesce(s.geom, l.centroid_geom),
-      o.confidential,
-      greatest(
-        o.sensitivity_precision,
-        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
-      )
-    )
-  ),
+  output_sref=$occurrenceOutputSrefSql,
   output_sref_system=get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
@@ -2027,10 +1998,12 @@ LEFT JOIN users uv on uv.id=o.verified_by_id and uv.deleted=false
 LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 LEFT JOIN people pd on pd.id=o.determiner_id and pd.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id
-LEFT JOIN (sample_attribute_values spv
-  JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
-      and spa.system_function='sref_precision'
-) on spv.sample_id=s.id and spv.deleted=false
+LEFT JOIN (sample_attribute_values v_sref_precision
+  JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false
+      and a_sref_precision.system_function='sref_precision'
+  LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
+) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+$srefOutputSizesSql
 LEFT JOIN (occurrence_attribute_values v_behaviour
   JOIN occurrence_attributes a_behaviour on a_behaviour.id=v_behaviour.occurrence_attribute_id and a_behaviour.deleted=false and a_behaviour.system_function='behaviour'
   LEFT JOIN cache_termlists_terms t_behaviour on a_behaviour.data_type='L' and t_behaviour.id=v_behaviour.int_value
@@ -2223,30 +2196,7 @@ SELECT o.id,
       WHERE oc.occurrence_id=o.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END,
-  get_output_sref(
-    greatest(
-      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
-      o.sensitivity_precision,
-      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
-      -- work out best square size to reflect a lat long's true precision
-      case
-        when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
-        when coalesce(spv.int_value, spv.float_value)>=5001 then 100000
-        when coalesce(spv.int_value, spv.float_value)>=501 then 10000
-        when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
-        when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100
-        else 10
-      end,
-      10 -- default minimum square size
-    ), reduce_precision(
-      coalesce(s.geom, l.centroid_geom),
-      o.confidential,
-      greatest(
-        o.sensitivity_precision,
-        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
-      )
-    )
-  ),
+  $occurrenceOutputSrefSql,
   get_output_system(
     reduce_precision(
       coalesce(s.geom, l.centroid_geom),
@@ -2267,10 +2217,12 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id
-LEFT JOIN (sample_attribute_values spv
-  JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
-      and spa.system_function='sref_precision'
-) on spv.sample_id=s.id and spv.deleted=false
+LEFT JOIN (sample_attribute_values v_sref_precision
+  JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false
+      and a_sref_precision.system_function='sref_precision'
+  LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
+) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+$srefOutputSizesSql
 LEFT JOIN users uv on uv.id=o.verified_by_id and uv.deleted=false
 LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 WHERE o.deleted=false
