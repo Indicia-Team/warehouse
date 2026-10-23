@@ -9,7 +9,7 @@
  * @copyright  (c) 2007-2008 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Session_Cookie_Driver implements Session_Driver {
+class Session_Cookie_Driver implements Session_Driver, SessionHandlerInterface {
 
 	protected $cookie_name;
 	protected $encrypt; // Library
