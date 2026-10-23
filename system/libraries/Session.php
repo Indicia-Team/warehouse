@@ -128,15 +128,7 @@ class Session_Core {
 				throw new Kohana_Exception('core.driver_implements', Session::$config['driver'], get_class($this), 'Session_Driver');
 
 			// Register non-native driver as the session handler
-			session_set_save_handler
-			(
-				array(Session::$driver, 'open'),
-				array(Session::$driver, 'close'),
-				array(Session::$driver, 'read'),
-				array(Session::$driver, 'write'),
-				array(Session::$driver, 'destroy'),
-				array(Session::$driver, 'gc')
-			);
+      session_set_save_handler(new Session_Handler(Session::$driver), FALSE);
 		}
 
 		// Validate the session name

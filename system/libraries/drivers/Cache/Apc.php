@@ -22,7 +22,7 @@ class Cache_Apc_Driver implements Cache_Driver {
 		return (($return = apc_fetch($id)) === FALSE) ? NULL : $return;
 	}
 
-	public function set($id, $data, array $tags = NULL, $lifetime)
+  public function set($id, $data, ?array $tags, $lifetime)
 	{
 		if ( ! empty($tags))
 		{
