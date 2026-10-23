@@ -124,7 +124,7 @@ version_compare(PHP_VERSION, '5.6', '<') and exit('The Indicia Warehouse require
  * Set the error reporting level. Unless you have a special need, E_ALL is a
  * good level for error reporting.
  */
-error_reporting(E_ALL & ~E_STRICT);
+error_reporting(E_ALL);
 
 /**
  * Turning off display_errors will effectively disable Kohana error display
