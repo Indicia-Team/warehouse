@@ -916,10 +916,10 @@ SQL;
    *   Text to include in response.
    * @param string $errorCode
    *   An error code that defines the specific problem so that the client may resolve it.
-   * @param array $errorData
+   * @param ?array $errorData
    *   Any extra data that can be used by the client in problem resolution.
    */
-  private function fail($status, $code, $text, $errorCode = NULL, array $errorData = NULL) {
+  private function fail($status, $code, $text, $errorCode = NULL, ?array $errorData = NULL) {
     $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.0';
     header($protocol . ' ' . $code . ' ' . $status);
     $response = [

@@ -112,7 +112,7 @@ class Dna_occurrence_Model extends ORM {
           return '';
         }
         // Split by comma, handle quoted values.
-        $items = str_getcsv($trimmed, ',');
+        $items = str_getcsv($trimmed, ',', escape: "\\");
         return implode("\n", $items);
       }
       return $value;
