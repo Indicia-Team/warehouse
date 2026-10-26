@@ -17,7 +17,7 @@
  * @copyright  (c) 2007-2008 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Session_Cache_Driver implements Session_Driver {
+class Session_Cache_Driver implements Session_Driver, SessionHandlerInterface {
 
 	protected $cache;
 	protected $encrypt;
@@ -33,7 +33,7 @@ class Session_Cache_Driver implements Session_Driver {
 		Kohana::log('debug', 'Session Cache Driver Initialized');
 	}
 
-	public function open($path, $name)
+  public function open($path, $name): bool
 	{
 		$config = Kohana::config('session.storage');
 
@@ -57,12 +57,12 @@ class Session_Cache_Driver implements Session_Driver {
 		return is_object($this->cache);
 	}
 
-	public function close()
+  public function close(): bool
 	{
 		return TRUE;
 	}
 
-	public function read($id)
+  public function read($id): string|false
 	{
 		$id = 'session_'.$id;
 		if ($data = $this->cache->get($id))
@@ -74,7 +74,7 @@ class Session_Cache_Driver implements Session_Driver {
 		return '';
 	}
 
-	public function write($id, $data)
+  public function write($id, $data): bool
 	{
 		$id = 'session_'.$id;
 		$data = Kohana::config('session.encryption') ? $this->encrypt->encode($data) : $data;
@@ -82,13 +82,13 @@ class Session_Cache_Driver implements Session_Driver {
 		return $this->cache->set($id, $data);
 	}
 
-	public function destroy($id)
+  public function destroy($id): bool
 	{
 		$id = 'session_'.$id;
 		return $this->cache->delete($id);
 	}
 
-	public function regenerate()
+  public function regenerate(): string
 	{
 		session_regenerate_id(TRUE);
 
@@ -96,10 +96,10 @@ class Session_Cache_Driver implements Session_Driver {
 		return session_id();
 	}
 
-	public function gc($maxlifetime)
+  public function gc($maxlifetime): int|false
 	{
 		// Just return, caches are automatically cleaned up
-		return TRUE;
+    return 0;
 	}
 
 } // End Session Cache Driver
