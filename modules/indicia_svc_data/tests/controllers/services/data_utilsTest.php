@@ -189,6 +189,127 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     $this->assertNotEquals(NULL, $c[0]['verified_on']);
   }
 
+  /**
+   * Deny cross-website decisions before writing comments or verification data.
+   *
+   * The authenticated user is a core admin, but a website token must remain
+   * scoped to its website's sharing agreements, regardless of that user role.
+   *
+   * @param string $action
+   *   Verification or redetermination endpoint to exercise.
+   *
+   * @dataProvider verificationActions
+   */
+  public function testVerificationRejectsUnsharedWebsite(string $action) {
+    $sampleId = $this->createOccurrence();
+    $db = new Database();
+    $occurrenceId = $db->query('SELECT id FROM occurrences WHERE sample_id=?', [$sampleId])->current()->id;
+    $db->query('UPDATE occurrences SET website_id=2 WHERE id=?', [$occurrenceId]);
+    $db->query('UPDATE samples SET survey_id=3 WHERE id=?', [$sampleId]);
+    $beforeOccurrence = ORM::factory('occurrence', $occurrenceId)->as_array();
+    $beforeSample = ORM::factory('sample', $sampleId)->as_array();
+    $params = [
+      'occurrence:id' => $occurrenceId,
+      'occurrence:ids' => (string) $occurrenceId,
+      'occurrence:record_status' => 'V',
+      'occurrence:taxa_taxon_list_id' => 2,
+      'occurrence_comment:comment' => 'Should not be written',
+      'sample:id' => $sampleId,
+      'sample:record_status' => 'V',
+      'sample_comment:comment' => 'Should not be written',
+      'user_id' => 1,
+    ];
+    $response = $this->verificationResponse($action, $params);
+    $this->assertArrayHasKey('error', $response);
+    $this->assertStringContainsString('permission to verify', $response['error']);
+    $this->assertSame($beforeOccurrence, ORM::factory('occurrence', $occurrenceId)->as_array());
+    $this->assertSame($beforeSample, ORM::factory('sample', $sampleId)->as_array());
+    $this->assertEquals('0', $db->query('SELECT count(*) FROM occurrence_comments WHERE occurrence_id=?', [$occurrenceId])->current()->count);
+    $this->assertEquals('0', $db->query('SELECT count(*) FROM sample_comments WHERE sample_id=?', [$sampleId])->current()->count);
+  }
+
+  /**
+   * @return array
+   *   Single/list occurrence decisions, sample decisions, and redeterminations.
+   */
+  public static function verificationActions(): array {
+    return [['single_verify'], ['list_verify'], ['single_verify_sample'], ['list_redet']];
+  }
+
+  /**
+   * Mixed batches must fail as a whole, without modifying permitted records.
+   */
+  public function testMixedWebsiteVerificationHasNoPartialUpdates() {
+    $ownSampleId = $this->createOccurrence();
+    $otherSampleId = $this->createOccurrence();
+    $db = new Database();
+    $ownId = $db->query('SELECT id FROM occurrences WHERE sample_id=?', [$ownSampleId])->current()->id;
+    $otherId = $db->query('SELECT id FROM occurrences WHERE sample_id=?', [$otherSampleId])->current()->id;
+    $db->query('UPDATE occurrences SET website_id=2 WHERE id=?', [$otherId]);
+    $response = $this->verificationResponse('list_verify', [
+      'occurrence:ids' => "$ownId,$otherId",
+      'occurrence:record_status' => 'V',
+      'occurrence_comment:comment' => 'Should not be written',
+      'user_id' => 1,
+    ]);
+    $this->assertArrayHasKey('error', $response);
+    $this->assertEquals('C', ORM::factory('occurrence', $ownId)->record_status);
+    $this->assertEquals('C', ORM::factory('occurrence', $otherId)->record_status);
+    $this->assertEquals('0', $db->query(
+      'SELECT count(*) FROM occurrence_comments WHERE occurrence_id IN (?, ?)',
+      [$ownId, $otherId]
+    )->current()->count);
+  }
+
+  /**
+   * Verification sharing must work without a warehouse permission filter.
+   */
+  public function testVerificationAllowsSharedWebsiteWithoutPermissionFilter() {
+    $sampleId = $this->createOccurrence();
+    $db = new Database();
+    $occurrenceId = $db->query('SELECT id FROM occurrences WHERE sample_id=?', [$sampleId])->current()->id;
+    $db->query('UPDATE occurrences SET website_id=2 WHERE id=?', [$occurrenceId]);
+    $db->query('UPDATE samples SET survey_id=3 WHERE id=?', [$sampleId]);
+    $db->query('UPDATE index_websites_website_agreements SET provide_for_verification=true WHERE from_website_id=2 AND to_website_id=1');
+    $response = helper_base::http_post(
+      helper_base::$base_url . 'index.php/services/data_utils/single_verify',
+      array_merge([
+        'occurrence:id' => $occurrenceId,
+        'occurrence:record_status' => 'V',
+        'user_id' => 1,
+      ], $this->auth['write_tokens']),
+      FALSE
+    );
+    $this->assertSame('OK', $response['output']);
+    $this->assertEquals('V', ORM::factory('occurrence', $occurrenceId)->record_status);
+  }
+
+  /**
+   * Call a decision endpoint, retaining JSON failures even with HTTP errors.
+   *
+   * @param string $action
+   *   Data utility action.
+   * @param array $params
+   *   Decision parameters without authentication fields.
+   *
+   * @return array
+   *   Decoded service error.
+   */
+  private function verificationResponse(string $action, array $params): array {
+    try {
+      $response = helper_base::http_post(
+        helper_base::$base_url . "index.php/services/data_utils/$action",
+        array_merge($params, $this->auth['write_tokens']),
+        FALSE
+      );
+      $body = $response['output'];
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $body = $e->responseBody;
+    }
+    return json_decode($body, TRUE);
+  }
+
   public function testBulkVerifyOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data__Utils_Test::testBulkVerifyOccurrence");
     $array = [
