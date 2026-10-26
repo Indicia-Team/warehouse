@@ -212,7 +212,7 @@ SQL;
       }
     }
     elseif (is_string($value)) {
-      $value = strpos($value, ',') === FALSE ? [$value] : array_map('trim', str_getcsv($value));
+      $value = strpos($value, ',') === FALSE ? [$value] : array_map('trim', str_getcsv($value,  escape: "\\"));
     }
     return !array_diff($value, $testArray);
   }
@@ -333,7 +333,7 @@ SQL;
    * @return bool
    *   True if string in decimal format and within range.
    */
-  public static function decimal_range($str, array $format = NULL) {
+  public static function decimal_range($str, ?array $format = NULL) {
     // Create the pattern.
     $pattern = '[0-9]%s\.[0-9]%s';
 

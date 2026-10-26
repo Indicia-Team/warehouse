@@ -1258,7 +1258,7 @@ class ReportEngine {
             elseif (in_array($paramDefs[$name]['datatype'], ['text[]', 'string[]'])) {
               // Array check on text parameter values.
               if (strlen($value)) {
-                $arr = str_getcsv($value, ",", "'");
+                $arr = str_getcsv($value, ",", "'", "\\");
                 foreach ($arr as &$item) {
                   $item = $this->reportDb->escape_str($item);
                 }
@@ -2316,7 +2316,7 @@ SQL;
    */
   private function addParamWheres($query, $paramName, $paramDef, $values) {
     // Multi-select parameter values need to be exploded into a list.
-    $valueList = empty($paramDef['multiselect']) ? [$values] : str_getcsv($values, ",", "'");
+    $valueList = empty($paramDef['multiselect']) ? [$values] : str_getcsv($values, ",", "'", "\\");
     // Work out the operation being used.
     if (isset($paramDef['param_op'])) {
       // Handle params that have where clauses linked to different operations.

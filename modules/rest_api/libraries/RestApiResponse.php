@@ -364,10 +364,10 @@ HTML;
    *   HTTP error code.
    * @param string $msg
    *   Detailed message to log.
-   * @param array $extra
+   * @param ?array $extra
    *   Additional info to include in the response if required.
    */
-  public function fail($status, $code, $msg = NULL, array $extra = NULL) {
+  public function fail($status, $code, $msg = NULL, ?array $extra = NULL) {
     http_response_code($code);
     $response = [
       'code' => $code,
