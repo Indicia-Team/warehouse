@@ -40,6 +40,14 @@ class Indicia {
       return TRUE;
     }
 
+    // Vendor code is outside the warehouse's control. Keep its deprecations
+    // visible in the log without allowing them to interrupt application
+    // requests or test discovery.
+    if (($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) && self::is_vendor_file($errfile)) {
+      Kohana::log('info', 'Vendor deprecation: ' . $errstr . ' at line ' . $errline . ' in file ' . $errfile);
+      return TRUE;
+    }
+
     try {
       throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
     }
@@ -47,6 +55,25 @@ class Indicia {
       error_logger::log_error('Error converted to exception', $e);
       throw $e;
     }
+  }
+
+  /**
+   * Check whether an error originated in Composer's vendor directory.
+   *
+   * @param string $file
+   *   Source file reported by PHP.
+   *
+   * @return bool
+   *   TRUE if the file is within the vendor directory.
+   */
+  private static function is_vendor_file($file) {
+    $vendor_directory = realpath(DOCROOT . 'vendor');
+    $source_file = realpath($file);
+    if ($vendor_directory === FALSE || $source_file === FALSE) {
+      return FALSE;
+    }
+    return $source_file === $vendor_directory ||
+      strpos($source_file, $vendor_directory . DIRECTORY_SEPARATOR) === 0;
   }
 
   /**
