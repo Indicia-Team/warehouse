@@ -113,18 +113,18 @@ $kohana_modules = 'modules';
 $kohana_system = 'system';
 
 /**
- * Test to make sure that Kohana is running on PHP 5.2 or newer. Once you are
+ * Test to make sure that the warehouse is running on PHP 8.2 or newer. Once you are
  * sure that your environment is compatible with Kohana, you can comment this
  * line out. When running an application on a new server, uncomment this line
  * to check the PHP version quickly.
  */
-version_compare(PHP_VERSION, '5.6', '<') and exit('The Indicia Warehouse requires PHP version 5.6 or newer.');
+version_compare(PHP_VERSION, '8.2', '<') and exit('The Indicia Warehouse requires PHP version 8.2 or newer.');
 
 /**
  * Set the error reporting level. Unless you have a special need, E_ALL is a
  * good level for error reporting.
  */
-error_reporting(E_ALL & ~E_STRICT);
+error_reporting(E_ALL);
 
 /**
  * Turning off display_errors will effectively disable Kohana error display

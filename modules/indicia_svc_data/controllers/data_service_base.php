@@ -68,15 +68,17 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   * be deleted - they are left to expire.
   */
   protected function delete_nonce() {
-    // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is
-    // one time only. The exception to this is when a submission contains images which are sent afterwards,
-    // in which case the last image will delete the nonce
-    if (!array_key_exists('persist_auth', $_REQUEST) || $_REQUEST['persist_auth']!='true') {
-      if (array_key_exists('nonce', $_REQUEST)) {
-        $nonce = $_REQUEST['nonce'];
-        $cache = new Cache();
-        $cache->delete($nonce);
+    // Media batches retain the nonce until the final upload. Never re-read
+    // request parameters here: they may differ from those authenticated.
+    if ($this->authenticatedNonce !== NULL
+        && $this->authenticatedNonce['mode'] === 'write'
+        && !$this->authenticatedNonce['persist_auth']) {
+      $cache = new Cache();
+      if (!$cache->delete($this->authenticatedNonce['nonce'])) {
+        Kohana::log('error', 'Unable to delete authenticated write nonce.');
+        throw new ServiceError('Unable to delete authentication nonce.', 1);
       }
+      $this->authenticatedNonce = NULL;
     }
   }
 
@@ -88,7 +90,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function handle_request() {
     // Authenticate for a 'read' parameter.
     kohana::log('debug', 'Requesting data from Warehouse');
-    kohana::log('debug', print_r($_REQUEST, TRUE));
+    kohana::log('debug', print_r(logRedaction::parameters($_REQUEST), TRUE));
     $this->authenticate('read');
     $mode = $this->get_output_mode();
     $this->setHeaders($mode);

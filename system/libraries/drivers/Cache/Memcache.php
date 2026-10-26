@@ -87,7 +87,7 @@ class Cache_Memcache_Driver implements Cache_Driver {
 		return (($return = $this->backend->get($id)) === FALSE) ? NULL : $return;
 	}
 
-	public function set($id, $data, array $tags = NULL, $lifetime)
+  public function set($id, $data, ?array $tags, $lifetime)
 	{
 		if ( ! empty($tags))
 		{

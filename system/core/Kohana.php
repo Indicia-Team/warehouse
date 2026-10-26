@@ -122,7 +122,7 @@ final class Kohana {
     }
 
     // Disable notices and "strict" errors
-    $ER = error_reporting(~E_NOTICE & ~E_STRICT);
+    $ER = error_reporting(~E_NOTICE);
 
     // Set the user agent
     self::$user_agent = ( ! empty($_SERVER['HTTP_USER_AGENT']) ? trim($_SERVER['HTTP_USER_AGENT']) : '');

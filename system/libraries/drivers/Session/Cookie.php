@@ -9,7 +9,7 @@
  * @copyright  (c) 2007-2008 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Session_Cookie_Driver implements Session_Driver {
+class Session_Cookie_Driver implements Session_Driver, SessionHandlerInterface {
 
 	protected $cookie_name;
 	protected $encrypt; // Library
@@ -26,17 +26,17 @@ class Session_Cookie_Driver implements Session_Driver {
 		Kohana::log('debug', 'Session Cookie Driver Initialized');
 	}
 
-	public function open($path, $name)
+  public function open($path, $name): bool
 	{
 		return TRUE;
 	}
 
-	public function close()
+  public function close(): bool
 	{
 		return TRUE;
 	}
 
-	public function read($id)
+  public function read($id): string|false
 	{
 		$data = (string) cookie::get($this->cookie_name);
 
@@ -46,7 +46,7 @@ class Session_Cookie_Driver implements Session_Driver {
 		return empty($this->encrypt) ? base64_decode($data) : $this->encrypt->decode($data);
 	}
 
-	public function write($id, $data)
+  public function write($id, $data): bool
 	{
 		$data = empty($this->encrypt) ? base64_encode($data) : $this->encrypt->encode($data);
 
@@ -59,7 +59,7 @@ class Session_Cookie_Driver implements Session_Driver {
 		return cookie::set($this->cookie_name, $data, Kohana::config('session.expiration'));
 	}
 
-	public function destroy($id)
+  public function destroy($id): bool
 	{
 		if ( ! isset($_COOKIE[$this->cookie_name])) {
 			// Cookie is already destroyed
@@ -70,7 +70,7 @@ class Session_Cookie_Driver implements Session_Driver {
 		}
 	}
 
-	public function regenerate()
+  public function regenerate(): string
 	{
 		session_regenerate_id(TRUE);
 
@@ -78,9 +78,9 @@ class Session_Cookie_Driver implements Session_Driver {
 		return session_id();
 	}
 
-	public function gc($maxlifetime)
+  public function gc($maxlifetime): int|false
 	{
-		return TRUE;
+    return 0;
 	}
 
 } // End Session Cookie Driver Class

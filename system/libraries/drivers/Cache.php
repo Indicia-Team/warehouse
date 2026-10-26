@@ -11,10 +11,12 @@
  */
 interface Cache_Driver {
 
-	/**
-	 * Set a cache item.
-	 */
-	public function set($id, $data, array $tags = NULL, $lifetime);
+  /**
+   * Set a cache item.
+   *
+   * All arguments are required; NULL tags mean the item is untagged.
+   */
+  public function set($id, $data, ?array $tags, $lifetime);
 
 	/**
 	 * Find all of the cache ids for a given tag.

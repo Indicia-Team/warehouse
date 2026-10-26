@@ -52,8 +52,8 @@ class config_test {
   }
 
   /**
-   * Ensure that the PHP version running on the server is at least 5.2, which supports
-   * JSON properly.
+   * Ensure that the PHP version running on the server is at least 8.2, as required
+   * by the warehouse and its Composer dependencies.
    *
    * @param array $messages
    *   List of messages that any information should be appended to.
@@ -153,8 +153,8 @@ class config_test {
   }
 
   /**
-   * Ensure that the PHP version running on the server is at least 5.2, which supports
-   * JSON properly.
+   * Ensure that the PHP version running on the server is at least 8.2, as required
+   * by the warehouse and its Composer dependencies.
    *
    * @param array $messages
    *   List of messages that any information should be appended to.

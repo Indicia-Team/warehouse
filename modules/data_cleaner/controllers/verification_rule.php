@@ -558,7 +558,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $handle = fopen($csvTempFile, "r");
       // First row, so load the column headings. Force lowercase so we can
       // case insensitive search later.
-      $headings = array_map('strtolower', fgetcsv($handle, 1000, ","));
+      $headings = array_map('strtolower', fgetcsv($handle, 1000, escape: "\\"));
       $obj = array('headings' => $headings);
       $filepos = ftell($handle);
       $obj['ruleIdColIdx'] = array_search('ruleid', $headings);
@@ -596,11 +596,11 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         fseek($handle, $filepos);
         if ($filepos == 0) {
           // Skip the headers.
-          fgetcsv($handle, 1000, ",");
+          fgetcsv($handle, 1000, escape: "\\");
         }
         $obj = $cache->get(basename($_GET['uploaded_csv']) . 'metadata');
         $errors = [];
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+        while (($data = fgetcsv($handle, 1000, escape: "\\")) !== FALSE && ($limit === FALSE || $count < $limit)) {
           $line = implode('', $data);
           // Skip blank lines.
           if (empty($line)) {

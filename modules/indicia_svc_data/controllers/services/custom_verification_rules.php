@@ -38,6 +38,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       $this->authenticate('write');
       $importTools = new ImportTools();
       $uploadedFile = $importTools->uploadFile();
+      $this->delete_nonce();
       echo json_encode([
         'status' => 'ok',
         'uploadedFile' => basename($uploadedFile),
@@ -115,6 +116,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         $errors[] = 'The rules spreadsheet cannot be imported because there is a limit grid refs column but no grid ref system column to qualify the grid refs.';
       }
       if (empty($errors)) {
+        $this->delete_nonce();
         echo json_encode([
           'status' => 'ok',
         ]);
@@ -240,6 +242,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         }
       }
       if (empty($errors)) {
+        $this->delete_nonce();
         echo json_encode([
           'status' => 'ok',
         ]);
@@ -737,6 +740,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           ]);
         }
       }
+      $this->delete_nonce();
       echo json_encode([
         'status' => 'ok',
       ]);

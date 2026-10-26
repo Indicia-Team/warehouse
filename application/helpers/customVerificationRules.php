@@ -290,7 +290,7 @@ TXT;
     ];
     // Also limit to stages if the ruleset has limit_to_stages set.
     if (!empty($ruleset->limit_to_stages)) {
-      $stages = str_getcsv(substr($ruleset->limit_to_stages, 1, strlen($ruleset->limit_to_stages) - 2));
+      $stages = str_getcsv(substr($ruleset->limit_to_stages, 1, strlen($ruleset->limit_to_stages) - 2), escape: "\\");
       $rulesetFilters[] = ['terms' => ['occurrence.life_stage' => $stages]];
     }
     // Finally, limit geography if specified in the ruleset.
@@ -405,7 +405,7 @@ TXT;
     ];
     // Rule may be only applicable to certain stages.
     if (!empty($rule->limit_to_stages)) {
-      $stages = str_getcsv(substr($rule->limit_to_stages, 1, strlen($rule->limit_to_stages) - 2));
+      $stages = str_getcsv(substr($rule->limit_to_stages, 1, strlen($rule->limit_to_stages) - 2), escape: "\\");
       // Escape so can be inserted into Painless script string.
       $stages = array_map(function ($stage) {
         return "'" . str_replace("'", "\\\'", strtolower($stage)) . "'";

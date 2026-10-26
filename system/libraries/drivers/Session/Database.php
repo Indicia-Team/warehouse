@@ -9,7 +9,7 @@
  * @copyright  (c) 2007-2008 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Session_Database_Driver implements Session_Driver {
+class Session_Database_Driver implements Session_Driver, SessionHandlerInterface {
 
 	/*
 	CREATE TABLE sessions
@@ -64,17 +64,17 @@ class Session_Database_Driver implements Session_Driver {
 		Kohana::log('debug', 'Session Database Driver Initialized');
 	}
 
-	public function open($path, $name)
+  public function open($path, $name): bool
 	{
 		return TRUE;
 	}
 
-	public function close()
+  public function close(): bool
 	{
 		return TRUE;
 	}
 
-	public function read($id)
+  public function read($id): string|false
 	{
 		// Load the session
 		$query = $this->db->from($this->table)->where('session_id', $id)->limit(1)->get()->result(TRUE);
@@ -96,7 +96,7 @@ class Session_Database_Driver implements Session_Driver {
 		return ($this->encrypt === NULL) ? base64_decode($data) : $this->encrypt->decode($data);
 	}
 
-	public function write($id, $data)
+  public function write($id, $data): bool
 	{
 		$data = array
 		(
@@ -130,7 +130,7 @@ class Session_Database_Driver implements Session_Driver {
 		return (bool) $query->count();
 	}
 
-	public function destroy($id)
+  public function destroy($id): bool
 	{
 		// Delete the requested session
 		$this->db->delete($this->table, array('session_id' => $id));
@@ -141,7 +141,7 @@ class Session_Database_Driver implements Session_Driver {
 		return TRUE;
 	}
 
-	public function regenerate()
+  public function regenerate(): string
 	{
 		// Generate a new session id
 		session_regenerate_id();
@@ -150,14 +150,14 @@ class Session_Database_Driver implements Session_Driver {
 		return session_id();
 	}
 
-	public function gc($maxlifetime)
+  public function gc($maxlifetime): int|false
 	{
 		// Delete all expired sessions
 		$query = $this->db->delete($this->table, array('last_activity <' => time() - $maxlifetime));
 
 		Kohana::log('debug', 'Session garbage collected: '.$query->count().' row(s) deleted.');
 
-		return TRUE;
+    return $query->count();
 	}
 
 } // End Session Database Driver
