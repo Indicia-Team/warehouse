@@ -1104,8 +1104,8 @@ class Data_Controller extends Data_Service_Base_Controller {
         $fTmp = upload::save('media_upload', $finalName, $directory . $subdir);
         Image::create_image_files($directory, basename($fTmp), $subdir, $this->website_id);
         $this->response = $subdir . basename($fTmp);
-        $this->send_response();
         $this->delete_nonce();
+        $this->send_response();
         kohana::log('debug', 'Successfully uploaded media to ' . $subdir . basename($fTmp));
       }
       else {
@@ -1243,7 +1243,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', $this->db->last_query());
       kohana::log('error', 'Request detail:');
       kohana::log('error', $this->uri->string());
-      kohana::log('error', kohana::debug($_REQUEST));
+      kohana::log('error', kohana::debug(logRedaction::parameters($_REQUEST)));
       throw $e;
     }
   }
@@ -1253,7 +1253,8 @@ class Data_Controller extends Data_Service_Base_Controller {
    *
    * For *_attribute_value entities, decrypt values when the requester either
    * created the value, is core admin, or is site admin for the record
-   * website.
+   * website. Permission checks require a verified user identity, not an
+   * unsigned user_id filter.
    *
   * @param array|Database_Result $rows
    *   Query result rows as arrays or objects.
@@ -1268,7 +1269,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (empty($rows)
         || !preg_match('/_attribute_value$/', $this->entity)
-        || empty($this->user_id)
+        || $this->getAuthenticatedUserId() === NULL
         || !class_exists('attributeEncryption')) {
       return $rows;
     }
@@ -1318,8 +1319,9 @@ class Data_Controller extends Data_Service_Base_Controller {
    *   Possibly decrypted row.
    */
   private function decryptAttributeValueRow($row, ?array $creatorMap = NULL) {
+    $authenticatedUserId = $this->getAuthenticatedUserId();
     if (!preg_match('/_attribute_value$/', $this->entity)
-        || empty($this->user_id)
+        || $authenticatedUserId === NULL
         || !class_exists('attributeEncryption')) {
       return $row;
     }
@@ -1348,8 +1350,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       $creatorId = $this->getAttributeValueCreator($rowId);
     }
 
-    $canDecrypt = ((int) $creatorId === (int) $this->user_id)
-      || attributeEncryption::canUserDecryptForWebsite($this->user_id, $websiteId);
+    $canDecrypt = ((int) $creatorId === $authenticatedUserId)
+      || attributeEncryption::canUserDecryptForWebsite($authenticatedUserId, $websiteId);
     if (!$canDecrypt) {
       return $row;
     }
@@ -1807,9 +1809,11 @@ class Data_Controller extends Data_Service_Base_Controller {
         if (isset($s['fields']['transaction_id']['value'])) {
           $response['transaction_id'] = $s['fields']['transaction_id']['value'];
         }
-        echo json_encode($response);
       }
       $this->delete_nonce();
+      if (isset($s)) {
+        echo json_encode($response);
+      }
       if (class_exists('request_logging') && isset($s)) {
         request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
       }

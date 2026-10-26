@@ -104,7 +104,8 @@ class Service_Base_Controller extends Controller {
    * Id of the indicia user ID calling the service.
    *
    * Obtained when performing read authentication and can be used to filter the
-   * response. Null if not provided in the report call.
+   * response. May come from an unsigned request parameter, so must not be used
+   * for permission checks. Null if not provided in the report call.
    *
    * @var int
    */
@@ -116,6 +117,13 @@ class Service_Base_Controller extends Controller {
    * @var int
    */
   protected $auth_user_id = NULL;
+
+  /**
+   * Validated nonce lifecycle context, populated only after authentication.
+   *
+   * @var array|null
+   */
+  protected $authenticatedNonce = NULL;
 
   /**
    * Flag set to true when user has core admin rights.
@@ -155,22 +163,97 @@ class Service_Base_Controller extends Controller {
   protected $response;
 
   /**
+   * Get the verified user identity for permission checks.
+   *
+   * @return int|null
+   *   User authenticated by a user-specific token or warehouse nonce.
+   */
+  protected function getAuthenticatedUserId(): ?int {
+    if ($this->in_warehouse) {
+      $userId = $this->user_id;
+    }
+    else {
+      $userId = $this->auth_user_id;
+    }
+    return $userId > 0 ? (int) $userId : NULL;
+  }
+
+  /**
+   * Resolve credentials and lifecycle controls without cookie/REQUEST precedence.
+   *
+   * Identical GET/POST duplicates are allowed, but conflicting values, partial
+   * credentials, and non-scalar or malformed values fail authentication.
+   * Lifecycle controls accept true/false and 1/0, including curl boolean forms.
+   *
+   * @return array
+   *   Validated credentials and boolean lifecycle controls.
+   */
+  protected function getAuthenticationParameters(): array {
+    $parameters = [];
+    foreach (['nonce', 'auth_token', 'persist_auth', 'reset_timeout'] as $key) {
+      foreach ([$_POST, $_GET] as $source) {
+        if (!array_key_exists($key, $source)) {
+          continue;
+        }
+        $value = $source[$key];
+        if ($key === 'persist_auth' || $key === 'reset_timeout') {
+          if (in_array($value, [TRUE, 1, '1', 'true'], TRUE)) {
+            $value = TRUE;
+          }
+          elseif (in_array($value, [FALSE, 0, '0', 'false', ''], TRUE)) {
+            $value = FALSE;
+          }
+          else {
+            throw new AuthenticationError('Invalid authentication parameters.', 1);
+          }
+        }
+        elseif (!is_string($value)) {
+          throw new AuthenticationError('Invalid authentication parameters.', 1);
+        }
+        if (array_key_exists($key, $parameters) && $parameters[$key] !== $value) {
+          throw new AuthenticationError('Conflicting authentication parameters.', 1);
+        }
+        $parameters[$key] = $value;
+      }
+    }
+    if (isset($parameters['nonce']) !== isset($parameters['auth_token'])) {
+      throw new AuthenticationError('Incomplete authentication credentials.', 1);
+    }
+    if (isset($parameters['nonce'])) {
+      if (!preg_match('/\A[0-9a-f]{40}\z/', $parameters['nonce'])
+          || !preg_match('/\A[0-9a-f]{40}(?::([1-9][0-9]*))?\z/', $parameters['auth_token'], $matches)
+          || (isset($matches[1]) && filter_var($matches[1], FILTER_VALIDATE_INT) === FALSE)) {
+        throw new AuthenticationError('Invalid authentication credentials.', 1);
+      }
+    }
+    return $parameters;
+  }
+
+  /**
    * Authenticate a data services request.
    *
-   * Before a request is accepted, this method ensures that the POST data
-   * contains the correct digest token so we know the request was from the
-   * website.
+   * Explicit GET/POST credentials are required, including for warehouse users.
+   * Session and remember-me cookies never substitute for a nonce/token pair.
    *
    * @param string $mode
    *   Whether the authentication token is required to have read or write
    *   access. Possible values are 'read' and 'write'. Defaults to 'write'.
    */
   protected function authenticate($mode = 'write') {
-    // Read calls are done using get values, so we merge the two arrays.
-    $array = array_merge($_POST, $_GET);
-    $authentic = FALSE;
     global $remoteAuthUserId;
     global $remoteUserId;
+    $this->in_warehouse = FALSE;
+    $this->website_id = NULL;
+    $this->website_password = NULL;
+    $this->user_id = NULL;
+    $this->auth_user_id = NULL;
+    $this->user_is_core_admin = FALSE;
+    $this->userWebsites = [];
+    $remoteAuthUserId = NULL;
+    $remoteUserId = NULL;
+    $this->authenticatedNonce = NULL;
+    $array = $this->getAuthenticationParameters();
+    $authentic = FALSE;
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
       $cache = new Cache();
@@ -181,8 +264,20 @@ class Service_Base_Controller extends Controller {
         // the mode.
         $tokens = explode('~', basename($path));
         // Check this cached nonce is for the correct read or write operation.
-        if ($mode == $tokens[1]) {
-          $id = $cache->get($tokens[0]);
+        if (count($tokens) === 3 && $tokens[0] === $nonce && $mode === $tokens[1]) {
+          $cachedId = $cache->get($nonce);
+          // A stale filename can survive expiry; absent data must never select
+          // private-key authentication instead of website authentication.
+          if (!is_int($cachedId) && !is_string($cachedId)) {
+            continue;
+          }
+          $id = filter_var($cachedId, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => -PHP_INT_MAX, 'max_range' => PHP_INT_MAX],
+          ]);
+          if ($id === FALSE || $id === 0) {
+            continue;
+          }
+          $password = NULL;
           if ($id > 0) {
             // Normal state, the ID is positive, which means we are
             // authenticating a remote website.
@@ -192,6 +287,10 @@ class Service_Base_Controller extends Controller {
             }
           }
           else {
+            $user = ORM::factory('user', -$id);
+            if (!$user->id) {
+              continue;
+            }
             $password = kohana::config('indicia.private_key');
           }
           // Calculate the auth token from the nonce and the password. Does it
@@ -210,9 +309,13 @@ class Service_Base_Controller extends Controller {
             $authentic = TRUE;
           }
           if ($authentic) {
+            if (!empty($array['reset_timeout'])) {
+              if (!$cache->set($nonce, $id, $mode, Kohana::config('indicia.nonce_life'))) {
+                throw new ServiceError('Unable to renew authentication nonce.', 1);
+              }
+              Kohana::log('info', "Nonce timeout reset.");
+            }
             Kohana::log('info', "Authentication successful.");
-            // Store ID in a global for code outside the service classes.
-            $remoteAuthUserId = $this->auth_user_id;
             // Cache website_password for subsequent use by controllers.
             $this->website_password = $password;
 
@@ -224,7 +327,6 @@ class Service_Base_Controller extends Controller {
               elseif (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
                 $this->user_id = (int) $_REQUEST['user_id'];
               }
-              $remoteUserId = $this->user_id;
             }
             else {
               $this->in_warehouse = TRUE;
@@ -233,8 +335,8 @@ class Service_Base_Controller extends Controller {
               // User id was passed as a negative number to differentiate from
               // a website id.
               $this->user_id = 0 - $id;
+              $this->auth_user_id = $this->user_id;
               // Get a list of the websites this user can see.
-              $user = ORM::Factory('user', $this->user_id);
               $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
                 $this->userWebsites = [];
@@ -248,23 +350,19 @@ class Service_Base_Controller extends Controller {
                 }
               }
             }
-            // Reset the nonce if requested. Doing it here will mean only gets
-            // reset if not already timed out.
-            if (array_key_exists('reset_timeout', $array) && $array['reset_timeout'] == 'true') {
-              Kohana::log('info', "Nonce timeout reset.");
-              $cache->set($nonce, $id, $mode);
-            }
+            // Store authenticated context for code outside the service classes.
+            $remoteAuthUserId = $this->auth_user_id;
+            $remoteUserId = $this->user_id;
+            $this->authenticatedNonce = [
+              'nonce' => $nonce,
+              'mode' => $mode,
+              'persist_auth' => $array['persist_auth'] ?? FALSE,
+            ];
+            break;
           }
         }
       }
     }
-    else {
-      $auth = new Auth();
-      $authentic = ($auth->logged_in() || $auth->auto_login());
-      $this->in_warehouse = $authentic;
-      $this->user_is_core_admin = $auth->logged_in('CoreAdmin');
-    }
-
     if (!$authentic) {
       Kohana::log('info', "Unable to authenticate.");
       throw new AuthenticationError("unauthorised", 1);
