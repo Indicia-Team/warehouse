@@ -1394,7 +1394,7 @@ SQL;
     fputs($fp, $response);
     rewind($fp);
     $data = [];
-    while ( ($row = fgetcsv($fp) ) !== FALSE ) {
+    while ( ($row = fgetcsv($fp, escape: "\\") ) !== FALSE ) {
       $data[] = $row;
     }
     $this->assertCount(2, $data, 'Data services get CSV for direct ID did not return 1 record.');

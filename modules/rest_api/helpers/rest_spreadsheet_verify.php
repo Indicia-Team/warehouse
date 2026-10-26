@@ -364,7 +364,7 @@ class rest_spreadsheet_verify {
     $db = new Database();
     $esUpdates = [];
     while ($done < ROWS_PER_BATCH) {
-      $row = fgetcsv($verificationsFile);
+      $row = fgetcsv($verificationsFile, escape: "\\");
       $metadata['filepos'] = ftell($verificationsFile);
       if ($row === FALSE) {
         $metadata['state'] = 'done';

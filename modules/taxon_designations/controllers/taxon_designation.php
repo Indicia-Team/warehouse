@@ -125,7 +125,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       if ($filepos == 0) {
         // First row, so load the column headings. Force lowercase so we can
         // case insensitive search later.
-        $headings = array_map('strtolower', fgetcsv($handle, 1000, ","));
+        $headings = array_map('strtolower', fgetcsv($handle, 1000, escape: "\\"));
         // Also work out the termlist_id for the cateogories.
         $r = $this->db
           ->select('id')
@@ -139,7 +139,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       else {
         $obj = $cache->get(basename($_GET['uploaded_csv']) . 'metadata');
       }
-      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+      while (($data = fgetcsv($handle, 1000, escape: "\\")) !== FALSE && ($limit === FALSE || $count < $limit)) {
         if (trim(implode('', $data)) === '') {
           // Skip any empty lines.
           continue;
