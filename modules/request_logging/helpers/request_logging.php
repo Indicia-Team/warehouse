@@ -25,6 +25,11 @@ defined('SYSPATH') or die('No direct script access.');
 class request_logging {
 
   /**
+   * Non-credential fields excluded to keep request logs concise.
+   */
+  private const SKIPPED_PARAMETERS = ['paramsFormExcludes', 'callback', 'reportSource', 'mode'];
+
+  /**
    * Log a web service request.
    *
    * @param string $io
@@ -74,17 +79,18 @@ class request_logging {
       if ($overrideStoredPost) {
         $post = $overrideStoredPost;
       }
+      elseif (!empty($_POST)) {
+        // PHP has already parsed form and multipart bodies; never log file data.
+        $post = $_POST;
+      }
       else {
         $post = file_get_contents('php://input');
         if (empty($post)) {
-          $post = empty($_POST) ? NULL : $_POST;
+          $post = NULL;
         }
       }
       if ($post !== NULL) {
-        if (is_array($post)) {
-          self::stripUnloggedParams($post);
-        }
-        $post = json_encode($post);
+        $post = self::preparePostForLogging($post, $overrideStoredPost ? '' : ($_SERVER['CONTENT_TYPE'] ?? ''));
       }
       $db->insert('request_log_entries', [
         'io' => $io,
@@ -114,8 +120,33 @@ class request_logging {
    *   Tidied array.
    */
   private static function stripUnloggedParams(array $array) {
-    $skipped = ['nonce', 'auth_token', 'paramsFormExcludes', 'callback', 'reportSource', 'mode'];
-    return array_diff_key($array, array_combine($skipped, $skipped));
+    return logRedaction::parameters($array, self::SKIPPED_PARAMETERS);
+  }
+
+  /**
+   * Redact POST data before encoding it for the JSON log column.
+   *
+   * Raw bodies remain JSON strings for compatibility with existing log readers.
+   *
+   * @param array|object|string $post
+   *   Parsed parameters, a raw body, or replacement data supplied by the caller.
+   * @param string $contentType
+   *   Content type used to interpret a raw request body.
+   *
+   * @return string
+   *   JSON-encoded, sanitised data.
+   */
+  private static function preparePostForLogging($post, string $contentType = ''): string {
+    if (is_array($post)) {
+      $post = self::stripUnloggedParams($post);
+    }
+    elseif ($post instanceof stdClass) {
+      $post = (object) self::stripUnloggedParams(get_object_vars($post));
+    }
+    elseif (is_string($post)) {
+      $post = logRedaction::body($post, self::SKIPPED_PARAMETERS, $contentType);
+    }
+    return json_encode($post, JSON_THROW_ON_ERROR);
   }
 
 }
