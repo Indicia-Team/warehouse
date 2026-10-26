@@ -15,7 +15,7 @@ class Cache_File_Driver implements Cache_Driver {
 
 	// Have to be very careful: need the functionality whereby we can reset the timeout on a cache entry.
 	// But if the cache is under multiple heavy use, deleting a file could be bad news.
-	
+
 	/**
 	 * Tests that the storage location is a directory and is writable.
 	 */
@@ -27,7 +27,7 @@ class Cache_File_Driver implements Cache_Driver {
 		// Make sure the cache directory is writable
 		if ( ! is_dir($directory) OR ! is_writable($directory))
 			throw new Kohana_Exception('cache.unwritable', $directory);
-			
+
 		// Directory is valid
 		$this->directory = $directory;
 	}
@@ -42,7 +42,7 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	private function all_exists($id, $tag)
 	{
-      // Change for Indicia. Test return from globs is not false, as it seems some servers will return false instead of an empty 
+      // Change for Indicia. Test return from globs is not false, as it seems some servers will return false instead of an empty
       // array of files if no matches.
 		if ($id === TRUE)
 		{
@@ -122,11 +122,11 @@ class Cache_File_Driver implements Cache_Driver {
 	 *
 	 * @param   string   cache id to set
 	 * @param   string   data in the cache
-	 * @param   array    cache tags
+   * @param   array|NULL  cache tags
 	 * @param   integer  lifetime
 	 * @return  bool
 	 */
-	public function set($id, $data, array $tags = NULL, $lifetime)
+  public function set($id, $data, ?array $tags, $lifetime)
 	{
 		// Cache File driver expects unix timestamp: this is in seconds
 		if ($lifetime !== 0)
@@ -137,7 +137,7 @@ class Cache_File_Driver implements Cache_Driver {
 		{
 			// Convert the tags into a string list
 			$tags = implode('+', $tags);
-		} else 
+		} else
       // Indicia chaneg - fix to support PHP 5.4.3 which raises a notice for array to string conversion in a couple of lines.
       $tags='';
 		$files = $this->all_exists($id, false);
@@ -176,8 +176,8 @@ class Cache_File_Driver implements Cache_Driver {
 			}
 			// Turn on error reporting again
 			error_reporting($ER);
-		}	
-		
+		}
+
 		// Write out a serialized cache
 		return (bool) $retVal;
 	}

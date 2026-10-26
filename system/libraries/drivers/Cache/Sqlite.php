@@ -87,11 +87,11 @@ class Cache_Sqlite_Driver implements Cache_Driver {
 	 *
 	 * @param   string   cache id to set
 	 * @param   string   data in the cache
-	 * @param   array    cache tags
+   * @param   array|NULL  cache tags
 	 * @param   integer  lifetime
 	 * @return  bool
 	 */
-	public function set($id, $data, array $tags = NULL, $lifetime)
+  public function set($id, $data, ?array $tags, $lifetime)
 	{
 		// Serialize and escape the data
 		$data = sqlite_escape_string(serialize($data));

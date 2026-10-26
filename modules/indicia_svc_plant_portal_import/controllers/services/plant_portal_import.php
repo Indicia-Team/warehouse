@@ -361,7 +361,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       if ($filepos == 0) {
         // First row, so skip the header.
         fseek($handle, 0);
-        fgetcsv($handle, 10000, ",");
+        fgetcsv($handle, 10000, escape: "\\");
         // Also clear the lookup cache.
         $cache->delete_tag('lookup');
       }
@@ -429,7 +429,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         }
       }
       $storedMeanings = self::retrieveCachedStoredMeanings();
-      while (($data = fgetcsv($handle, 10000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+      while (($data = fgetcsv($handle, 10000, escape: "\\")) !== FALSE && ($limit === FALSE || $count < $limit)) {
         if (!array_filter($data)) {
           // Skip empty rows.
           continue;
@@ -1589,7 +1589,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $errorHandle = fopen($errorFile, "a");
     // Skip the header row, but add it to the errors file with additional field
     // for row number unless already present.
-    $headers = fgetcsv($handle, 1000, ",");
+    $headers = fgetcsv($handle, 1000, escape: "\\");
     $existingImportGuidColIdx = FALSE;
     if ($needHeaders) {
       $existingProblemColIdx = array_search('Problem', $headers);

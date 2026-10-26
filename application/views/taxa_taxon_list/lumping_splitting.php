@@ -22,6 +22,8 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$auth = data_entry_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $id = html::initial_value($values, 'taxa_taxon_list:id');
 /* For lumping, if there is a taxon_relation record already existing with this
  * taxon in the from_ field, then this has already been lumped.
@@ -57,17 +59,19 @@ if ($id != NULL) {
 ?>
 
 <script type="text/javascript" >
+var lumpSplitReadAuth = <?php echo json_encode($auth['read']); ?>;
+var lumpSplitWriteAuth = <?php echo json_encode($auth['write_tokens']); ?>;
 $(document).ready(function() {
   jQuery("#LStaxon").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
     minChars : 1,
-    extraParams : {
+    extraParams : jQuery.extend({}, lumpSplitReadAuth, {
       taxon_list_id : "<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>",
       orderby : "taxon",
       mode : "json",
       deleted : 'false',
       view : 'detail',
       qfield : 'taxon'
-    },
+    }),
     parse: function(data) {
       var results = [];
       $.each(data, function(i, item) {
@@ -105,7 +109,7 @@ addLStaxon = function(){
       type: "GET",
       url: "<?php echo url::site() ?>services/data/taxon_relation?mode=json&view=list" +
            "&to_taxon_meaning_id=" + jQuery('#LStaxon_meaning_id').val() + "&callback=?",
-      data: {},
+      data: lumpSplitReadAuth,
       success: function(trdata) {
         if(!(trdata instanceof Array)){
           // do nothing
@@ -157,7 +161,7 @@ performLump = function(){
     jQuery.ajax({
         type: "GET",
         url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=" + jQuery(elem).data('meaning') + "&callback=?",
-        data: {},
+        data: lumpSplitReadAuth,
         success: function(ttlData) {
           if(ttlData instanceof Array){
             for (j=0; j< ttlData.length; j++){
@@ -178,7 +182,7 @@ performLump = function(){
   jQuery.ajax({
       type: "POST",
       url: "<?php echo url::site() ?>services/data/save?mode=json",
-      data: {submission : JSON.stringify(sa)},
+      data: jQuery.extend({}, lumpSplitWriteAuth, {submission : JSON.stringify(sa)}),
       success: function(attrdata) {
       },
       dataType: 'json',
@@ -214,7 +218,7 @@ performSplit = function(){
       jQuery.ajax({
         type: "GET",
         url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>&callback=?",
-        data: {},
+        data: lumpSplitReadAuth,
         success: function(ttlData) {
           if(ttlData instanceof Array){
             for (j=0; j< ttlData.length; j++){
@@ -234,7 +238,7 @@ performSplit = function(){
     jQuery.ajax({
         type: "POST",
         url: "<?php echo url::site() ?>services/data/save?mode=json",
-        data: {submission : JSON.stringify(sa)},
+        data: jQuery.extend({}, lumpSplitWriteAuth, {submission : JSON.stringify(sa)}),
         success: function(attrdata) {
         },
         dataType: 'json',

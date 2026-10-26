@@ -20,8 +20,79 @@
 
 /**
  * Class providing miscellaneous data utility web services.
+ *
+ * Successful actions consume their authenticated write nonce before returning
+ * a response, unless persist_auth explicitly requests reuse.
  */
 class Data_utils_Controller extends Data_Service_Base_Controller {
+
+  /**
+   * Check a whole batch against website-level verification sharing.
+   *
+   * Verifier roles are managed by client sites, not by warehouse filters.
+   * Use live tables so stale report/cache rows cannot grant access. The single
+   * count query uses record primary keys and a set of sharing agreements.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $entity
+   *   Either occurrence or sample.
+   * @param array $ids
+   *   Record IDs to check, including any parent-sample expansion.
+   *
+   * @throws AuthorisationError
+   *   If any record is missing, deleted, or outside the permitted websites.
+   */
+  protected function checkVerificationAccess($db, string $entity, array $ids): void {
+    if (!in_array($entity, ['occurrence', 'sample'], TRUE)) {
+      throw new InvalidArgumentException('Unsupported verification entity.');
+    }
+    if (empty($ids)) {
+      return;
+    }
+    $idList = implode(',', $ids);
+    warehouse::validateIntCsvListParam($idList);
+    $table = $entity === 'occurrence' ? 'occurrences' : 'samples';
+    $join = $entity === 'sample' ? 'JOIN surveys s ON s.id=r.survey_id AND s.deleted=false' : '';
+    $websiteField = $entity === 'sample' ? 's.website_id' : 'r.website_id';
+    if ($this->website_id > 0) {
+      $websiteId = (int) $this->website_id;
+      $permission = <<<SQL
+        ($websiteField=$websiteId OR $websiteField IN (
+          SELECT from_website_id FROM index_websites_website_agreements
+          WHERE to_website_id=$websiteId AND provide_for_verification=true
+        ))
+      SQL;
+    }
+    elseif ($this->in_warehouse && $this->getAuthenticatedUserId() !== NULL) {
+      if ($this->user_is_core_admin) {
+        $permission = 'true';
+      }
+      else {
+        $userId = $this->getAuthenticatedUserId();
+        $permission = <<<SQL
+          $websiteField IN (
+            SELECT website_id FROM users_websites
+            WHERE user_id=$userId AND site_role_id IS NOT NULL AND banned=false
+          )
+        SQL;
+      }
+    }
+    else {
+      throw new AuthorisationError('No authenticated website available for verification.', 2001);
+    }
+    $sql = <<<SQL
+      SELECT COUNT(*) AS count
+      FROM $table r
+      $join
+      WHERE r.id IN ($idList) AND r.deleted=false
+      AND $permission
+    SQL;
+    $count = (int) $db->query($sql)->current()->count;
+    if ($count !== count(array_unique($ids, SORT_REGULAR))) {
+      throw new AuthorisationError('You do not have permission to verify some of the records.', 2001);
+    }
+  }
 
   /**
    * Handled configurable data actions.
@@ -102,6 +173,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       else {
         header('Content-Type: application/json');
       }
+      $this->delete_nonce();
       echo $r;
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, $db);
@@ -188,21 +260,22 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         if (($record['record_status'] !== 'V' || $record['record_substatus'] !== $substatus) &&
           (!empty($record['pass']) || ($_POST['ignore'] ?? '') === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
-          if (!$dryRun) {
-            $db->insert('occurrence_comments', [
-              'occurrence_id' => $record['occurrence_id'],
-              'comment' => "This record is $status",
-              'created_by_id' => $this->user_id,
-              'created_on' => date('Y-m-d H:i:s'),
-              'updated_by_id' => $this->user_id,
-              'updated_on' => date('Y-m-d H:i:s'),
-              'record_status' => 'V',
-              'record_substatus' => $substatus,
-            ]);
-          }
         }
       }
-      if (!$dryRun) {
+      $this->checkVerificationAccess($db, 'occurrence', array_values($ids));
+      if (!$dryRun && !empty($ids)) {
+        foreach ($ids as $id) {
+          $db->insert('occurrence_comments', [
+            'occurrence_id' => $id,
+            'comment' => "This record is $status",
+            'created_by_id' => $this->user_id,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => $this->user_id,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'record_status' => 'V',
+            'record_substatus' => $substatus,
+          ]);
+        }
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues($db, $this->user_id, 'V', $substatus, 'H');
         // Check for any workflow updates. Any workflow records will need an
@@ -213,6 +286,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $db->query('COMMIT;');
         $transactionStarted = FALSE;
       }
+      $this->delete_nonce();
       echo count($ids);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db);
@@ -267,11 +341,12 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   public function list_verify() {
     if (empty($_POST['occurrence:ids'])) {
       echo 'occurrence:ids not supplied';
-      kohana::log('debug', 'Invalid occurrence:ids to list_verify: ' . var_export($_POST, TRUE));
+      kohana::log('debug', 'Invalid occurrence:ids to list_verify: ' . var_export(logRedaction::parameters($_POST), TRUE));
       return;
     }
-    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+    if (!preg_match('/^\d++(?:,\d++)*+$/D', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+      return;
     }
     $this->array_verify(explode(',', $_POST['occurrence:ids']));
   }
@@ -298,8 +373,10 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $db = new Database();
         $this->authenticate('write');
         if (count($ids) === 1 && !empty($_POST['applyDecisionToParentSample'])) {
+          $this->checkVerificationAccess($db, 'occurrence', $ids);
           $ids = $this->findSameTaxonInParentSample($db, $ids[0]);
         }
+        $this->checkVerificationAccess($db, 'occurrence', $ids);
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues(
           $db,
@@ -327,14 +404,15 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
             ]);
           }
         }
+        $this->delete_nonce();
         echo 'OK';
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
         }
       }
       catch (Exception $e) {
-        echo $e->getMessage();
         error_logger::log_error('Exception during single record verify', $e);
+        $this->handle_error($e);
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), $ids);
         }
@@ -425,6 +503,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     SQL;
     $db->query($qry);
 
+    $this->delete_nonce();
     echo json_encode([
       'code' => 200,
       'status' => 'OK',
@@ -461,7 +540,8 @@ WHERE o1.id=$id
 -- Always include the selected record. Include other records only if unverified.
 AND (o2.id=$id OR (o2.record_status='C' AND o2.record_substatus IS NULL));
 SQL;
-    return explode(',', $db->query($sql)->current()->expanded);
+    $expanded = $db->query($sql)->current()->expanded;
+    return $expanded === NULL ? [(string) $id] : explode(',', $expanded);
   }
 
   /**
@@ -479,10 +559,10 @@ SQL;
   public function list_redet() {
     if (empty($_POST['occurrence:ids'])) {
       echo 'occurrence:ids not supplied';
-      kohana::log('debug', 'Invalid occurrence:ids to list_redet: ' . var_export($_POST, TRUE));
+      kohana::log('debug', 'Invalid occurrence:ids to list_redet: ' . var_export(logRedaction::parameters($_POST), TRUE));
       return;
     }
-    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+    if (!preg_match('/^\d++(?:,\d++)*+$/D', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
       return;
     }
@@ -504,6 +584,7 @@ SQL;
         $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
+        $this->checkVerificationAccess($db, 'occurrence', $ids);
         $determinerPersonId = $this->getDeterminerPersonId($db, $this->user_id, $_POST['occurrence:determiner_id'] ?? NULL);
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableRedetUpdateValues(
@@ -536,14 +617,15 @@ SQL;
             ]);
           }
         }
+        $this->delete_nonce();
         echo 'OK';
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, NULL, json_encode($ids));
         }
       }
       catch (Exception $e) {
-        echo $e->getMessage();
         error_logger::log_error('Exception during redet', $e);
+        $this->handle_error($e);
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), json_encode($ids));
         }
@@ -698,6 +780,7 @@ SQL;
         $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
+        $this->checkVerificationAccess($db, 'sample', [$_POST['sample:id']]);
         $updates = array(
           'record_status' => $_POST['sample:record_status'],
           'verified_by_id' => $this->user_id,
@@ -731,14 +814,15 @@ SQL;
             'record_status' => $_POST['sample:record_status'],
           ));
         }
+        $this->delete_nonce();
         echo 'OK';
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db);
         }
       }
       catch (Exception $e) {
-        echo $e->getMessage();
         error_logger::log_error('Exception during single sample verify', $e);
+        $this->handle_error($e);
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
         }
@@ -767,16 +851,19 @@ SQL;
       foreach ($data['content']['records'] as $record) {
         if ($record['record_status'] !== 'V') {
           $ids[$record['sample_id']] = $record['sample_id'];
-          $db->insert('sample_comments', array(
-            'sample_id' => $record['sample_id'],
-            'comment' => "This sample is accepted",
-            'created_by_id' => $this->user_id,
-            'created_on' => date('Y-m-d H:i:s'),
-            'updated_by_id' => $this->user_id,
-            'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => 'V'
-          ));
         }
+      }
+      $this->checkVerificationAccess($db, 'sample', array_values($ids));
+      foreach ($ids as $id) {
+        $db->insert('sample_comments', array(
+          'sample_id' => $id,
+          'comment' => "This sample is accepted",
+          'created_by_id' => $this->user_id,
+          'created_on' => date('Y-m-d H:i:s'),
+          'updated_by_id' => $this->user_id,
+          'updated_on' => date('Y-m-d H:i:s'),
+          'record_status' => 'V'
+        ));
       }
       $updates = array(
         'record_status' => 'V',
@@ -785,21 +872,26 @@ SQL;
         'updated_by_id' => $this->user_id,
         'updated_on' => date('Y-m-d H:i:s'),
       );
-      $db->from('samples')->set($updates)->in('id', array_keys($ids))->update();
+      if (!empty($ids)) {
+        $db->from('samples')->set($updates)->in('id', array_keys($ids))->update();
+      }
       $updates = array(
         'record_status' => 'V',
         'verified_on' => date('Y-m-d H:i:s'),
         'updated_on' => date('Y-m-d H:i:s'),
       );
-      $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
+      if (!empty($ids)) {
+        $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
+      }
+      $this->delete_nonce();
       echo count($ids);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
-      echo $e->getMessage();
       error_logger::log_error('Exception during bulk verify of samples', $e);
+      $this->handle_error($e);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
       }
@@ -812,7 +904,7 @@ SQL;
    * Allows bulk deletion of occurrence data. Currently only supports deletion
    * of entire imports. When calling this service, the following must be
    * provided in the POST or GET data:
-   * * write authentication tokens
+   * * write authentication tokens containing a signed user ID
    * * import_guid - the GUID of the import to delete
    * * trial - optional. Set a value such as 't' to do a trial run.
    *
@@ -825,17 +917,19 @@ SQL;
       $this->fail('Bad request', 400, 'Missing import_guid parameter');
       return;
     }
-    elseif (!preg_match('/^[\dA-Z\-]+$/', $_REQUEST['import_guid'])) {
+    elseif (!is_string($_REQUEST['import_guid']) || !preg_match('/^[\dA-Z\-]+$/D', $_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Incorrect import_guid format');
       return;
     }
-    elseif (empty($this->auth_user_id)) {
-      $this->fail('Bad request', 400, 'Bulk_delete_occurrences requires a more up-to-date client which provides the user ID in the authentication token.');
-    }
     else {
+      $tm = microtime(TRUE);
+      $db = NULL;
       try {
-        $tm = microtime(TRUE);
         $this->authenticate('write');
+        if ($this->auth_user_id === NULL || $this->auth_user_id <= 0) {
+          $this->fail('Bad request', 400, 'Bulk_delete_occurrences requires a more up-to-date client which provides the user ID in the authentication token.');
+          return;
+        }
         $db = new Database();
         $deletionSql = '';
         if (empty($_REQUEST['trial'])) {
@@ -891,6 +985,7 @@ SQL;
         else {
           header('Content-Type: application/json');
         }
+        $this->delete_nonce();
         echo $r;
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db);
@@ -898,6 +993,7 @@ SQL;
       }
       catch (Exception $e) {
         error_logger::log_error('Exception during bulk_delete_occurrences', $e);
+        $this->handle_error($e);
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
         }
@@ -916,10 +1012,10 @@ SQL;
    *   Text to include in response.
    * @param string $errorCode
    *   An error code that defines the specific problem so that the client may resolve it.
-   * @param array $errorData
+   * @param ?array $errorData
    *   Any extra data that can be used by the client in problem resolution.
    */
-  private function fail($status, $code, $text, $errorCode = NULL, array $errorData = NULL) {
+  private function fail($status, $code, $text, $errorCode = NULL, ?array $errorData = NULL) {
     $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.0';
     header($protocol . ' ' . $code . ' ' . $status);
     $response = [
@@ -933,7 +1029,7 @@ SQL;
     if ($errorData) {
       $response['errorData'] = $errorData;
     }
-    kohana::log('error','Fail in data utils call at ' . $_SERVER['REQUEST_URI'] . ' with status: ' . $status . ', code: ' . $code . ', message: ' . $text);
+    kohana::log('error','Fail in data utils call at ' . logRedaction::uri($_SERVER['REQUEST_URI']) . ' with status: ' . $status . ', code: ' . $code . ', message: ' . $text);
     echo json_encode($response);
   }
 
@@ -1167,7 +1263,7 @@ SQL;
     $datasetMappings = json_decode($_POST['datasetMappings']);
     if (empty($datasetMappings)) {
       $this->fail('Bad Request', 400, 'The datasetMappings parameter was not valid JSON.');
-      kohana::log('debug', 'Bulk move mappings contain invalid JSON: ' . $_POST['datasetMappings']);
+      kohana::log('debug', 'Bulk move mappings contain invalid JSON: ' . logRedaction::body($_POST['datasetMappings'], [], 'application/json'));
       return;
     }
     // Validate that list of website/survey mappings in the request all match
@@ -1250,6 +1346,7 @@ SQL;
         'samples' => $countStats->sample_count,
       ]
     ];
+    $this->delete_nonce();
     echo json_encode($response);
     if (class_exists('request_logging')) {
       request_logging::log('a', 'data', NULL, 'bulk_move', $this->website_id, $this->auth_user_id, $tm, $db);
@@ -1332,7 +1429,7 @@ SQL;
     $options = json_decode($_POST['options'] ?? '{}');
     if (!is_object($options) || json_last_error() !== JSON_ERROR_NONE) {
       kohana::log('error', 'Invalid JSON in options parameter: ' . json_last_error_msg());
-      kohana::log('error', 'Options parameter: ' . var_export($_POST['options'] ?? '{}', TRUE));
+      kohana::log('error', 'Options parameter: ' . logRedaction::body($_POST['options'] ?? '{}', [], 'application/json'));
       $this->fail('Bad request', 400, 'The options parameter must contain a valid JSON object.');
       return;
     }
@@ -1501,6 +1598,7 @@ SQL;
           'occurrences' => count(explode(',', $occurrenceIds)),
         ],
       ];
+      $this->delete_nonce();
       echo json_encode($response);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db);

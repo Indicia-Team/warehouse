@@ -18,22 +18,22 @@ interface Session_Driver {
 	 * @param   string   session name
 	 * @return  boolean
 	 */
-	public function open($path, $name);
+  public function open($path, $name): bool;
 
 	/**
 	 * Closes a session.
 	 *
 	 * @return  boolean
 	 */
-	public function close();
+  public function close(): bool;
 
 	/**
 	 * Reads a session.
 	 *
 	 * @param   string  session id
-	 * @return  string
+   * @return  string|false
 	 */
-	public function read($id);
+  public function read($id): string|false;
 
 	/**
 	 * Writes a session.
@@ -42,7 +42,7 @@ interface Session_Driver {
 	 * @param   string   session data
 	 * @return  boolean
 	 */
-	public function write($id, $data);
+  public function write($id, $data): bool;
 
 	/**
 	 * Destroys a session.
@@ -50,21 +50,21 @@ interface Session_Driver {
 	 * @param   string   session id
 	 * @return  boolean
 	 */
-	public function destroy($id);
+  public function destroy($id): bool;
 
 	/**
 	 * Regenerates the session id.
 	 *
 	 * @return  string
 	 */
-	public function regenerate();
+  public function regenerate(): string;
 
 	/**
 	 * Garbage collection.
 	 *
 	 * @param   integer  session expiration period
-	 * @return  boolean
+   * @return  integer|false  number of deleted sessions, or false on failure
 	 */
-	public function gc($maxlifetime);
+  public function gc($maxlifetime): int|false;
 
 } // End Session Driver Interface

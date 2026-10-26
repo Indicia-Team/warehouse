@@ -61,9 +61,10 @@ class Report_Controller extends Data_Service_Base_Controller {
     $this->authenticate('read');
     $websites = $this->website_id ? array($this->website_id) : null;
     $this->reportEngine = new ReportEngine($websites, $this->user_id);
-    $isCoreAdmin = !empty($this->user_id) && attributeEncryption::isCoreAdmin($this->user_id);
-    $siteAdminWebsiteIds = !empty($this->user_id)
-      ? attributeEncryption::getUserAdminWebsiteIds($this->user_id)
+    $authenticatedUserId = $this->getAuthenticatedUserId();
+    $isCoreAdmin = $authenticatedUserId !== NULL && attributeEncryption::isCoreAdmin($authenticatedUserId);
+    $siteAdminWebsiteIds = $authenticatedUserId !== NULL
+      ? attributeEncryption::getUserAdminWebsiteIds($authenticatedUserId)
       : [];
     $canDecrypt = $isCoreAdmin || !empty($siteAdminWebsiteIds);
     $this->reportEngine->setDecryptPermissions($canDecrypt, $isCoreAdmin, $siteAdminWebsiteIds);

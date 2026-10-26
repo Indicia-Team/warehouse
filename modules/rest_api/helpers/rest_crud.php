@@ -1214,13 +1214,13 @@ SQL;
    *
    * @param mixed $data
    *   Associative array or object of field names and values.
-   * @param array $fields
+   * @param ?array $fields
    *   Optional list of fields to restrict to.
    *
    * @return array
    *   Associative array of field names and values.
    */
-  private static function getValuesForResponse($data, array $fields = NULL) {
+  private static function getValuesForResponse($data, ?array $fields = NULL) {
     if (is_object($data)) {
       $data = (array) $data;
     }

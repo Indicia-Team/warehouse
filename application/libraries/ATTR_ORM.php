@@ -141,7 +141,7 @@ abstract class ATTR_ORM extends Valid_ORM {
       return FALSE;
     }
     $hasValue = $this->db
-      ->select('1 AS found')
+      ->select('id')
       ->from($valueTable)
       ->where([
         $valueAttrField => $this->id,
