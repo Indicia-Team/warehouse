@@ -204,7 +204,8 @@
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
-        get_sref_precision(smp.entered_sref, smp.entered_sref_system, null)
+        /* divide by 2 to get radius from the square width. */
+        get_sref_precision(smp.entered_sref, smp.entered_sref_system, null) / 2
       ELSE COALESCE(snf.attr_sref_precision, 50)
     END"
             datatype="float"
