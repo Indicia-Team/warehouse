@@ -660,6 +660,77 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($response['error']), 'Normal user should be denied decrypt reports.');
   }
 
+  /**
+   * Reject unsigned admin IDs while retaining signed admin decryption access.
+   *
+   * The top-level user_id deliberately claims administrator identity in every
+   * case. Only the user-specific token should confer decryption permissions.
+   *
+   * @param string $mode
+   *   JSON or streamed CSV response format.
+   * @param bool $signed
+   *   Whether the token authenticates user 1 or only the website.
+   * @param bool $coreAdmin
+   *   Whether user 1 is a core admin; otherwise their site-admin role applies.
+   *
+   * @dataProvider decryptAuthenticationContexts
+   */
+  public function testDecryptReportRequiresAuthenticatedIdentity(string $mode, bool $signed, bool $coreAdmin) {
+    $db = new Database();
+    $db->query('UPDATE users SET core_role_id=? WHERE id=1', [$coreAdmin ? 1 : NULL]);
+    $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
+    $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
+    $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
+      [attributeEncryption::encrypt('Top secret')]);
+    $auth = $this->siteAdminAuth;
+    $nonce = $auth['read']['nonce'];
+    $auth['read']['auth_token'] = $signed ? sha1("$nonce:password:1") . ':1' : sha1("$nonce:password");
+    $response = $this->getReportResponseAsAuth(
+      'library/locations/locations_encrypted_attr_test.xml',
+      $auth,
+      ['location_type_id' => 2],
+      $mode,
+      ['user_id' => 1]
+    );
+    if ($signed) {
+      if ($mode === 'json') {
+        $this->assertFalse(isset($response['error']), 'Signed administrator should retain decrypt access.');
+        $this->assertCount(1, $response);
+        $this->assertSame('Top secret', $response[0]['secret_text']);
+      }
+      else {
+        $this->assertStringContainsString('Top secret', $response);
+      }
+    }
+    elseif ($mode === 'json') {
+      $this->assertArrayHasKey('error', $response);
+      $this->assertStringNotContainsString('Top secret', json_encode($response));
+    }
+    else {
+      $this->assertStringContainsString('status: 403', $response);
+      $this->assertStringNotContainsString('Top secret', $response);
+    }
+  }
+
+  /**
+   * Cover token type, administrator role, and buffered/streamed output.
+   *
+   * @return array
+   *   Named cases containing response mode, signed-token flag, and core role.
+   */
+  public static function decryptAuthenticationContexts(): array {
+    return [
+      'unsigned core admin JSON' => ['json', FALSE, TRUE],
+      'unsigned core admin CSV' => ['csv', FALSE, TRUE],
+      'unsigned site admin JSON' => ['json', FALSE, FALSE],
+      'unsigned site admin CSV' => ['csv', FALSE, FALSE],
+      'signed core admin JSON' => ['json', TRUE, TRUE],
+      'signed core admin CSV' => ['csv', TRUE, TRUE],
+      'signed site admin JSON' => ['json', TRUE, FALSE],
+      'signed site admin CSV' => ['csv', TRUE, FALSE],
+    ];
+  }
+
   public function testDecryptReportAllowedForSiteAdminAndReturnsPlaintext() {
     $db = new Database();
     $db->query('UPDATE users SET core_role_id=NULL WHERE id=1');
@@ -748,7 +819,25 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     return $this->getReportResponseAsAuth($report, $auth, $params, 'csv');
   }
 
-  private function getReportResponseAsAuth($report, array $auth, $params = [], $mode = 'json') {
+  /**
+   * Request a report with explicit credentials and optional request overrides.
+   *
+   * @param string $report
+   *   Local report path, including its XML extension.
+   * @param array $auth
+   *   Authentication structure containing read nonce and token values.
+   * @param array $params
+   *   Report filters encoded in the params field.
+   * @param string $mode
+   *   Response format, defaulting to JSON.
+   * @param array $extraRequestParams
+   *   Top-level request overrides, such as an unsigned user_id claim. These
+   *   are separate from report filters and take precedence over defaults.
+   *
+   * @return array|string|null
+   *   Decoded JSON response, or the raw response for other formats.
+   */
+  private function getReportResponseAsAuth($report, array $auth, $params = [], $mode = 'json', array $extraRequestParams = []) {
     $requestParams = array(
       'report' => $report,
       'reportSource' => 'local',
@@ -758,7 +847,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'params' => json_encode($params)
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
-    $response = self::getResponse($url, TRUE, $requestParams);
+    $response = self::getResponse($url, TRUE, array_merge($requestParams, $extraRequestParams));
     if ($mode === 'json') {
       // Valid json response will decode.
       return json_decode($response, TRUE);
