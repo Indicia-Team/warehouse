@@ -21,6 +21,7 @@ single step through code.
 
 ### Prerequisites
 Naturally you'll need [Docker](https://docs.docker.com/engine/install/) installed.
+The warehouse requires PHP 8.2 or newer.
 
 Currently, a postgres client is needed on the host for the script to complete the set
 up of the indicia schema. E.g. on Ubuntu you can

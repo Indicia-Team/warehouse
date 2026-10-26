@@ -454,7 +454,7 @@ class warehouse {
    *   Message to throw as an exception if the format is incorrect.
    */
   public static function validateIntCsvListParam($list, $msg = 'Parameter format incorrect') {
-    if (!preg_match('/^\d+(,\d+)*$/', str_replace(' ', '', $list))) {
+    if (!preg_match('/^\d++(?:,\d++)*+$/', str_replace(' ', '', $list))) {
       throw new exception($msg);
     }
   }
