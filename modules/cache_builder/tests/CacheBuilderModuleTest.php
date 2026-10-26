@@ -182,6 +182,229 @@ class CacheBuilderModuleTest extends Indicia_DatabaseTestCase {
   }
 
   /**
+   * Preserve entered grid notation without bypassing precision restrictions.
+   *
+   * @dataProvider provideOutputSpatialReferences
+   */
+  public function testOutputSpatialReference($entity, $operation, array $scenario, $expectedSref) {
+    require_once 'modules/cache_builder/helpers/cache_builder.php';
+    require_once 'modules/sref_osgb/helpers/osgb.php';
+    $scenario += [
+      'sref' => 'SU67NW',
+      'system' => 'OSGB',
+      'geometry_sref' => 'SU67NW',
+      'privacy' => NULL,
+      'sensitivity' => NULL,
+      'confidential' => 'f',
+      'sibling_sensitivity' => NULL,
+      'sibling_confidential' => 'f',
+      'precision' => NULL,
+      'precision_type' => 'I',
+      'latlong' => FALSE,
+      'location_only' => FALSE,
+      'no_occurrences' => FALSE,
+    ];
+    $wkt = osgb::sref_to_wkt($scenario['geometry_sref']);
+    $this->db->query(
+      'UPDATE samples
+       SET entered_sref=?, entered_sref_system=?, privacy_precision=?,
+         geom=ST_Transform(ST_GeomFromText(?, 27700), 900913), location_id=NULL
+       WHERE id=1',
+      [$scenario['sref'], $scenario['system'], $scenario['privacy'], $wkt]
+    );
+    $roundTrip = $this->db->query(
+      'SELECT ST_HausdorffDistance(ST_Transform(geom, 27700),
+         ST_GeomFromText(?, 27700)) AS error_metres
+       FROM samples WHERE id=1',
+      [$wkt]
+    )->current();
+    $this->assertLessThan(
+      0.1,
+      (float) $roundTrip->error_metres,
+      'Fixture OSGB geometry must survive the 27700/900913 round trip within 0.1 m. '
+        . 'Check the test database spatial_ref_sys definitions and PROJ datum/grid configuration.'
+    );
+    $this->db->query(
+      'UPDATE occurrences SET sensitivity_precision=?, confidential=? WHERE id=1',
+      [$scenario['sensitivity'], $scenario['confidential']]
+    );
+    $this->db->query(
+      'UPDATE occurrences SET sensitivity_precision=?, confidential=? WHERE id=2',
+      [$scenario['sibling_sensitivity'], $scenario['sibling_confidential']]
+    );
+    if ($scenario['latlong']) {
+      $this->db->query(
+        "UPDATE samples
+         SET geom=ST_Centroid(geom), entered_sref_system='4326',
+           entered_sref=ST_Y(ST_Transform(ST_Centroid(geom), 4326))::text
+             || ', ' || ST_X(ST_Transform(ST_Centroid(geom), 4326))::text
+         WHERE id=1"
+      );
+    }
+    if ($scenario['location_only']) {
+      $this->db->query(
+        'UPDATE locations
+         SET centroid_geom=(SELECT geom FROM samples WHERE id=1),
+           centroid_sref=?, centroid_sref_system=?
+         WHERE id=1',
+        [$scenario['sref'], $scenario['system']]
+      );
+      $this->db->query(
+        'UPDATE samples
+         SET location_id=1, geom=NULL, entered_sref=NULL, entered_sref_system=NULL
+         WHERE id=1'
+      );
+    }
+    if ($scenario['no_occurrences']) {
+      $this->db->query('UPDATE occurrences SET sample_id=2 WHERE sample_id=1');
+    }
+    if ($scenario['precision'] !== NULL) {
+      $this->db->query(
+        "UPDATE sample_attributes
+         SET system_function='sref_precision', data_type=?, termlist_id=?
+         WHERE id=1",
+        [$scenario['precision_type'], $scenario['precision_type'] === 'L' ? 1 : NULL]
+      );
+      $intValue = $scenario['precision_type'] === 'I' ? $scenario['precision'] : NULL;
+      $floatValue = $scenario['precision_type'] === 'F' ? $scenario['precision'] : NULL;
+      if ($scenario['precision_type'] === 'L') {
+        $this->db->query(
+          'UPDATE cache_termlists_terms SET sort_order=? WHERE id=1',
+          [$scenario['precision']]
+        );
+        $intValue = 1;
+      }
+      $this->db->query(
+        'INSERT INTO sample_attribute_values
+          (sample_id, sample_attribute_id, int_value, float_value,
+           created_on, created_by_id, updated_on, updated_by_id)
+         VALUES (1, 1, ?, ?, now(), 1, now(), 1)',
+        [$intValue, $floatValue]
+      );
+    }
+
+    $table = "cache_{$entity}_nonfunctional";
+    if ($operation === 'insert') {
+      $this->db->query("DELETE FROM $table WHERE id=1");
+      cache_builder::insert($this->db, $entity, [1]);
+    }
+    else {
+      $this->db->query(
+        "UPDATE $table SET output_sref='stale', output_sref_system='stale' WHERE id=1"
+      );
+      cache_builder::update($this->db, $entity, [1]);
+    }
+
+    $cached = $this->db->query(
+      "SELECT output_sref, output_sref_system FROM $table WHERE id=1"
+    )->current();
+    $this->assertNotFalse($cached);
+    if (is_array($expectedSref)) {
+      $this->assertContains(
+        $cached->output_sref,
+        $expectedSref,
+        'The output must be a 10 m cell adjoining the reduced 1 km square centre.'
+      );
+    }
+    else {
+      $this->assertSame($expectedSref, $cached->output_sref);
+    }
+    $this->assertSame('OSGB', $cached->output_sref_system);
+  }
+
+  /**
+   * Exercise each rule independently on both cache tables and write paths.
+   */
+  public static function provideOutputSpatialReferences() {
+    $cases = [
+      'north-west quadrant' => [[], 'SU67NW'],
+      'north-east quadrant' => [
+        ['sref' => 'SU67NE', 'geometry_sref' => 'SU67NE'], 'SU67NE',
+      ],
+      'south-west quadrant' => [
+        ['sref' => 'SU67SW', 'geometry_sref' => 'SU67SW'], 'SU67SW',
+      ],
+      'south-east quadrant' => [
+        ['sref' => 'SU67SE', 'geometry_sref' => 'SU67SE'], 'SU67SE',
+      ],
+      'tetrad' => [
+        ['sref' => 'SU67A', 'geometry_sref' => 'SU67A'], 'SU67A',
+      ],
+      '10 metre square' => [
+        ['sref' => 'SU60007500', 'geometry_sref' => 'SU60007500'], 'SU60007500',
+      ],
+      '1 metre square' => [
+        ['sref' => 'SU6000075000', 'geometry_sref' => 'SU6000075000'], 'SU60007500',
+      ],
+      'latitude longitude point' => [
+        ['geometry_sref' => 'SU6000075000', 'latlong' => TRUE], 'SU60007500',
+      ],
+      'different notation in same projection' => [
+        ['sref' => '460000, 175000', 'system' => '27700',
+          'geometry_sref' => 'SU60007500'],
+        'SU60007500',
+      ],
+      'private' => [['privacy' => 10000], 'SU67'],
+      'fully private' => [['privacy' => 0], 'SU67'],
+      'sensitive occurrence' => [['sensitivity' => 10000], 'SU67'],
+      'confidential with null sensitivity' => [['confidential' => 't'], 'SU67'],
+      'confidential 10 metre square' => [
+        ['sref' => 'SU60007500', 'geometry_sref' => 'SU60007500',
+          'confidential' => 't'],
+        // The 1 km centre is a 10 m grid intersection; projection and centroid
+        // rounding can select any of the four adjoining cells.
+        ['SU60507550', 'SU60497550', 'SU60507549', 'SU60497549'],
+      ],
+      'missing entered reference' => [['sref' => NULL], 'SU67'],
+      'empty entered reference' => [['sref' => ''], 'SU67'],
+      'location only' => [
+        ['sref' => 'SU60007500', 'geometry_sref' => 'SU60007500',
+          'location_only' => TRUE],
+        'SU60007500',
+      ],
+      'coarser precision attribute' => [['precision' => 5001], 'SU'],
+      'coarser floating point precision attribute' => [
+        ['precision' => 5001.0, 'precision_type' => 'F'], 'SU',
+      ],
+      'coarser lookup precision attribute' => [
+        ['precision' => 5001, 'precision_type' => 'L'], 'SU',
+      ],
+      'finer precision attribute preserves quadrant' => [['precision' => 500], 'SU67NW'],
+      'finer floating point precision attribute preserves quadrant' => [
+        ['precision' => 500.0, 'precision_type' => 'F'], 'SU67NW',
+      ],
+      'finer lookup precision attribute preserves quadrant' => [
+        ['precision' => 500, 'precision_type' => 'L'], 'SU67NW',
+      ],
+      'precision attribute just too coarse for quadrant' => [['precision' => 501], 'SU67'],
+      'equal precision attribute preserves 10 metre square' => [
+        ['sref' => 'SU60007500', 'geometry_sref' => 'SU60007500', 'precision' => 5],
+        'SU60007500',
+      ],
+      'precision attribute just too coarse for 10 metre square' => [
+        ['sref' => 'SU60007500', 'geometry_sref' => 'SU60007500', 'precision' => 6],
+        'SU600750',
+      ],
+      'sensitive sibling' => [['sibling_sensitivity' => 10000], 'SU67', 'SU67NW'],
+      'confidential sibling' => [['sibling_confidential' => 't'], 'SU67', 'SU67NW'],
+      'no occurrences' => [['no_occurrences' => TRUE], 'SU67NW'],
+    ];
+    $data = [];
+    foreach ($cases as $name => $case) {
+      foreach (['samples', 'occurrences'] as $entity) {
+        if ($entity === 'occurrences' && !empty($case[0]['no_occurrences'])) {
+          continue;
+        }
+        $expectedSref = $entity === 'occurrences' && isset($case[2]) ? $case[2] : $case[1];
+        foreach (['insert', 'update'] as $operation) {
+          $data["$entity $operation: $name"] = [$entity, $operation, $case[0], $expectedSref];
+        }
+      }
+    }
+    return $data;
+  }
+
+  /**
    * Verify deleting a sample removes cache rows for its entire subtree.
    */
   public function testDeletingSampleRemovesSubtreeCacheRows() {
