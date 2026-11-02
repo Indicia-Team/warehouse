@@ -239,19 +239,22 @@ SQL;
         return "Synonym $operation->taxon_name already exists.";
       }
     }
-    $allExistingNames->rewind();
+
+    $current = $allExistingNames[0];
+    
     // Copy over details from the preferred taxon to define a synonym.
-    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
-    $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
-    $fields['taxa_taxon_list:common_taxon_id'] = $allExistingNames->current()->common_taxon_id;
-    $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
-    $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
-    $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
-    $fields['taxon:freshwater_flag'] = $allExistingNames->current()->freshwater_flag;
-    $fields['taxon:terrestrial_flag'] = $allExistingNames->current()->terrestrial_flag;
-    $fields['taxon:non_native_flag'] = $allExistingNames->current()->non_native_flag;
-    $fields['taxon:organism_key'] = $allExistingNames->current()->organism_key;
-    $fields['taxon:external_key'] = $allExistingNames->current()->external_key;
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $current->taxon_meaning_id;
+    $fields['taxa_taxon_list:parent_id'] = $current->parent_id;
+    $fields['taxa_taxon_list:common_taxon_id'] = $current->common_taxon_id;
+    $fields['taxon:taxon_rank_id'] = $current->taxon_rank_id;
+    $fields['taxon:taxon_group_id'] = $current->taxon_group_id;
+    $fields['taxon:marine_flag'] = $current->marine_flag;
+    $fields['taxon:freshwater_flag'] = $current->freshwater_flag;
+    $fields['taxon:terrestrial_flag'] = $current->terrestrial_flag;
+    $fields['taxon:non_native_flag'] = $current->non_native_flag;
+    $fields['taxon:organism_key'] = $current->organism_key;
+    $fields['taxon:external_key'] = $current->external_key;
+
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
@@ -330,7 +333,9 @@ SQL;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
+
     $namesToUpdate = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
+
     if (count($namesToUpdate) === 0) {
       // If organism not present then assumed to be deleted so operation is
       // skipped, according to info from C. Raper 13/05/2024.
@@ -527,15 +532,19 @@ SQL;
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     $allNamesToMerge = $this->getTaxaForKeys(['organism_key' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
-      $this->operationErrors[] = 'Synonym (organism key) not found';
+        return "Merge skipped because organism key {$operation->synonym} does not exist.";
     }
+    // if (count($allNamesToMerge) === 0) {
+    //  $this->operationErrors[] = 'Synonym (organism key) not found ' . 'Synonym=' . $operation->synonym . "\n"
+    // . json_encode($operation, JSON_PRETTY_PRINT);
+    // }
     if (count($namesToKeep) === 0) {
       $this->operationErrors[] = 'Could not find existing organisms using current_organism_key';
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, reset($namesToKeep), $operation);
   }
 
   /**
@@ -566,7 +575,7 @@ SQL;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, reset($namesToKeep), $operation);
   }
 
   /**
@@ -680,7 +689,7 @@ SQL;
     }
     foreach ($namesForOrganismKey as $nameInfo) {
       // Don't redo the promoted name.
-      if ($nameInfo->search_code !== $operation['synonym']) {
+      if ($nameInfo->search_code !== $operation->synonym) {
         $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
       }
     }
@@ -715,7 +724,7 @@ SQL;
       return 'Error';
     }
     // All existing names sorted so preferred name is first.
-    $previousPreferredName = $allExistingNames->current();
+    $previousPreferredName = $allExistingNames[0];
     $originalName = $previousPreferredName->taxon;
     $this->applyTaxonDefaultsToOperation($previousPreferredName, $operation);
     // Add the taxon as per new taxon, using the existing taxon meaning Id.
@@ -723,7 +732,7 @@ SQL;
     // The rename taxon operation only updates the parent from the operation
     // if for the correct organism key (in order to match UKSI operations
     // behaviour).
-    if ($operation->current_organism_key !== $operation->current_organism_key) {
+    if ($operation->organism_key !== $operation->current_organism_key) {
       $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
     }
     $fields['taxon:organism_key'] = $operation->current_organism_key;
@@ -807,6 +816,40 @@ SQL;
     return 't';
   }
 
+  /*
+    It is worth running this script before doing the UKSI ipdate
+    SELECT
+    id,
+    organism_key,
+    search_code,
+    external_key
+FROM taxa
+WHERE
+    organism_key IS DISTINCT FROM btrim(organism_key)
+    OR search_code IS DISTINCT FROM btrim(search_code)
+    OR external_key IS DISTINCT FROM btrim(external_key);
+
+ UPDATE taxa
+SET
+    organism_key = CASE
+        WHEN organism_key IS NULL THEN NULL
+        ELSE btrim(regexp_replace(organism_key, '[[:cntrl:]]', '', 'g'))
+    END,
+    search_code = CASE
+        WHEN search_code IS NULL THEN NULL
+        ELSE btrim(regexp_replace(search_code, '[[:cntrl:]]', '', 'g'))
+    END,
+    external_key = CASE
+        WHEN external_key IS NULL THEN NULL
+        ELSE btrim(regexp_replace(external_key, '[[:cntrl:]]', '', 'g'))
+    END
+WHERE
+    organism_key IS DISTINCT FROM btrim(regexp_replace(organism_key, '[[:cntrl:]]', '', 'g'))
+    OR search_code IS DISTINCT FROM btrim(regexp_replace(search_code, '[[:cntrl:]]', '', 'g'))
+    OR external_key IS DISTINCT FROM btrim(regexp_replace(external_key, '[[:cntrl:]]', '', 'g'));
+   
+
+  */
   /**
    * If a preferred name changes for a concept, update references.
    *
@@ -857,7 +900,7 @@ SQL;
    */
   private function moveNames($names, $linkToName, $operation) {
     $seniorName = $linkToName->taxon;
-    $juniorName = $names->current()->taxon;
+    $juniorName = $names[0]->taxon;
     $taxonMeaningId = $linkToName->taxon_meaning_id;
     $externalKey = $linkToName->external_key;
     $parentId = $linkToName->parent_id;
@@ -1126,23 +1169,120 @@ SQL;
       if (count($parent) === 1) {
         return $parent[0]->id;
       }
+
       if (count($parent) > 1) {
-        if ($preferAllowDataEntry) {
-          // Check if only 1 has allow_data_entry=true, if so it can be
-          // returned.
-          if ($parent[0]->allow_data_entry === 't' && $parent[1]->allow_data_entry === 'f') {
+
+        // Attempt to resolve duplicate preferred records automatically.
+        $updated = $this->removeDuplicatePreferredRecords($operation->parent_organism_key);
+
+        if ($updated > 0) {
+          $parent = $this->db
+            ->select('ttl.id, ttl.allow_data_entry')
+            ->from('taxa_taxon_lists AS ttl')
+            ->join('taxa as t', 't.id', 'ttl.taxon_id')
+            ->where([
+              'ttl.taxon_list_id' => $this->getTaxonListId(),
+              't.organism_key' => $operation->parent_organism_key,
+              'ttl.preferred' => 't',
+              'ttl.deleted' => 'f',
+              't.deleted' => 'f',
+            ])
+            ->where('t.search_code IS NOT NULL')
+            ->orderby('allow_data_entry', 'DESC')
+            ->limit(2)
+            ->get()
+            ->result_array(TRUE);
+
+          if (count($parent) === 1) {
             return $parent[0]->id;
           }
         }
-        $this->operationErrors[] = "Identified multiple possible parents.";
+
+        if ($preferAllowDataEntry) {
+          // Check if only one record allows data entry.
+          if (
+            count($parent) === 2 &&
+            $parent[0]->allow_data_entry === 't' &&
+            $parent[1]->allow_data_entry === 'f'
+          ) {
+            return $parent[0]->id;
+          }
+        }
+
+        $this->operationErrors[] =
+          "Identified multiple possible parents after cleanup. " .
+          "Organism Key: {$operation->parent_organism_key}\n" .
+          "Operation:\n" . json_encode($operation, JSON_PRETTY_PRINT) . "\n" .
+          "Parents:\n" . json_encode($parent, JSON_PRETTY_PRINT);
       }
       elseif (count($parent) === 0) {
-        $this->operationErrors[] = "Could not find parent to link to.";
+        $this->operationErrors[] =
+          "Could not find parent to link to. Organism Key: {$operation->parent_organism_key} ".json_encode($operation, JSON_PRETTY_PRINT);
       }
     }
     return NULL;
   }
 
+
+  /**
+   * Ensures only the newest preferred record for an organism key remains
+   * preferred and available for data entry.
+   *
+   * UKSI operations can occasionally leave multiple preferred
+   * taxa_taxon_list records linked to the same organism key. This function
+   * retains the most recently updated preferred record and demotes all
+   * older preferred records by:
+   *  - setting preferred = false
+   *  - setting allow_data_entry = false
+   *
+   * @param string $organismKey
+   *   Organism key to clean up.
+   *
+   * @return int
+   *   Number of records updated.
+   */
+  private function removeDuplicatePreferredRecords(string $organismKey): int {
+    // Get all preferred records for this organism, newest first.
+    $records = $this->db
+      ->select('ttl.id')
+      ->from('taxa_taxon_lists AS ttl')
+      ->join('taxa AS t', 't.id', 'ttl.taxon_id')
+      ->where([
+        't.organism_key' => $organismKey,
+        'ttl.preferred' => 't',
+        'ttl.deleted' => 'f',
+        't.deleted' => 'f',
+      ])
+      ->orderby('ttl.updated_on', 'DESC')
+      ->get()
+      ->result_array(TRUE);
+
+    // Nothing to do if only one preferred record exists.
+    if (count($records) <= 1) {
+      return 0;
+    }
+
+    $updated = 0;
+
+    // Keep the newest record; demote all older records.
+    foreach (array_slice($records, 1) as $record) {
+      $this->db->query("
+        UPDATE taxa_taxon_lists
+        SET
+          preferred = false,
+          allow_data_entry = false,
+          updated_on = now()
+        WHERE id = {$record->id}
+      ");
+
+      $updated++;
+    }
+
+    return $updated;
+  }
+
+
+  
   /**
    * Retrieve the configured main taxon list's ID.
    *
