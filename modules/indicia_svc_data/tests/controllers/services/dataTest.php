@@ -4,6 +4,7 @@ use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
+require_once 'modules/indicia_svc_data/controllers/services/data.php';
 
 $postedUserId = 1;
 
@@ -17,6 +18,10 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   private static $db;
 
   private static $auth;
+
+  private $viewPermissionOriginalUser;
+
+  private $viewPermissionOriginalMemberships;
 
   public function getDataSet() {
     $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
@@ -60,6 +65,223 @@ where p.id=u.person_id and p.email_address like 'addedPerson%';
 delete from people where email_address like 'addedPerson%';
 SQL;
     self::$db->query($sql);
+  }
+
+  protected function tearDown(): void {
+    try {
+      if ($this->viewPermissionOriginalUser !== NULL) {
+        self::$db->query('DELETE FROM users_websites WHERE user_id=?', [self::$extraUserId]);
+        foreach ($this->viewPermissionOriginalMemberships as $membership) {
+          self::$db->insert('users_websites', $membership);
+        }
+        self::$db->query('UPDATE users SET core_role_id=? WHERE id=?', [
+          $this->viewPermissionOriginalUser->core_role_id,
+          self::$extraUserId,
+        ]);
+      }
+    }
+    finally {
+      parent::tearDown();
+    }
+  }
+
+  /**
+   * Temporarily configure the existing extra user for permission tests.
+   */
+  private function prepareViewPermissionUser(array $memberships, bool $coreAdmin = FALSE): void {
+    $user = self::$db
+      ->query('SELECT core_role_id, person_id FROM users WHERE id=?', [self::$extraUserId])
+      ->current();
+    $this->assertNotFalse($user);
+    $this->viewPermissionOriginalMemberships = self::$db
+      ->query('SELECT * FROM users_websites WHERE user_id=?', [self::$extraUserId])
+      ->result_array(FALSE);
+    $this->viewPermissionOriginalUser = $user;
+    self::$db->query('UPDATE users SET core_role_id=? WHERE id=?', [
+      $coreAdmin ? 1 : NULL,
+      self::$extraUserId,
+    ]);
+    self::$db->query('DELETE FROM users_websites WHERE user_id=?', [self::$extraUserId]);
+    foreach ($memberships as $websiteId => [$roleId, $banned]) {
+      self::$db->insert('users_websites', [
+        'user_id' => self::$extraUserId,
+        'website_id' => $websiteId,
+        'site_role_id' => $roleId,
+        'banned' => $banned ? 't' : 'f',
+        'created_by_id' => 1,
+        'created_on' => date('Y-m-d H:i:s'),
+        'updated_by_id' => 1,
+        'updated_on' => date('Y-m-d H:i:s'),
+      ]);
+    }
+  }
+
+  /**
+   * Exercise authentication, role lookups and result filtering over HTTP.
+   *
+   * @dataProvider viewPermissionScenarios
+   */
+  public function testViewPermissions(array $scenario): void {
+    $scenario += [
+      'memberships' => [1 => [1, FALSE], 2 => [2, FALSE]],
+      'warehouse' => TRUE,
+      'signed' => TRUE,
+      'core_admin' => FALSE,
+      'view' => 'detail',
+      'direct' => FALSE,
+      'denied' => FALSE,
+      'expected_websites' => [1, 2],
+    ];
+    $this->prepareViewPermissionUser($scenario['memberships'], $scenario['core_admin']);
+    $password = $scenario['warehouse'] ? Kohana::config('indicia.private_key') : 'password';
+    $auth = data_entry_helper::get_read_auth($scenario['warehouse'] ? -self::$extraUserId : 1, $password);
+    $suffix = !$scenario['warehouse'] && $scenario['signed'] ? ':' . self::$extraUserId : '';
+    $auth['auth_token'] = sha1("$auth[nonce]:$password$suffix") . $suffix;
+    $params = $auth + [
+      'mode' => 'json',
+      'view' => $scenario['view'],
+      'columns' => 'id,website_id',
+      'wantCount' => '1',
+    ];
+    if (isset($scenario['user_id'])) {
+      $params['user_id'] = $scenario['user_id'];
+    }
+    $path = 'person';
+    if ($scenario['direct']) {
+      $path .= '/' . $this->viewPermissionOriginalUser->person_id;
+    }
+    $response = $this->getResponse(
+      data_entry_helper::$base_url . "index.php/services/data/$path?" . http_build_query($params, '', '&')
+    );
+    $this->assertIsArray($response);
+    if ($scenario['denied']) {
+      $this->assertArrayHasKey('error', $response);
+      $this->assertEquals(2001, $response['code']);
+      return;
+    }
+    $this->assertArrayNotHasKey('error', $response);
+    $this->assertArrayHasKey('records', $response);
+    $view = $scenario['view'] === 'detail' ? 'detail_people' : 'list_people';
+    $expectedQuery = self::$db->select('id, website_id')->from($view);
+    if ($scenario['expected_websites'] !== NULL) {
+      $expectedQuery->in('website_id', $scenario['expected_websites']);
+    }
+    if ($scenario['direct']) {
+      $expectedQuery->where('id', $this->viewPermissionOriginalUser->person_id);
+    }
+    $expected = $expectedQuery->get()->result_array(FALSE);
+    $this->assertNotEmpty($expected);
+    $this->assertEqualsCanonicalizing($expected, $response['records']);
+    $this->assertEquals(count($expected), $response['count']);
+    if ($scenario['core_admin']) {
+      $this->assertContains(NULL, array_column($response['records'], 'website_id'));
+    }
+  }
+
+  public static function viewPermissionScenarios(): array {
+    $remote = ['warehouse' => FALSE, 'expected_websites' => [NULL, 1]];
+    return [
+      'warehouse admin and editor websites' => [[]],
+      'warehouse excludes member website' => [[
+        'memberships' => [1 => [1, FALSE], 2 => [3, FALSE]],
+        'expected_websites' => [1],
+      ]],
+      'warehouse excludes banned website' => [[
+        'memberships' => [1 => [1, FALSE], 2 => [1, TRUE]],
+        'expected_websites' => [1],
+      ]],
+      'warehouse excludes membership without role' => [[
+        'memberships' => [1 => [1, FALSE], 2 => [NULL, FALSE]],
+        'expected_websites' => [1],
+      ]],
+      'warehouse without memberships' => [['memberships' => [], 'denied' => TRUE]],
+      'warehouse member only' => [['memberships' => [1 => [3, FALSE]], 'denied' => TRUE]],
+      'warehouse banned admin only' => [['memberships' => [1 => [1, TRUE]], 'denied' => TRUE]],
+      'warehouse without a role' => [['memberships' => [1 => [NULL, FALSE]], 'denied' => TRUE]],
+      'warehouse direct record uses website permissions' => [[
+        'memberships' => [1 => [1, FALSE], 2 => [3, FALSE]],
+        'expected_websites' => [1],
+        'direct' => TRUE,
+      ]],
+      'warehouse core admin can see unlinked people' => [['core_admin' => TRUE, 'expected_websites' => NULL]],
+      'unrestricted list view accepts members' => [[
+        'memberships' => [1 => [3, FALSE]],
+        'view' => 'list',
+        'expected_websites' => [NULL, 1],
+      ]],
+      'remote admin' => [$remote],
+      'remote editor' => [$remote + ['memberships' => [1 => [2, FALSE]]]],
+      'remote member' => [$remote + ['memberships' => [1 => [3, FALSE]], 'denied' => TRUE]],
+      'remote banned admin' => [$remote + ['memberships' => [1 => [1, TRUE]], 'denied' => TRUE]],
+      'remote without a role' => [$remote + ['memberships' => [1 => [NULL, FALSE]], 'denied' => TRUE]],
+      'remote admin of another website' => [$remote + ['memberships' => [2 => [1, FALSE]], 'denied' => TRUE]],
+      'legacy token cannot borrow admin identity' => [$remote + ['signed' => FALSE, 'user_id' => 1, 'denied' => TRUE]],
+      'signed member cannot borrow admin identity' => [$remote + [
+        'memberships' => [1 => [3, FALSE]],
+        'user_id' => 1,
+        'denied' => TRUE,
+      ]],
+      'signed editor ignores forged user filter' => [$remote + [
+        'memberships' => [1 => [2, FALSE]],
+        'user_id' => 1,
+      ]],
+    ];
+  }
+
+  /**
+   * Check configurable view policies using real PostgreSQL views and filtering.
+   *
+   * @dataProvider genericViewPermissionScenarios
+   */
+  public function testGenericViewPermissions(int $requiredRoleId, bool $hasWebsiteColumn, bool $coreAdmin): void {
+    $this->prepareViewPermissionUser([1 => [1, FALSE], 2 => [2, FALSE]], $coreAdmin);
+    self::$db->query(<<<SQL
+      CREATE TEMP VIEW test_view_permission_people AS
+      SELECT id, website_id AS from_website_id FROM detail_people
+    SQL);
+    try {
+      $reflection = new ReflectionClass(Data_Controller::class);
+      $controller = $reflection->newInstanceWithoutConstructor();
+      $context = [
+        'db' => self::$db,
+        'viewname' => 'test_view_permission_people',
+        'view_columns' => $hasWebsiteColumn ? ['from_website_id' => []] : [],
+        'restrictByWebsiteRolePermissions' => ['test_view_permission_people' => $requiredRoleId],
+        'in_warehouse' => TRUE,
+        'website_id' => 0,
+        'user_id' => self::$extraUserId,
+        'user_is_core_admin' => $coreAdmin,
+      ];
+      foreach ($context as $property => $value) {
+        $reflection->getProperty($property)->setValue($controller, $value);
+      }
+      if (!$hasWebsiteColumn && !$coreAdmin) {
+        $this->expectException(EntityAccessError::class);
+      }
+      $method = $reflection->getMethod('applyViewPermissions');
+      $method->setAccessible(TRUE);
+      $method->invoke($controller);
+      $query = self::$db->select('id, from_website_id')->from('test_view_permission_people');
+      $rows = $query->get()->result_array(FALSE);
+      $this->assertNotEmpty($rows);
+      $websites = array_column($rows, 'from_website_id');
+      $this->assertEqualsCanonicalizing(
+        $coreAdmin ? [NULL, 1, 2] : ($requiredRoleId === 1 ? [1] : [1, 2]),
+        array_values(array_unique($websites, SORT_REGULAR))
+      );
+    }
+    finally {
+      self::$db->query('DROP VIEW test_view_permission_people');
+    }
+  }
+
+  public static function genericViewPermissionScenarios(): array {
+    return [
+      'from_website_id filtering' => [2, TRUE, FALSE],
+      'configured admin-only threshold' => [1, TRUE, FALSE],
+      'restricted view without website column' => [2, FALSE, FALSE],
+      'core admin bypasses missing website column' => [2, FALSE, TRUE],
+    ];
   }
 
   /**

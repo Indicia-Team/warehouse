@@ -24,6 +24,8 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+ class Kohana_Database_Table_Not_Found_Exception extends Kohana_Database_Exception {}
+
 /**
  * Helper class to provide postgreSQL specific SQL functions.
  */
@@ -438,7 +440,7 @@ SQL;
         }
       }
       if (empty($fieldInfo)) {
-        throw new Kohana_Database_Exception('database.table_not_found', $entity);
+        throw new Kohana_Database_Table_Not_Found_Exception('database.table_not_found', $entity);
       }
       else {
         $cache->set($key, $fieldInfo, ['orm']);
