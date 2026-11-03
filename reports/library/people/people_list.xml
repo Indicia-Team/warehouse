@@ -6,23 +6,23 @@
     LEFT JOIN users u on u.person_id=p.id and u.deleted=false
     LEFT JOIN users_websites uw on u.id=uw.user_id
     LEFT JOIN websites w on w.id=uw.website_id and w.deleted=false
+    -- Join to the authenticated user to check their site roles.
+    JOIN users up ON up.id=#auth_user_id# AND up.deleted=false
+    -- Does the user belong to the same website as the auth user, where they are editor or admin?
+    LEFT JOIN users_websites uwp on uwp.website_id=uw.website_id
+        and uwp.user_id=#auth_user_id#
+        and coalesce(uwp.site_role_id, 4) &lt; 3 -- site editor or admin
     #joins#
     WHERE p.deleted = false
+    /* Only for core admin, or people you created or have access to via website admin rights. */
+    AND (up.core_role_id = 1 OR uwp.id IS NOT NULL OR p.created_by_id=#auth_user_id#)
     AND #website_filter#
   </query>
   <orderbys>
     <orderby>fullname_order</orderby>
   </orderbys>
   <params>
-    <param name='auth_user_id' display='Administrator User ID' datatype='integer' default=''
-           description="Set this if the report is for a warehouse user with admin rights over only certain websites.
-            Limits the report output to the people records linked to users that are members of those websites, or people
-            created by the user accessing the report unless that user is promoted to core admin." >
-      <join>LEFT JOIN users_websites uwp on uwp.website_id=uw.website_id
-        and uwp.user_id=#auth_user_id#
-        and coalesce(uwp.site_role_id, 4) &lt; 3 -- site editor or admin
-      </join>
-      <where>(uwp.id IS NOT NULL or (p.created_by_id=#auth_user_id# and u.core_role_id IS NULL))</where>
+    <param name="auth_user_id" display="Administrator User ID" datatype="integer" default="-1" >
     </param>
   </params>
   <columns>
