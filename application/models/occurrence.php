@@ -489,8 +489,10 @@ class Occurrence_Model extends ORM {
     if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === TRUE)) {
       $retVal['sample:sample_method_id'] = [
         'display' => 'Sample Method',
-        'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
-        'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
+        'description' => 'OPTIONAL: use this box if you want to add a single method term to ALL the records you are' .
+          'importing. Otherwise, leave it set to "<please select>". If your spreadsheet already has a column containing' .
+          'a method for your records you will be able to import that into an appropriate method field (depending which' .
+          'survey you are importing into), during the next step in the import process.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $sample_methods),
       ];
