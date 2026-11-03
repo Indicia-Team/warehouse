@@ -139,6 +139,15 @@ class Data_Controller extends Data_Service_Base_Controller {
     'verification_rule_datum',
   ];
 
+  /**
+   * List of views that require specific website role permissions.
+   */
+  protected $restrictByWebsiteRolePermissions = [
+    // Key is the view name, value is the required website role ID (or lower).
+    // 3 = member, 2 = editor, 1 = admin.
+    'detail_people' => 2,
+  ];
+
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = [
     'cache_taxon_searchterms',
@@ -1035,7 +1044,14 @@ class Data_Controller extends Data_Service_Base_Controller {
       // Store the entity in class member, so less recursion overhead when
       // building XML.
       $this->viewname = $this->get_view_name();
-      $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
+      try {
+        $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
+      }
+      catch (Kohana_Database_Table_Not_Found_Exception $e) {
+        echo "Unrecognised entity " . $this->viewname . ".";
+        http_response_code(404);
+        exit;
+      }
       $result = $this->build_query_results();
     }
     return ['records' => $result];
@@ -1202,7 +1218,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // websites.
         $allowedWebsiteValues = array_merge($this->userWebsites);
         $allowedWebsiteValues[] = NULL;
-        $this->db->in('website_id', $allowedWebsiteValues);
+        $this->db->in($this->viewname . '.' . $websiteFilterField, $allowedWebsiteValues);
       }
     }
     if ($this->uri->total_arguments() == 0) {
@@ -1212,6 +1228,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     else {
       $this->db->where("$this->viewname.id", $this->uri->argument(1));
     }
+    $this->applyViewPermissions();
     try {
       if ($count) {
         $r = $this->db->count_records();
@@ -1245,6 +1262,55 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', $this->uri->string());
       kohana::log('error', kohana::debug(logRedaction::parameters($_REQUEST)));
       throw $e;
+    }
+  }
+
+  /**
+   * Enforce view roles and restrict warehouse queries to qualifying websites.
+   *
+   * Restricted warehouse views must expose website_id or from_website_id.
+   * Records without a website are only accessible to core administrators.
+   */
+  private function applyViewPermissions() {
+    if (!$this->user_is_core_admin && array_key_exists($this->viewname, $this->restrictByWebsiteRolePermissions)) {
+      $requiredRoleId = $this->restrictByWebsiteRolePermissions[$this->viewname];
+      $userId = $this->getAuthenticatedUserId();
+      $allowedWebsiteIds = [];
+      if ($userId) {
+        $roleDb = new Database();
+        $roleDb
+          ->select('website_id')
+          ->from('users_websites')
+          ->where('user_id', $userId)
+          ->where('site_role_id IS NOT', NULL)
+          ->where('site_role_id <=', $requiredRoleId)
+          ->where('banned', 'f');
+        if (!$this->in_warehouse) {
+          $roleDb->where('website_id', $this->website_id)->limit(1);
+        }
+        foreach ($roleDb->get()->result_array(FALSE) as $userWebsite) {
+          $allowedWebsiteIds[] = $userWebsite['website_id'];
+        }
+      }
+      if (empty($allowedWebsiteIds)) {
+        $message = 'Access to view ' . $this->viewname . ' unauthorised.';
+        Kohana::log('info', $message . ' User ' . $userId . ' is not authorised.');
+        throw new AuthorisationError($message, 2001);
+      }
+      if ($this->in_warehouse) {
+        if (array_key_exists('website_id', $this->view_columns)) {
+          $websiteFilterField = 'website_id';
+        }
+        elseif (array_key_exists('from_website_id', $this->view_columns)) {
+          $websiteFilterField = 'from_website_id';
+        }
+        else {
+          $message = "Restricted view $this->viewname has no website column.";
+          Kohana::log('info', $message);
+          throw new EntityAccessError($message, 1004);
+        }
+        $this->db->in($this->viewname . '.' . $websiteFilterField, $allowedWebsiteIds);
+      }
     }
   }
 
