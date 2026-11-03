@@ -139,6 +139,15 @@ class Data_Controller extends Data_Service_Base_Controller {
     'verification_rule_datum',
   ];
 
+  /**
+   * List of views that require specific website role permissions.
+   */
+  protected $restrictByWebsiteRolePermissions = [
+    // Key is the view name, value is the required website role ID (or lower).
+    // 3 = member, 2 = editor, 1 = admin.
+    'detail_people' => 2,
+  ];
+
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = [
     'cache_taxon_searchterms',
@@ -1035,7 +1044,14 @@ class Data_Controller extends Data_Service_Base_Controller {
       // Store the entity in class member, so less recursion overhead when
       // building XML.
       $this->viewname = $this->get_view_name();
-      $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
+      try {
+        $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
+      }
+      catch (Kohana_Database_Table_Not_Found_Exception $e) {
+        echo "Unrecognised entity " . $this->viewname . ".";
+        http_response_code(404);
+        exit;
+      }
       $result = $this->build_query_results();
     }
     return ['records' => $result];
@@ -1212,6 +1228,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     else {
       $this->db->where("$this->viewname.id", $this->uri->argument(1));
     }
+    $this->applyViewPermissions();
     try {
       if ($count) {
         $r = $this->db->count_records();
@@ -1245,6 +1262,35 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', $this->uri->string());
       kohana::log('error', kohana::debug(logRedaction::parameters($_REQUEST)));
       throw $e;
+    }
+  }
+
+  /**
+   * If the view requires a certain user role for access, enforce it.
+   */
+  private function applyViewPermissions() {
+    if (!$this->user_is_core_admin && array_key_exists($this->viewname, $this->restrictByWebsiteRolePermissions)) {
+      $requiredRoleId = $this->restrictByWebsiteRolePermissions[$this->viewname];
+      $roleDb = new Database();
+      $userId = $this->getAuthenticatedUserId();
+      if ($userId) {
+        $userWebsite = $roleDb
+          ->select('site_role_id')
+          ->from('users_websites')
+          ->where('user_id', $userId)
+          ->where('website_id', $this->website_id)
+          ->where('banned', 'f')
+          ->limit(1)
+          ->get()
+          ->current();
+      }
+      if (!$userId || !$userWebsite || !isset($userWebsite->site_role_id)
+          || !is_numeric($userWebsite->site_role_id)
+          || (int) $userWebsite->site_role_id > $requiredRoleId) {
+        $message = 'Access to view ' . $this->viewname . ' unauthorised.';
+        Kohana::log('info', $message . ' User ' . $userId . ' is not authorised.');
+        throw new AuthorisationError($message, 2001);
+      }
     }
   }
 
