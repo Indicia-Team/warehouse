@@ -1218,7 +1218,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // websites.
         $allowedWebsiteValues = array_merge($this->userWebsites);
         $allowedWebsiteValues[] = NULL;
-        $this->db->in('website_id', $allowedWebsiteValues);
+        $this->db->in($this->viewname . '.' . $websiteFilterField, $allowedWebsiteValues);
       }
     }
     if ($this->uri->total_arguments() == 0) {
@@ -1266,30 +1266,50 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * If the view requires a certain user role for access, enforce it.
+   * Enforce view roles and restrict warehouse queries to qualifying websites.
+   *
+   * Restricted warehouse views must expose website_id or from_website_id.
+   * Records without a website are only accessible to core administrators.
    */
   private function applyViewPermissions() {
     if (!$this->user_is_core_admin && array_key_exists($this->viewname, $this->restrictByWebsiteRolePermissions)) {
       $requiredRoleId = $this->restrictByWebsiteRolePermissions[$this->viewname];
-      $roleDb = new Database();
       $userId = $this->getAuthenticatedUserId();
+      $allowedWebsiteIds = [];
       if ($userId) {
-        $userWebsite = $roleDb
-          ->select('site_role_id')
+        $roleDb = new Database();
+        $roleDb
+          ->select('website_id')
           ->from('users_websites')
           ->where('user_id', $userId)
-          ->where('website_id', $this->website_id)
-          ->where('banned', 'f')
-          ->limit(1)
-          ->get()
-          ->current();
+          ->where('site_role_id IS NOT', NULL)
+          ->where('site_role_id <=', $requiredRoleId)
+          ->where('banned', 'f');
+        if (!$this->in_warehouse) {
+          $roleDb->where('website_id', $this->website_id)->limit(1);
+        }
+        foreach ($roleDb->get()->result_array(FALSE) as $userWebsite) {
+          $allowedWebsiteIds[] = $userWebsite['website_id'];
+        }
       }
-      if (!$userId || !$userWebsite || !isset($userWebsite->site_role_id)
-          || !is_numeric($userWebsite->site_role_id)
-          || (int) $userWebsite->site_role_id > $requiredRoleId) {
+      if (empty($allowedWebsiteIds)) {
         $message = 'Access to view ' . $this->viewname . ' unauthorised.';
         Kohana::log('info', $message . ' User ' . $userId . ' is not authorised.');
         throw new AuthorisationError($message, 2001);
+      }
+      if ($this->in_warehouse) {
+        if (array_key_exists('website_id', $this->view_columns)) {
+          $websiteFilterField = 'website_id';
+        }
+        elseif (array_key_exists('from_website_id', $this->view_columns)) {
+          $websiteFilterField = 'from_website_id';
+        }
+        else {
+          $message = "Restricted view $this->viewname has no website column.";
+          Kohana::log('info', $message);
+          throw new EntityAccessError($message, 1004);
+        }
+        $this->db->in($this->viewname . '.' . $websiteFilterField, $allowedWebsiteIds);
       }
     }
   }
