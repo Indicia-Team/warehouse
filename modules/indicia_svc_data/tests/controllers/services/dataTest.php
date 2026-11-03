@@ -179,7 +179,7 @@ SQL;
   }
 
   public static function viewPermissionScenarios(): array {
-    $remote = ['warehouse' => FALSE, 'expected_websites' => [1]];
+    $remote = ['warehouse' => FALSE, 'expected_websites' => [NULL, 1]];
     return [
       'warehouse admin and editor websites' => [[]],
       'warehouse excludes member website' => [[
