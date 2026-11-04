@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## Version 9.28.0
 
 * Adds GET support to the REST API for retrieving media for a given location, sample or occurrence.
+* Fix Record Cleaner clearing occurrence identification difficulty when no difficulty warning
+  comment is generated, including for taxa with identification difficulty 1.
 
 ## Version 9.27.0
 *2026-09-24*

@@ -518,24 +518,24 @@ class RecordCleanerApi {
       CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
         COALESCE(string_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}', ' '), 'pass')
       END AS data_cleaner_info,
-      CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE COUNT(oc.id)=0 END AS data_cleaner_result,
-      ocdiff.generated_by_subtype::integer as difficulty
+      CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE COUNT(oc.id)=0 END AS data_cleaner_result
       INTO TEMPORARY data_cleaner_results
       FROM occurrences o
       LEFT JOIN occurrence_comments oc ON oc.occurrence_id=o.id
         AND oc.implies_manual_check_required=true
         AND oc.deleted=false
-      LEFT JOIN occurrence_comments ocdiff ON ocdiff.occurrence_id=o.id
-        AND ocdiff.implies_manual_check_required=true
-        AND ocdiff.deleted=false
-        AND ocdiff.generated_by='record_cleaner_difficulty'
       WHERE o.id in ($ids)
-      GROUP BY o.id, o.last_verification_check_date, ocdiff.generated_by_subtype;
+      GROUP BY o.id, o.last_verification_check_date;
 
       UPDATE cache_occurrences_functional o
       SET data_cleaner_result = dcr.data_cleaner_result,
         applied_verification_rule_types=cttl.applicable_verification_rule_types,
-        identification_difficulty = dcr.difficulty
+        identification_difficulty = (
+          SELECT cts.identification_difficulty
+          FROM cache_taxon_searchterms cts
+          WHERE cts.taxa_taxon_list_id=o.taxa_taxon_list_id
+          AND cts.simplified=false
+        )
       FROM data_cleaner_results dcr, cache_taxa_taxon_lists cttl
       WHERE dcr.id=o.id
       AND cttl.external_key = o.taxa_taxon_list_external_key
