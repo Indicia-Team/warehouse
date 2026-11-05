@@ -22,9 +22,11 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
- class Kohana_Database_Table_Not_Found_Exception extends Kohana_Database_Exception {}
+Kohana::auto_load('Database');
+
+class Kohana_Database_Table_Not_Found_Exception extends Kohana_Database_Exception {}
 
 /**
  * Helper class to provide postgreSQL specific SQL functions.
