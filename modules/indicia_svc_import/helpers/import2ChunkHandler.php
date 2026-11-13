@@ -88,12 +88,24 @@ class import2ChunkHandler {
         $workflowBulkModeEnabled = TRUE;
       }
       $config = self::getConfig($configId);
+      $chunkContext = [
+        'requestId' => uniqid('', TRUE),
+        'configId' => $configId,
+        'importGuid' => $config['importGuid'],
+        'tableName' => $config['tableName'],
+        'phase' => $isPrecheck ? 'precheck' : 'import',
+        'restart' => !empty($params['restart']),
+        'rowsProcessedBefore' => $config['rowsProcessed'],
+        'activeParentBefore' => $config['activeParent']['id'] ?? NULL,
+      ];
+      kohana::log('info', 'Import chunk started: ' . json_encode($chunkContext));
       $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         self::resetChunkProgress($db, $configId, $config, $isPrecheck);
       }
       self::getChunkSize($isBackground, $isPrecheck);
+      $chunkContext['rowsProcessedAtStart'] = $config['rowsProcessed'];
 
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
@@ -103,6 +115,7 @@ class import2ChunkHandler {
         $dnaEntityColumns = self::findEntityColumns('dna_occurrence', $config);
       }
       $parentEntityDataRows = self::fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
+      $chunkContext['selectedParentRows'] = count($parentEntityDataRows);
       $activeParent = $config['activeParent'] ?? NULL;
       if (!empty($activeParent['data']) && isset($activeParent['id'])) {
         // A parent with more child rows than fit in one request is saved in
@@ -146,6 +159,8 @@ class import2ChunkHandler {
         }
       }
 
+      $chunkContext['childRowsProcessed'] = $occurrenceRowsProcessedThisRequest;
+      $chunkContext['deadlineReached'] = $deadlineReached;
       $response = self::finishChunk(
         $db,
         $configId,
@@ -153,7 +168,8 @@ class import2ChunkHandler {
         $isPrecheck,
         $parentEntityDataRows,
         $benchmarkStartIndex,
-        $benchmarkStartedAt
+        $benchmarkStartedAt,
+        $chunkContext
       );
       $benchmarkLogged = TRUE;
       return $response;
@@ -171,6 +187,10 @@ class import2ChunkHandler {
         // Abort request implies response already sent.
         return;
       }
+      kohana::log('error', 'Import chunk failed: ' . json_encode(($chunkContext ?? []) + [
+        'rowsProcessed' => $config['rowsProcessed'] ?? NULL,
+        'activeParentAfter' => $config['activeParent']['id'] ?? NULL,
+      ]));
       // Save config as it tells us how far we got, making diagnosis and
       // continuation easier.
       if (isset($config)) {
@@ -465,6 +485,8 @@ class import2ChunkHandler {
    *   Index of the first benchmark recorded for this chunk.
    * @param float $benchmarkStartedAt
    *   Chunk start timestamp used for benchmark logging.
+   * @param array $chunkContext
+   *   Request and continuation state used for diagnostic logging.
    *
    * @return array
    *   Progress response for the caller.
@@ -476,11 +498,52 @@ class import2ChunkHandler {
     $isPrecheck,
     array $parentEntityDataRows,
     $benchmarkStartIndex,
-    $benchmarkStartedAt
+    $benchmarkStartedAt,
+    array $chunkContext
   ) {
     $progress = $config['totalRows'] > 0
       ? 100 * $config['rowsProcessed'] / $config['totalRows']
       : 100;
+    // Keep completion behaviour unchanged, but log the staging state before
+    // successful imports remove the temporary table.
+    $status = $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0
+      ? 'done'
+      : ($isPrecheck ? 'checking' : 'importing');
+    $summary = $chunkContext + [
+      'status' => $status,
+      'completionReason' => $status === 'done'
+        ? ($config['rowsProcessed'] >= $config['totalRows'] ? 'row-count' : 'no-parent-rows')
+        : NULL,
+      'rowsProcessed' => $config['rowsProcessed'],
+      'totalRows' => $config['totalRows'],
+      'rowsInserted' => $config['rowsInserted'],
+      'rowsUpdated' => $config['rowsUpdated'],
+      'errorsCount' => $config['errorsCount'],
+      'parentRowsInChunk' => count($parentEntityDataRows),
+      'activeParentAfter' => $config['activeParent']['id'] ?? NULL,
+      'elapsed' => microtime(TRUE) - $benchmarkStartedAt,
+    ];
+    $noProgress = $config['rowsProcessed'] === $chunkContext['rowsProcessedAtStart'];
+    $unexpected = $status === 'done' && $config['rowsProcessed'] < $config['totalRows'];
+    if ($status === 'done' || $noProgress) {
+      $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
+      $counts = $db->query(<<<SQL
+        SELECT COUNT(*) AS total_rows,
+          COUNT(*) FILTER (WHERE imported=true) AS imported_rows,
+          COUNT(*) FILTER (WHERE checked=true) AS checked_rows,
+          COUNT(*) FILTER (WHERE errors IS NOT NULL) AS error_rows,
+          COUNT(*) FILTER (WHERE imported=false AND errors IS NULL) AS pending_import_rows,
+          COUNT(*) FILTER (WHERE checked=false AND errors IS NULL) AS pending_check_rows
+        FROM import_temp.$dbIdentifiers[tempTableName];
+      SQL)->current();
+      $summary['staging'] = array_map('intval', (array) $counts);
+      $pendingField = $isPrecheck ? 'pending_check_rows' : 'pending_import_rows';
+      $unexpected = $unexpected
+        || $summary['staging']['total_rows'] !== (int) $config['totalRows']
+        || ($status === 'done' && $summary['staging'][$pendingField] > 0)
+        || ($status !== 'done' && $noProgress);
+    }
+    kohana::log($unexpected ? 'error' : 'info', 'Import chunk finished: ' . json_encode($summary));
     if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
       self::tidyUpAfterImport($db, $configId, $config);
     }
@@ -495,7 +558,7 @@ class import2ChunkHandler {
       // Additional check for count of parentDataEntityRows will apply if an
       // import is restarted by refreshing the browser page, as the
       // rowsProcessed won't reach the total rows in this case.
-      'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
+      'status' => $status,
       'progress' => $config['totalRows'] > 0
         ? 100 * $config['rowsProcessed'] / $config['totalRows']
         : 100,
