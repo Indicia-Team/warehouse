@@ -17,4 +17,4 @@ data = "XDEBUG_SESSION=true"
 
 # The information we want to post.
 data = "user=admin"
-data = "password="
+data = "password=password"
