@@ -71,6 +71,9 @@ class User_Model extends ORM {
   }
 
   public function preSubmit() {
+    if (array_key_exists('service_auth_user_id', $this->identifiers) && !$this->checkServiceWriteAccess()) {
+      return FALSE;
+    }
     if (isset($this->submission['fields']['core_role_id']))
       if (!is_numeric($this->submission['fields']['core_role_id']['value']))
         $this->submission['fields']['core_role_id']['value'] = NULL;
@@ -79,6 +82,54 @@ class User_Model extends ORM {
     $this->droppedFields = array_diff_key($this->submission['fields'],
         $this->table_columns);
     return parent::preSubmit();
+  }
+
+  /**
+   * Block data services writes to the users table.
+   *
+   * Allow allow_share_for_* fields only.
+   */
+  private function checkServiceWriteAccess(): bool {
+    $fields = $this->submission['fields'];
+    $id = $fields['id'] ?? NULL;
+    $id = is_array($id) ? ($id['value'] ?? NULL) : $id;
+    $id = $id ?: $this->id;
+    $isUpdate = !empty($id);
+    if ($isUpdate && (
+        (!is_int($id) && !is_string($id))
+        || !ctype_digit((string) $id)
+        || $this->identifiers['service_auth_user_id'] === NULL
+        || (string) $id !== (string) $this->identifiers['service_auth_user_id'])) {
+      $this->errors['general'] = 'User updates require authentication as the user being updated.';
+      return FALSE;
+    }
+    $allowedFields = [
+      'id',
+      'allow_share_for_reporting',
+      'allow_share_for_peer_review',
+      'allow_share_for_verification',
+      'allow_share_for_data_flow',
+      'allow_share_for_moderation',
+      'allow_share_for_editing',
+    ];
+    if (!$isUpdate) {
+      $allowedFields = array_merge($allowedFields, ['username', 'person_id']);
+    }
+    $forbiddenFields = array_diff(array_keys($fields), $allowedFields);
+    if ($forbiddenFields) {
+      $this->errors['general'] = 'Fields not writable through user services: ' . implode(', ', $forbiddenFields) . '.';
+      return FALSE;
+    }
+    $relationships = $isUpdate
+      ? ['fkFields', 'superModels', 'subModels', 'joinsTo', 'metaFields']
+      : ['joinsTo'];
+    foreach ($relationships as $relationship) {
+      if (!empty($this->submission[$relationship])) {
+        $this->errors['general'] = 'User services cannot write relationships using ' . $relationship . '.';
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   public function password_validate(Validation $array, $save = FALSE) {

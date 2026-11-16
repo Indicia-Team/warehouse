@@ -141,7 +141,7 @@ MSG;
       $user->save();
       $person->save();
       $this->session->set_flash('flash_info', 'Your password has been changed.');
-      url::redirect(arr::remove('requested_page', $_SESSION));
+      url::redirect(arr::remove('requested_page', $_SESSION) ?? '');
     }
     else {
       // Because this does not use the standard submit code we need to manually
