@@ -931,6 +931,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->check_update_access($this->entity, $s);
       $model = ORM::factory($this->entity);
       $model->submission = $s;
+      $model->setIdentifiers(['service_auth_user_id' => $this->getAuthenticatedUserId()]);
       $result = $model->submit();
       kohana::log('debug', "Model submit: $model->object_name $model->id");
       $id = $model->id;
@@ -1923,7 +1924,10 @@ class Data_Controller extends Data_Service_Base_Controller {
     $model = ORM::factory($item['id']); // id is the entity.
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;
-    $model->setIdentifiers(['website_id' => $this->website_id]);
+    $model->setIdentifiers([
+      'website_id' => $this->website_id,
+      'service_auth_user_id' => $this->getAuthenticatedUserId(),
+    ]);
     ORM::$authorisedWebsiteId = $this->website_id;
     $result = $model->submit();
     if (!$result) {
@@ -1950,6 +1954,11 @@ class Data_Controller extends Data_Service_Base_Controller {
       $msg = "Attempt to update entity $entity by website $this->website_id: no write access allowed through services.";
       Kohana::log('info', $msg);
       throw new EntityAccessError($msg, 2002);
+    }
+    if ($entity === 'user') {
+      // The user model checks the verified identity and field allowlist, also
+      // for nested records which do not pass through this controller.
+      return TRUE;
     }
     if (array_key_exists('id', $s['fields'])) {
       if (is_numeric($s['fields']['id']['value'])) {
