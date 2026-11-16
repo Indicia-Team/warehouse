@@ -526,6 +526,7 @@ class Taxontree_operation_Controller extends Indicia_Controller {
         l.iso as language_iso,
         l.language as language,
         tr.rank,
+        ttl.id AS taxa_taxon_list_id,
         ttl.taxon_meaning_id,
         ttl.preferred::boolean AS preferred,
         ttl.allow_data_entry::boolean AS allow_data_entry,
