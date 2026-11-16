@@ -82,6 +82,7 @@ services:
         volumes:
             # Share the warehouse code between host and container
             - ..:/var/www/html/
+            - vendor:/var/www/html/vendor
             - crontab:/var/spool/cron/crontabs
             # Share CA certificate provided by Elasticsearch.
             - elastic_certs:/usr/local/share/ca-certificates
@@ -243,6 +244,7 @@ volumes:
     geoserver:
     elastic_data:
     elastic_certs:
+    vendor:
     crontab:
 
 networks:

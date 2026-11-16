@@ -1628,7 +1628,8 @@ SQL;
   /**
    * Adds end-point for retrieving errors file.
    *
-   * Sends CSV content for rows with errors to the output.
+   * Sends CSV content for rows with errors to the output. The include-all-rows
+   * option includes successful and pending rows, labelled with import status.
    */
   public function get_errors_file() {
     // Support data-file for legacy clients.
@@ -1640,9 +1641,14 @@ SQL;
       ]);
       return;
     }
+    $includeNotImported = !empty($_GET['include-not-imported']);
+    $includeAllRows = !empty($_GET['include-all-rows']);
+    $downloadName = $includeAllRows ? 'import-results.csv' : 'import-errors.csv';
+    $isPrecheck = !empty($_GET['precheck']);
+    $statusField = $isPrecheck ? 'checked' : 'imported';
     header("Content-Description: File Transfer");
     header("Content-Type: text/csv");
-    header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
+    header("Content-Disposition: attachment; filename=\"$downloadName\"");
     $configId = $_GET['config-id'] ?? $_GET['data-file'];
     $config = import2ChunkHandler::getConfig($configId);
     $db = new Database();
@@ -1652,25 +1658,29 @@ SQL;
       '_row_id+1',
       'errors',
     ]);
-    if (!empty($_GET['include-not-imported'])) {
-      $fields[] = "CASE imported WHEN true THEN 'yes' ELSE 'no' END as imported";
+    if ($includeNotImported || $includeAllRows) {
+      $fields[] = "CASE $statusField WHEN true THEN 'yes' ELSE 'no' END as $statusField";
     }
     $fieldSql = implode(', ', $fields);
-    $includeNotImported = !empty($_GET['include-not-imported']) ? 'OR imported=false' : '';
+    $where = $includeAllRows
+      ? ''
+      : 'WHERE errors IS NOT NULL' . ($includeNotImported ? " OR $statusField=false" : '');
     $query = <<<SQL
       SELECT $fieldSql
       FROM import_temp.$dbIdentifiers[tempTableName]
-      WHERE errors IS NOT NULL
-      $includeNotImported
+      $where
       ORDER BY _row_id;
     SQL;
     $results = $db->query($query)->result(FALSE);
     $out = fopen('php://output', 'w');
-    fputcsv($out, array_merge(array_keys($config['columns']), [
+    $headers = array_merge(array_keys($config['columns']), [
       '[Row no.]',
       '[Errors]',
-      '[Imported]',
-    ]));
+    ]);
+    if ($includeNotImported || $includeAllRows) {
+      $headers[] = $isPrecheck ? '[Checked]' : '[Imported]';
+    }
+    fputcsv($out, $headers, escape: '\\');
     // Find any date fields than need mapping back from Excel date integers to
     // date strings.
     $dateCols = [];
@@ -1693,7 +1703,7 @@ SQL;
           }
         }
       }
-      fputcsv($out, $row);
+      fputcsv($out, $row, escape: '\\');
     }
     fclose($out);
   }

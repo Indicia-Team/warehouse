@@ -29,11 +29,10 @@ class Person_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "People";
     $this->model = new Person_Model();
 
-    // use a report to load the users list so the parameters can be more complex
+    // Use a report to load the users list so the parameters can be more
+    // complex.
     $this->gridReport = 'library/people/people_list';
-    // apply permissions for the users you can administer
-    if (!$this->auth->logged_in('CoreAdmin'))
-      $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
+    // Permissions automatically applied using auth_user_id in report.
   }
 
   protected function getModelValues() {

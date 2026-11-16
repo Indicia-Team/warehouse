@@ -1,6 +1,12 @@
 # This image contains Debian's Apache httpd in conjunction with PHP.
 # https://hub.docker.com/_/php
-FROM php:8.3-apache
+FROM php:8.4-apache
+
+# Composer will be used during setup to install vendor, we do this from the
+# container to match the PHP version above e.g. FROM php:8.x-apache as opposed
+# to the PHP version of the host.
+COPY --from=composer/composer:2-bin /composer /usr/local/bin/composer
+
 # Use PHP development configuration file as a basis
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 

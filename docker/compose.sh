@@ -8,34 +8,6 @@ export COMPOSE_PROJECT_NAME=indicia
 # Make .env variables available to scripts
 source .env
 
-# Ensure dependencies of warehouse code have been installed on host.
-if [ ! $(which composer) ]; then
-  # Install composer locally if not present.
-  echo "Installing composer..."
-  ./getcomposer.sh
-  COMPOSER_CMD='php composer.phar'
-else
-  # Use existing composer installation.
-  COMPOSER_CMD='composer'
-fi
-
-$COMPOSER_CMD install \
-  --working-dir=../ \
-  --no-dev \
-  --ignore-platform-req=ext-mbstring \
-  --ignore-platform-req=ext-dom \
-  --ignore-platform-req=ext-gd \
-  --ignore-platform-req=ext-simplexml \
-  --ignore-platform-req=ext-xml \
-  --ignore-platform-req=ext-xmlreader \
-  --ignore-platform-req=ext-xmlwriter \
-  --ignore-platform-req=ext-zip
-
-if [ "$COMPOSER_CMD" = "php composer.phar" ]; then
-  # Don't want this hanging around in our code base.
-  rm composer.phar
-fi
-
 # For additional debug information and to see the output of RUN
 # commands in docker files modify the build command as follows:
 #     BUILDKIT_PROGRESS=plain docker-compose build \
@@ -44,19 +16,33 @@ docker compose build --pull \
   --build-arg GID=$(id -g) \
   --build-arg USER=$(id -un) \
   --build-arg GROUP=$(id -gn)
+
+# We are using composer via the warehouse container to update
+# vendor. This allows the PHP version to match the warehouse container,
+# rather than host system.
+docker compose run --rm --no-deps \
+  --user 0:0 \
+  --env COMPOSER_ALLOW_SUPERUSER=1 \
+  --env XDEBUG_MODE=off \
+  --workdir /var/www/html \
+  --entrypoint composer \
+  warehouse install --no-dev --no-interaction
+
 # When the containers are brought up the database will initialise
 # on first run.
 # The warehouse executes its startup script which copies in some 
 # config files then waits for the database to be ready. Next it 
 # starts Apache and will respond to http requests.
 # This is performed in the background.
-docker compose up -d
+docker compose up -d postgres warehouse elastic mailpit
 
 # Run elasticsearch setup.
 source elastic/setup.sh
 
 # Run warehouse setup.
 source warehouse/setup.sh
+
+docker compose up -d logstash kibana geoserver pgadmin
 
 # Clean up.
 rm -f cookiefile
