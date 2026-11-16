@@ -321,10 +321,8 @@ SQL;
     // Create a user for the actual tests.
     $array = [
       'user:person_id' => $personId,
-      'user:core_role_id' => 1,
       'user:username' => "testUser$personId",
       'users_website:website_id' => 1,
-      'users_website:site_role_id' => 1,
     ];
     $structure = [
       'model' => 'user',
@@ -334,6 +332,12 @@ SQL;
     ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('user', $s, self::$auth['write_tokens']);
+    if (!isset($r['success'])) {
+      throw new RuntimeException('Failed to create test user: ' . json_encode($r));
+    }
+    $db = new Database();
+    $db->query('UPDATE users SET core_role_id=1 WHERE id=?', [$r['success']]);
+    $db->query('UPDATE users_websites SET site_role_id=1 WHERE user_id=? AND website_id=1', [$r['success']]);
     return $r['success'];
   }
 
@@ -679,7 +683,6 @@ SQL;
     $personId = $r['success'];
     $array = [
       'user:person_id' => $personId,
-      'user:core_role_id' => 1,
       'user:username' => 'testUser',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'user']);
@@ -689,8 +692,87 @@ SQL;
     $this->assertTrue(isset($r['success']), 'Submitting a new user did not work');
     // cleanup
     $userId = $r['success'];
+    $this->assertNull(ORM::factory('user', $userId)->core_role_id);
     ORM::Factory('user', $userId)->delete();
     ORM::Factory('person', $personId)->delete();
+  }
+
+  /**
+   * Exercise real authentication, nested ORM writes, and stored account fields.
+   *
+   * @dataProvider userPreferenceWrites
+   */
+  public function testUserPreferenceWrites(bool $signed, bool $ownUser, bool $nested, bool $forbiddenField): void {
+    $userId = self::$extraUserId;
+    $original = self::$db->query('SELECT * FROM users WHERE id=?', [$userId])->current();
+    $auth = data_entry_helper::get_read_write_auth(1, 'password')['write_tokens'];
+    $suffix = $signed ? ':' . ($ownUser ? $userId : 1) : '';
+    $auth['auth_token'] = sha1("$auth[nonce]:password$suffix") . $suffix;
+    // The unsigned filter must not override the authenticated identity.
+    $auth['user_id'] = $userId;
+    $preferences = [
+      'allow_share_for_reporting',
+      'allow_share_for_peer_review',
+      'allow_share_for_verification',
+      'allow_share_for_data_flow',
+      'allow_share_for_moderation',
+      'allow_share_for_editing',
+    ];
+    $submission = ['id' => 'user', 'fields' => ['id' => ['value' => $userId]]];
+    foreach ($preferences as $field) {
+      $submission['fields'][$field] = ['value' => $original->$field === 't' ? 'f' : 't'];
+    }
+    if ($forbiddenField) {
+      $submission['fields']['username'] = ['value' => 'forbidden-rename'];
+    }
+    $entity = 'user';
+    if ($nested) {
+      $entity = 'person';
+      $originalPerson = self::$db->query('SELECT * FROM people WHERE id=?', [$original->person_id])->current();
+      $submission = [
+        'id' => 'person',
+        'fields' => ['id' => ['value' => $original->person_id]],
+        'superModels' => [['fkId' => 'created_by_id', 'model' => $submission]],
+      ];
+    }
+    try {
+      $httpResponse = data_entry_helper::http_post(
+        data_entry_helper::$base_url . "index.php/services/data/$entity",
+        http_build_query(['submission' => json_encode($submission)] + $auth),
+        FALSE
+      );
+      $response = json_decode($httpResponse['output'], TRUE);
+      $allowed = $signed && $ownUser && !$forbiddenField;
+      $this->assertIsArray($response);
+      $this->assertArrayHasKey($allowed ? 'success' : 'error', $response);
+      $stored = self::$db->query('SELECT * FROM users WHERE id=?', [$userId])->current();
+      foreach ($preferences as $field) {
+        $expected = $allowed ? ($original->$field === 't' ? 'f' : 't') : $original->$field;
+        $this->assertSame($expected, $stored->$field, $field);
+      }
+      $this->assertSame($original->username, $stored->username);
+      $this->assertSame($original->core_role_id, $stored->core_role_id);
+      $this->assertSame($original->person_id, $stored->person_id);
+    }
+    finally {
+      self::$db->update('users', (array) $original, ['id' => $userId]);
+      if ($nested) {
+        self::$db->update('people', (array) $originalPerson, ['id' => $original->person_id]);
+      }
+    }
+  }
+
+  public static function userPreferenceWrites(): array {
+    return [
+      'own preferences' => [TRUE, TRUE, FALSE, FALSE],
+      'other user' => [TRUE, FALSE, FALSE, FALSE],
+      'unsigned token' => [FALSE, TRUE, FALSE, FALSE],
+      'extra field' => [TRUE, TRUE, FALSE, TRUE],
+      'nested own preferences' => [TRUE, TRUE, TRUE, FALSE],
+      'nested other user' => [TRUE, FALSE, TRUE, FALSE],
+      'nested unsigned token' => [FALSE, TRUE, TRUE, FALSE],
+      'nested extra field' => [TRUE, TRUE, TRUE, TRUE],
+    ];
   }
 
   public function testCreateFilter() {

@@ -45,6 +45,25 @@ class Users_website_Model extends ORM {
   ];
 
   public function validate(Validation $array, $save = FALSE) {
+    if (array_key_exists('service_auth_user_id', $this->identifiers)) {
+      $values = $array->as_array();
+      $roleId = $values['site_role_id'] ?? NULL;
+      if ($roleId === '' || $roleId === 'null') {
+        $roleId = NULL;
+      }
+      if ((string) $roleId !== (string) $this->site_role_id) {
+        $this->errors['site_role_id'] = 'Website roles cannot be assigned through data services.';
+        return FALSE;
+      }
+      if ($this->loaded) {
+        foreach (['user_id', 'website_id'] as $field) {
+          if (isset($values[$field]) && (string) $values[$field] !== (string) $this->$field) {
+            $this->errors[$field] = 'Existing website memberships cannot be reassigned through data services.';
+            return FALSE;
+          }
+        }
+      }
+    }
     if ($save) {
       $check = $this->prepareLicenceApplicationTask($array->as_array());
       if (!$check['valid']) {
