@@ -31,3 +31,32 @@ $returnPath = url::site() . "uksi_operation/importer";
   <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
   <input type="submit" value="Upload file" class="btn btn-default" />
 </form>
+
+<hr />
+
+<h3>UKSI Master Reconciliation</h3>
+
+<p>
+  Compare the current taxon list with the UKSI master table and log any differences.
+</p>
+
+
+<form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo url::site('uksi_operation/master_importer'); ?>">
+  <label for="csv_masterupload">Upload a master CSV file to check against :</label>
+  <input type="file" name="csv_masterupload" id="csv_masterupload" class="form-control" />
+  <input type="submit" value="Upload file" class="btn btn-default" />
+</form>
+
+<a
+  class="btn btn-warning"
+  href="<?php echo url::site('uksi_operation/reconcile_preview'); ?>"
+  onclick="return confirm('Run reconciliation in preview mode? No data will be updated.');">
+  Preview Reconciliation
+</a>
+
+<a
+  class="btn btn-danger"
+  href="<?php echo url::site('uksi_operation/reconcile_apply'); ?>"
+  onclick="return confirm('Run reconciliation and APPLY updates to the taxonomy?');">
+  Apply Reconciliation
+</a>

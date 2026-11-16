@@ -34,10 +34,19 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   private $operationErrors = [];
 
   /**
+    * UUID of the repair run, which is used to identify operations that are
+    * part of a repair run and should be ignored when checking for duplicates.
+    *
+    * @var string
+   */
+  private $repairRunUuid = '00000000-0000-0000-0000-000000000000';
+
+  /**
    * Controller constructor, configures grid view.
    */
   public function __construct() {
     parent::__construct('uksi_operation', 'uksi_operation/index');
+
     $this->columns = [
       'sequence' => '',
       'operation' => '',
@@ -47,11 +56,14 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       'batch_processed_on' => 'Batch date',
       'operation_priority' => 'Priority'
     ];
+
     $this->pagetitle = "UKSI Operations";
     $this->model = ORM::factory('uksi_operation');
+    $this->orderby = 'operation_processed ASC, operation_priority ASC, sequence ASC';
+
+ //   $this->orderby = 'operation_processed';
+    $this->sortdir = 'desc';    
     $this->model->reload_columns(TRUE);
-    
-    $this->orderby = 'operation_processed, operation_priority ASC, sequence ASC';
 
 
   }
@@ -73,6 +85,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   }
 
   public function process() {
+    $this->trimTaxonCodes();
     $view = new View('uksi_operation/process');
     $view->totalToProcess = $this->db
       ->query('SELECT count(*) FROM uksi_operations WHERE operation_processed=false;')
@@ -80,6 +93,106 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $this->template->title = 'Processing';
     $this->template->content = $view;
   }
+
+  public function master_importer() {
+      $this->action_master_importer();
+  }
+
+  public function action_master_importer() {
+      if ($this->request->method() === HTTP_Request::POST)
+      {
+          // 1. Validate the uploaded file
+          $validation = Validation::factory($_FILES)
+              ->rule('csv_masterupload', 'Upload::not_empty')
+              ->rule('csv_masterupload', 'Upload::valid')
+              ->rule('csv_masterupload', 'Upload::type', array(':value', array('csv', 'txt')));
+
+          if ($validation->check())
+          {
+              // 2. Save the file temporarily to a writable Linux directory
+              $upload_dir = APPPATH . 'cache/';
+              $filename = Upload::save($_FILES['csv_masterupload'], NULL, $upload_dir);
+
+              if ($filename !== FALSE)
+              {
+                  // 3. Parse the CSV file
+                  $this->process_csv($filename);
+
+                  // 4. Clean up the temporary file
+                  unlink($filename);
+
+                  // Redirect or set a success message
+                  $this->redirect('uksi_operation/index');
+              }
+          }
+          else
+          {
+              // Handle validation errors
+              $errors = $validation->errors('upload');
+              echo Debug::vars($errors);
+          }
+      }
+  }
+
+  protected function process_csv($filepath)
+  {
+      // Ensures proper line-ending detection on Linux for files created on Mac/Windows
+      ini_set('auto_detect_line_endings', TRUE);
+
+      if (($handle = fopen($filepath, 'r')) !== FALSE)
+      {
+          $this->createUKSImastertable();
+          $row_number = 0;
+
+          while (($data = fgetcsv($handle, 1000, ',')) !== FALSE)
+          {
+              $row_number++;
+
+              // Skip the header row if your CSV has column titles
+              if ($row_number === 1)
+              {
+                  continue;
+              }
+
+              // Map CSV columns to variables (adjust indexes to match your CSV)
+              $col1 = isset($data[0]) ? trim($data[0]) : NULL;
+              $col2 = isset($data[1]) ? trim($data[1]) : NULL;
+
+              // Example: Insert into database using Kohana DB Query Builder
+              /*
+              DB::insert('your_table_name', array('column_1', 'column_2'))
+                  ->values(array($col1, $col2))
+                  ->execute();
+              */
+          }
+
+          fclose($handle);
+      }
+  }
+
+  public function reconcile_preview() {
+
+    $results = $this->reconcileTaxonomyToMaster( 'uksi_master', false );
+
+    $this->template->title = 'Reconciliation Preview';
+    $this->template->content = '<pre>' . htmlspecialchars(print_r($results, true)) . '</pre>';
+  
+  }      
+
+  public function reconcile_apply() {
+
+    $results = $this->reconcileTaxonomyToMaster(
+      'uksi_master',
+      true
+    );
+
+    $this->template->title = 'Reconciliation Applied';
+
+    $this->template->content =
+  '<pre>' . htmlspecialchars(print_r($results, true)) . '</pre>';
+
+
+  }   
 
   public function processing_complete() {
     $view = new View('uksi_operation/processing_complete');
@@ -92,9 +205,9 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $this->auto_render = FALSE;
     // Note operations processed in task type order.
     $qry = <<<SQL
-SELECT * FROM uksi_operations
-WHERE operation_processed=false
-ORDER BY batch_processed_on asc, operation_priority asc, sequence asc;
+        SELECT * FROM uksi_operations
+        WHERE operation_processed=false
+        ORDER BY batch_processed_on asc, operation_priority asc, sequence asc;
 SQL;
     $operation = $this->db
       ->query($qry)
@@ -239,19 +352,22 @@ SQL;
         return "Synonym $operation->taxon_name already exists.";
       }
     }
-    $allExistingNames->rewind();
+
+    $current = $allExistingNames[0];
+    
     // Copy over details from the preferred taxon to define a synonym.
-    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
-    $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
-    $fields['taxa_taxon_list:common_taxon_id'] = $allExistingNames->current()->common_taxon_id;
-    $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
-    $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
-    $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
-    $fields['taxon:freshwater_flag'] = $allExistingNames->current()->freshwater_flag;
-    $fields['taxon:terrestrial_flag'] = $allExistingNames->current()->terrestrial_flag;
-    $fields['taxon:non_native_flag'] = $allExistingNames->current()->non_native_flag;
-    $fields['taxon:organism_key'] = $allExistingNames->current()->organism_key;
-    $fields['taxon:external_key'] = $allExistingNames->current()->external_key;
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $current->taxon_meaning_id;
+    $fields['taxa_taxon_list:parent_id'] = $current->parent_id;
+    $fields['taxa_taxon_list:common_taxon_id'] = $current->common_taxon_id;
+    $fields['taxon:taxon_rank_id'] = $current->taxon_rank_id;
+    $fields['taxon:taxon_group_id'] = $current->taxon_group_id;
+    $fields['taxon:marine_flag'] = $current->marine_flag;
+    $fields['taxon:freshwater_flag'] = $current->freshwater_flag;
+    $fields['taxon:terrestrial_flag'] = $current->terrestrial_flag;
+    $fields['taxon:non_native_flag'] = $current->non_native_flag;
+    $fields['taxon:organism_key'] = $current->organism_key;
+    $fields['taxon:external_key'] = $current->external_key;
+
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
@@ -330,7 +446,9 @@ SQL;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
+
     $namesToUpdate = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
+
     if (count($namesToUpdate) === 0) {
       // If organism not present then assumed to be deleted so operation is
       // skipped, according to info from C. Raper 13/05/2024.
@@ -445,15 +563,65 @@ SQL;
    *   Operation details.
    */
   public function processExtractName($operation) {
+
     $this->checkOperationRequiredFields('Extract name', $operation, [
       'synonym',
       'organism_key',
       'current_organism_key',
     ]);
+
+
+            $current = $this->getTaxaForKeys([
+              'organism_key' => $operation->current_organism_key,
+            ]);
+
+            $target = $this->getTaxaForKeys([
+              'organism_key' => $operation->organism_key,
+            ]);
+
+            if ($current && !$target ) {     // CASE 1
+              // perform the extract
+            }
+
+            if ($current && $target) {   // CASE 2
+              // skip as name already extracted
+              return "Extract Name operation skipped. Organism already exists.";
+            }
+
+            if (!$current && $target) {  // CASE 3
+              // skip as probably already occurred
+              return "Extract Name operation skipped. Organism already exists.";
+            }
+
+            if (!$current && !$target) {  // CASE 4
+              $this->operationErrors[] = 'Current organism key not found for Extract Name operation';
+            }
+
+          
+            if (count($this->operationErrors) > 0) {
+              return 'Error';
+            }
+
+    /* We need to determine what the extract name is being preformed on , is it the organism key or the synonym */
+
+
+    $existing = $this->getTaxaForKeys([
+      'search_code' => $operation->synonym,
+    ]);
+
+    foreach ($existing as $taxon) {
+      if ($taxon->preferred === 't') {
+        return "Extract Name operation skipped. TVK {$operation->synonym} is already an accepted name.";
+      }
+    }
+      
+      
     $namesToUpdate = $this->getTaxaForKeys([
       'search_code' => $operation->synonym,
       'organism_key' => $operation->current_organism_key,
     ]);
+
+
     // Check names found.
     if (count($namesToUpdate) === 0) {
       // If not found when checking both TVK and org key, we can try a search
@@ -464,15 +632,15 @@ SQL;
         'ttl.allow_data_entry' => 't',
       ]);
       if (count($namesToUpdate) === 0) {
-        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
+        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.'." /n/n" . json_encode($operation, JSON_PRETTY_PRINT);
       }
       elseif (count($namesToUpdate) > 1) {
-        $this->operationErrors[] = 'Multiple names found when searching for a unique name using the taxon version key given in Synonym for Extract Name operation.';
+        $this->operationErrors[] = 'Multiple names found when searching for a unique name using the taxon version key given in Synonym for Extract Name operation.' . " /n/n" . json_encode($operation, JSON_PRETTY_PRINT);
       }
     }
     foreach ($namesToUpdate as $nameInfo) {
       if ($nameInfo->preferred === 't') {
-        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation is for the accepted name, not a synonym.';
+        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation is for the accepted name, not a synonym.' . " /n/n" . json_encode($operation, JSON_PRETTY_PRINT);
       }
     }
     if (count($this->operationErrors) > 0) {
@@ -527,15 +695,19 @@ SQL;
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     $allNamesToMerge = $this->getTaxaForKeys(['organism_key' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
-      $this->operationErrors[] = 'Synonym (organism key) not found';
+        return "Merge skipped because organism key {$operation->synonym} does not exist.";
     }
+    // if (count($allNamesToMerge) === 0) {
+    //  $this->operationErrors[] = 'Synonym (organism key) not found ' . 'Synonym=' . $operation->synonym . "\n"
+    // . json_encode($operation, JSON_PRETTY_PRINT);
+    // }
     if (count($namesToKeep) === 0) {
       $this->operationErrors[] = 'Could not find existing organisms using current_organism_key';
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, reset($namesToKeep), $operation);
   }
 
   /**
@@ -561,12 +733,12 @@ SQL;
       $this->operationErrors[] = 'Synonym (taxon version key) not found';
     }
     if (count($namesToKeep) === 0) {
-      $this->operationErrors[] = 'Organism key not found';
+      $this->operationErrors[] = 'Organism key not found. '. "/n/n" . json_encode($operation, JSON_PRETTY_PRINT);
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    return $this->moveNames($allNamesToMerge, $namesToKeep->current(), $operation);
+    return $this->moveNames($allNamesToMerge, reset($namesToKeep), $operation);
   }
 
   /**
@@ -585,6 +757,7 @@ SQL;
       'rank',
       'taxon_group_key',
     ]);
+    
     $existingManuallyAdded = $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
     $fields = $this->getCreateTaxonFields($operation);
     if (count($this->operationErrors) > 0) {
@@ -680,7 +853,7 @@ SQL;
     }
     foreach ($namesForOrganismKey as $nameInfo) {
       // Don't redo the promoted name.
-      if ($nameInfo->search_code !== $operation['synonym']) {
+      if ($nameInfo->search_code !== $operation->synonym) {
         $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
       }
     }
@@ -715,7 +888,7 @@ SQL;
       return 'Error';
     }
     // All existing names sorted so preferred name is first.
-    $previousPreferredName = $allExistingNames->current();
+    $previousPreferredName = $allExistingNames[0];
     $originalName = $previousPreferredName->taxon;
     $this->applyTaxonDefaultsToOperation($previousPreferredName, $operation);
     // Add the taxon as per new taxon, using the existing taxon meaning Id.
@@ -723,7 +896,7 @@ SQL;
     // The rename taxon operation only updates the parent from the operation
     // if for the correct organism key (in order to match UKSI operations
     // behaviour).
-    if ($operation->current_organism_key !== $operation->current_organism_key) {
+    if ($operation->organism_key !== $operation->current_organism_key) {
       $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
     }
     $fields['taxon:organism_key'] = $operation->current_organism_key;
@@ -807,6 +980,7 @@ SQL;
     return 't';
   }
 
+ 
   /**
    * If a preferred name changes for a concept, update references.
    *
@@ -857,7 +1031,7 @@ SQL;
    */
   private function moveNames($names, $linkToName, $operation) {
     $seniorName = $linkToName->taxon;
-    $juniorName = $names->current()->taxon;
+    $juniorName = $names[0]->taxon;
     $taxonMeaningId = $linkToName->taxon_meaning_id;
     $externalKey = $linkToName->external_key;
     $parentId = $linkToName->parent_id;
@@ -1123,26 +1297,176 @@ SQL;
         ->orderby('allow_data_entry', 'DESC')
         ->limit(2)
         ->get()->result_array(TRUE);
-      if (count($parent) === 1) {
-        return $parent[0]->id;
-      }
+        if (count($parent) === 1) {
+          return $parent[0]->id;
+        }
+
       if (count($parent) > 1) {
-        if ($preferAllowDataEntry) {
-          // Check if only 1 has allow_data_entry=true, if so it can be
-          // returned.
-          if ($parent[0]->allow_data_entry === 't' && $parent[1]->allow_data_entry === 'f') {
+
+        // Attempt to resolve duplicate preferred records automatically.
+        $updated = $this->removeDuplicatePreferredRecords($operation->parent_organism_key);
+
+        if ($updated > 0) {
+          $parent = $this->db
+            ->select('ttl.id, ttl.allow_data_entry')
+            ->from('taxa_taxon_lists AS ttl')
+            ->join('taxa as t', 't.id', 'ttl.taxon_id')
+            ->where([
+              'ttl.taxon_list_id' => $this->getTaxonListId(),
+              't.organism_key' => $operation->parent_organism_key,
+              'ttl.preferred' => 't',
+              'ttl.deleted' => 'f',
+              't.deleted' => 'f',
+            ])
+            ->where('t.search_code IS NOT NULL')
+            ->orderby('allow_data_entry', 'DESC')
+            ->limit(2)
+            ->get()
+            ->result_array(TRUE);
+
+          if (count($parent) === 1) {
             return $parent[0]->id;
           }
         }
-        $this->operationErrors[] = "Identified multiple possible parents.";
+
+        if ($preferAllowDataEntry) {
+          // Check if only one record allows data entry.
+          if (
+            count($parent) === 2 &&
+            $parent[0]->allow_data_entry === 't' &&
+            $parent[1]->allow_data_entry === 'f'
+          ) {
+            return $parent[0]->id;
+          }
+        }
+
+        $this->operationErrors[] =
+          "Identified multiple possible parents after cleanup. " .
+          "Organism Key: {$operation->parent_organism_key}\n" .
+          "Operation:\n" . json_encode($operation, JSON_PRETTY_PRINT) . "\n" .
+          "Parents:\n" . json_encode($parent, JSON_PRETTY_PRINT);
       }
       elseif (count($parent) === 0) {
-        $this->operationErrors[] = "Could not find parent to link to.";
+        $this->operationErrors[] =
+          "Could not find parent to link to. Organism Key: {$operation->parent_organism_key} ".json_encode($operation, JSON_PRETTY_PRINT);
       }
     }
     return NULL;
   }
 
+
+  /**
+   * Ensures only the newest preferred record for an organism key remains
+   * preferred and available for data entry.
+   *
+   * UKSI operations can occasionally leave multiple preferred
+   * taxa_taxon_list records linked to the same organism key. This function
+   * retains the most recently updated preferred record and demotes all
+   * older preferred records by:
+   *  - setting preferred = false
+   *  - setting allow_data_entry = false
+   *
+   * @param string $organismKey
+   *   Organism key to clean up.
+   *
+   * @return int
+   *   Number of records updated.
+   */
+  private function removeDuplicatePreferredRecords(string $organismKey): int {
+      $records = $this->db
+      ->query("
+        SELECT ttl.id
+        FROM taxa_taxon_lists ttl
+        JOIN taxa t ON t.id = ttl.taxon_id
+        WHERE t.organism_key = '$organismKey'
+        AND  ttl.taxon_list_id = ". $this->getTaxonListId() ."
+        AND t.deleted = false
+        AND ttl.deleted = false
+        AND ttl.preferred = true
+        ORDER BY
+          ttl.allow_data_entry DESC,
+          t.created_on DESC,
+          t.id DESC
+      ")
+      ->result_array(TRUE);
+
+      $count = count($records);
+
+      switch ($count) {
+        case 0:
+          $keyrecords = $this->db
+            ->query("
+              SELECT ttl.id
+              FROM taxa_taxon_lists ttl
+              JOIN taxa t ON t.id = ttl.taxon_id
+              WHERE t.organism_key = '$organismKey'
+              AND t.deleted = false
+              AND ttl.deleted = false
+              AND ttl.taxon_list_id = ".$this->getTaxonListId() ."
+              AND t.search_code = t.external_key
+              ORDER BY t.updated_on DESC, t.id DESC
+            ")
+            ->result_array(TRUE);     
+            
+            if (count($keyrecords)>0) {
+
+              foreach ($keyrecords as $record) {
+                $this->db->query("
+                  UPDATE taxa_taxon_lists
+                  SET preferred = false,
+                      allow_data_entry = false,
+                      updated_on = now()
+                  WHERE id = $record->id
+                ");  
+              }  
+
+              // Promote the winner.
+              $winnerId = $keyrecords[0]->id;
+              $this->db->query("
+                UPDATE taxa_taxon_lists
+                SET preferred = true,
+                    allow_data_entry = true,
+                    updated_on = now()
+                WHERE id = $winnerId
+              ");              
+            }
+
+          return 0;
+          
+        case 1:
+         
+          return 0;
+        default:
+
+            $winnerId = $records[0]->id;
+
+            // Demote everything.
+            $this->db->query("
+              UPDATE taxa_taxon_lists ttl
+              SET preferred = false,
+                  updated_on = now()
+              FROM taxa t
+              WHERE ttl.taxon_id = t.id
+              AND t.organism_key = '$organismKey'
+            ");    
+
+            $this->db->query("
+              UPDATE taxa_taxon_lists
+              SET preferred = true,
+                  allow_data_entry = true,
+                  updated_on = now()
+              WHERE id = $winnerId
+            "); 
+            return count($records) - 1;          
+
+
+            break;
+      }
+      
+      return 0;
+
+  }
+  
   /**
    * Retrieve the configured main taxon list's ID.
    *
@@ -1167,20 +1491,69 @@ SQL;
    * @return int
    *   ID, or NULL if not found.
    */
-  private function getTaxonRankId($operation) {
-    if (!empty($operation->rank)) {
+    private function getTaxonRankId($operation) {
+      if (empty($operation->rank)) {
+        return NULL;
+      }
+
       $rank = $this->db->select('id')
         ->from('taxon_ranks')
         ->where('deleted', 'f')
         ->where("lower(rank)='" . strtolower($operation->rank) . "'")
-        ->get()->current();
+        ->get()
+        ->current();
+
       if ($rank) {
         return $rank->id;
       }
-      $this->operationErrors[] = "Could not find rank $operation->rank in the database.";
+
+      $this->db->insert('taxon_ranks', [
+        'rank' => $operation->rank,
+        'short_name' => $this->generateRankShortName($operation->rank),
+        'created_on' => date('Y-m-d H:i:s'),
+        'updated_on' => date('Y-m-d H:i:s'),
+        'created_by_id' => 1,
+        'updated_by_id' => 1,
+        'deleted' => 'f',
+      ]);
+
+      $rank = $this->db->select('id')
+        ->from('taxon_ranks')
+        ->where('deleted', 'f')
+        ->where("lower(rank)='" . strtolower($operation->rank) . "'")
+        ->get()
+        ->current();
+
+      return $rank ? $rank->id : NULL;
     }
-    return NULL;
-  }
+
+    /**
+     * Generates a default short name for a taxon rank.
+     *
+     * Existing ranks use a mixture of abbreviations and full names. As the UKSI
+     * feed does not provide a short name, this method generates a sensible default
+     * when creating previously unseen ranks.
+     *
+     * Examples:
+     * - Cultivar => Cult
+     * - Cultivar group => CultGrp
+     * - Species group => SpecGrp
+     *
+     * @param string $rank
+     *   The rank name.
+     *
+     * @return string
+     *   The generated short name.
+     */
+    private function generateRankShortName($rank) {
+      $parts = preg_split('/\s+/', trim($rank));
+
+      if (count($parts) > 1) {
+        return substr($parts[0], 0, 4) . ucfirst(substr($parts[1], 0, 3));
+      }
+
+      return substr($rank, 0, 4);
+    }
 
   /**
    * Finds the ID of a taxon group described in an operation.
@@ -1229,5 +1602,412 @@ SQL;
     $this->operationErrors[] = "Could not find language code $iso in the database.";
     return NULL;
   }
+
+    /**
+     * Removes leading and trailing spaces from UKSI key fields.
+     */
+    private function trimTaxonCodes() {
+      $this->db->query("
+            SELECT
+            id,
+            organism_key,
+            search_code,
+            external_key
+        FROM taxa
+        WHERE
+            organism_key IS DISTINCT FROM btrim(organism_key)
+            OR search_code IS DISTINCT FROM btrim(search_code)
+            OR external_key IS DISTINCT FROM btrim(external_key);
+
+        UPDATE taxa
+        SET
+            organism_key = CASE
+                WHEN organism_key IS NULL THEN NULL
+                ELSE btrim(regexp_replace(organism_key, '[[:cntrl:]]', '', 'g'))
+            END,
+            search_code = CASE
+                WHEN search_code IS NULL THEN NULL
+                ELSE btrim(regexp_replace(search_code, '[[:cntrl:]]', '', 'g'))
+            END,
+            external_key = CASE
+                WHEN external_key IS NULL THEN NULL
+                ELSE btrim(regexp_replace(external_key, '[[:cntrl:]]', '', 'g'))
+            END
+        WHERE
+            organism_key IS DISTINCT FROM btrim(regexp_replace(organism_key, '[[:cntrl:]]', '', 'g'))
+            OR search_code IS DISTINCT FROM btrim(regexp_replace(search_code, '[[:cntrl:]]', '', 'g'))
+            OR external_key IS DISTINCT FROM btrim(regexp_replace(external_key, '[[:cntrl:]]', '', 'g'));
+      " );
+    }
+
+      public function reconcileTaxonomyToMaster(
+        string $masterTable,
+        bool $applyChanges = false
+      ) {
+
+
+        $masterTable = $this->validateMasterTable($masterTable);
+
+        $this->repairRunUuid= uniqid('repair_', true);
+        $this->createlogtable();
+
+        $results = [
+          'organism_key_mismatches' => 0,
+          'recommended_name_mismatches' => 0,
+          'duplicate_preferred_names' => 0,
+          'missing_taxa' => 0,
+          'changes_applied' => 0
+        ];
+
+        $this->checkOrganismKeys(
+          $masterTable,
+          $applyChanges,
+          $results
+        );
+
+        $this->checkPreferredNames(
+          $masterTable,
+          $applyChanges,
+          $results
+        );
+
+        $this->checkRecommendedTvks(
+          $masterTable,
+          $applyChanges,
+          $results
+        );
+
+        return $results;
+
+      }
+
+      private function defaultWhere() {
+        return "
+          WHERE ttl.allow_data_entry=true
+            AND ttl.taxon_list_id = ". $this->getTaxonListId() ."
+            AND ttl.preferred=true
+            AND t.deleted=false
+            AND ttl.deleted=false ";
+            
+      }
+
+
+      private function checkOrganismKeys(
+        string $masterTable,
+        bool $applyChanges,
+        array &$results
+      ) {
+          $sql = "
+          SELECT
+              t.id as id,
+              t.taxon,
+              t.search_code,
+              t.external_key,
+              t.organism_key,
+              um.organism_key AS master_key    
+          FROM taxa t
+          JOIN taxa_taxon_lists ttl
+              ON ttl.taxon_id=t.id
+          JOIN $masterTable um
+              ON um.recommended_taxon_version_key=t.external_key
+          ". $this->defaultWhere() ."
+            AND t.organism_key<>um.organism_key
+            AND um.organism_key> ' '
+          ";
+
+          $result = $this->db->query($sql)->result_array(TRUE);
+          $count =0;
+          foreach ($result as $row) {
+
+                if ($applyChanges) {
+
+                $updateSQL = "
+                    UPDATE taxa
+                    SET organism_key = '".$row->master_key."'
+                    WHERE id =".$row->id." ;
+                  ";
+
+                  $this->db->query($updateSQL);
+
+                    $this->logReconciliationChange(
+                      $masterTable,
+                      'organism_key_mismatch_saved',
+                      $row->id,
+                      NULL,
+                      $row->search_code,
+                      $row->external_key,
+                      $row->organism_key,
+                      'organism_key',
+                      $row->organism_key,
+                      $row->master_key,
+                      'Indicia organism key updated to match master table organism key for recommended taxon version key /n/n '.$updateSQL,
+                      $applyChanges
+                    );  
+
+                    $count++;
+              }
+          }
+
+          $results['preferred_name_mismatches'] = count($result);
+          $results['preferred_name_updates'] = $count;          
+    }
+
+
+      private function checkRecommendedTvks(
+        string $masterTable,
+        bool $applyChanges,
+        array &$results
+      ) {
+
+          $sql = "
+          SELECT
+              t.id,
+              t.taxon,
+              t.search_code,
+              t.external_key,
+              t.organism_key,
+              um.recommended_taxon_version_key AS master_key
+          FROM taxa t
+          JOIN taxa_taxon_lists ttl
+            ON ttl.taxon_id=t.id
+          JOIN $masterTable um
+            ON um.input_taxon_version_key=t.search_code
+          ". $this->defaultWhere() ."
+            AND t.external_key<>um.recommended_taxon_version_key
+          ";
+
+          $result = $this->db->query($sql)->result_array(TRUE);
+
+          $count = 0;
+
+          foreach ($result as $row) {
+
+              $this->logReconciliationChange(
+                $masterTable,
+                'recommended_tvk_mismatch',
+                $row->id,
+                NULL,
+                $row->search_code,
+                $row->external_key,
+                $row->organism_key,
+                'external_key',
+                $row->external_key,
+                $row->master_key,
+                'Indicia recommended TVK does not match UKSI recommended TVK',
+                $applyChanges
+              );
+
+              if ($applyChanges) {
+
+                  $updateSQL = "
+                    UPDATE taxa
+                    SET external_key = ?
+                    WHERE id = ?
+                  ";
+
+                  $this->db->query($updateSQL, [$row->master_key, $row->id]);
+
+             //     $taxon = ORM::factory('taxon', $row->id);
+             //     $taxon->external_key = $row->master_key;
+             //     $taxon->set_metadata();
+             //     $taxon->save();
+
+                  $this->logReconciliationChange(
+                    $masterTable,
+                    'recommended_tvk_mismatch',
+                    $row->id,
+                    NULL,
+                    $row->search_code,
+                    $row->external_key,
+                    $row->organism_key,
+                    'external_key',
+                    $row->external_key,
+                    $row->master_key,
+                    'Indicia recommended TVK updated to match UKSI recommended TVK',
+                    true
+                  );
+
+                  $count++;
+              }
+          }
+
+          $results['recommended_tvk_mismatches'] = count($result);
+          $results['recommended_tvk_updates'] = $count;
+      }      
+
+      private function logReconciliationChange(
+        string $masterTable,
+        string $operationType,
+        ?int $taxonId,
+        ?int $ttlId,
+        ?string $searchCode,
+        ?string $externalKey,
+        ?string $organismKey,
+        string $fieldName,
+        ?string $oldValue,
+        ?string $newValue,
+        ?string $reason,
+        bool $applied
+      ) {
+
+          $this->db->insert('indicia.uksi_repair_log', [
+            'repair_run_uuid' => $this->repairRunUuid,
+            'repair_date' => date('Y-m-d H:i:s'),
+            'master_table' => $masterTable,
+            'operation_type' => $operationType,
+            'taxon_id' => $taxonId,
+            'ttl_id' => $ttlId,
+            'search_code' => $searchCode,
+            'external_key' => $externalKey,
+            'organism_key' => $organismKey,
+            'field_name' => $fieldName,
+            'old_value' => $oldValue,
+            'new_value' => $newValue,
+            'reason' => $reason,
+            'applied' => $applied ? 't' : 'f',
+            'created_by' => 'UKSI Operations Module',
+          ]);
+      }
+
+      private function checkPreferredNames(
+        string $masterTable,
+        bool $applyChanges,
+        array &$results
+      ) {
+
+          $sql = "
+          SELECT
+              t.id,
+              t.taxon,
+              t.search_code,
+              t.external_key,
+              t.organism_key,
+              um.recommended_taxon_name AS master_name
+          FROM taxa t
+          JOIN taxa_taxon_lists ttl
+            ON ttl.taxon_id=t.id
+          JOIN $masterTable um
+            ON um.input_taxon_version_key=t.search_code
+          ". $this->defaultWhere() ."
+            AND lower(t.taxon)<>lower(um.recommended_taxon_name)
+          ";
+
+          $result = $this->db->query($sql)->result_array(TRUE);
+
+          $count = 0;
+
+          foreach ($result as $row) {
+
+              $this->logReconciliationChange(
+                $masterTable,
+                'preferred_name_mismatch',
+                $row->id,
+                NULL,
+                $row->search_code,
+                $row->external_key,
+                $row->organism_key,
+                'taxon',
+                $row->taxon,
+                $row->master_name,
+                'Indicia preferred name does not match UKSI preferred name',
+                $applyChanges
+              );
+
+              if ($applyChanges) {
+
+                  $updateSQL = "
+                    UPDATE taxa
+                    SET taxon = ?
+                    WHERE id = ?
+                  ";
+
+                  $this->db->query($updateSQL, [$row->master_name, $row->id]);
+
+                  $this->logReconciliationChange(
+                    $masterTable,
+                    'preferred_name_mismatch',
+                    $row->id,
+                    NULL,
+                    $row->search_code,
+                    $row->external_key,
+                    $row->organism_key,
+                    'taxon',
+                    $row->taxon,
+                    $row->master_name,
+                    'Indicia preferred name updated to match UKSI preferred name',
+                    true
+                  );
+
+                  $count++;
+              }
+          }
+
+          $results['preferred_name_mismatches'] = count($result);
+          $results['preferred_name_updates'] = $count;
+      }
+
+      private function createlogtable () {
+        $sql = "
+          DROP TABLE IF EXISTS uksi_repair_log;
+          CREATE TABLE indicia.uksi_repair_log (
+              id serial PRIMARY KEY,
+              repair_run_uuid varchar(50) NOT NULL,
+              repair_date timestamp DEFAULT now(),
+              master_table varchar(100),
+              operation_type varchar(50),
+              taxon_id integer,
+              ttl_id integer,
+              search_code varchar(100),
+              external_key varchar(100),
+              organism_key varchar(50),
+              field_name varchar(100),
+              old_value text,
+              new_value text,
+              reason text,
+              applied boolean,
+              created_by text
+            );
+          ";
+        $this->db->query($sql);
+      }
+
+      private function createUKSImastertable() {
+        $sql = "
+          DROP TABLE IF EXISTS indicia.uksi_master;
+        //  ALTER TABLE indicia.uksidb RENAME TO uksi_master;
+
+          CREATE TABLE indicia.uksi_master (
+            nameserver_id_key varchar(50) NULL,
+            recommended_taxon_version_key varchar(50) NULL,
+            input_taxon_name TEXT NULL,
+            recommended_taxon_name TEXT NULL,
+            parent_name text NULL,
+            parent_taxon_version_key varchar(50) NULL,
+            organism_key varchar(50) NULL,
+            recommended_organism_key varchar(50) NULL,
+            organism_relationship varchar(50) NULL,
+            input_taxon_key varchar(50) NULL,
+            recommended_taxon_key varchar(50) NULL,
+            input_taxon_version_key varchar(50) NULL,
+            taxon_type varchar(50) NULL,
+            taxon_version_form varchar(50) NULL,
+            taxon_version_status varchar(50) NULL,
+            entry_date timestamp NULL,
+            changed_date timestamp NULL,
+            deleted_date timstamp NULL     
+            )  
+        ;";
+
+        $this->db->query($sql);
+      }
+
+      private function validateMasterTable(string $masterTable): string {
+        $validTables = ['uksi_master'];
+        if (!in_array($masterTable, $validTables)) {
+          throw new InvalidArgumentException("Invalid master table specified: $masterTable");
+        }
+        return $masterTable;
+      }
+       
 
 }
