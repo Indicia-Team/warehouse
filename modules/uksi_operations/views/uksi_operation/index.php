@@ -54,14 +54,15 @@ $returnPath = url::site() . "uksi_operation/importer";
 
 <p>
   Compare the current taxon list with the UKSI master table and log any differences.
+  <span style="color:red" ><b>** WARNING **</b> ensure you have imported the correct table to reconcile against as uksi_master </span>
 </p>
 
 
-<form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo url::site('uksi_operation/master_importer'); ?>">
+<!-- form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo url::site('uksi_operation/master_importer'); ?>">
   <label for="csv_masterupload">Upload a master CSV file to check against :</label>
   <input type="file" name="csv_masterupload" id="csv_masterupload" class="form-control" />
   <input type="submit" value="Upload file" class="btn btn-default" />
-</form>
+</form -->
 
 <a
   class="btn btn-warning"
@@ -73,6 +74,6 @@ $returnPath = url::site() . "uksi_operation/importer";
 <a
   class="btn btn-danger"
   href="<?php echo url::site('uksi_operation/reconcile_apply'); ?>"
-  onclick="return confirm('Run reconciliation and APPLY updates to the taxonomy?');">
+  onclick="return confirm('Run reconciliation and APPLY updates to the taxonomy ?');">
   Apply Reconciliation
 </a>
