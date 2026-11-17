@@ -76,8 +76,9 @@ class rest_spreadsheet_verify {
     elseif (!empty($postData['fileId'])) {
       // Subsequent call - fileId used to find metadata file.
       $fileId = $postData['fileId'];
-      $file = fopen(DOCROOT . "import/{$fileId}-metadata.json", "r");
-      $metadata = json_decode(fread($file, filesize((DOCROOT . "import/{$fileId}-metadata.json"))), TRUE);
+      $metadataFile = self::getMetadataFilePath($fileId);
+      $file = fopen($metadataFile, "r");
+      $metadata = json_decode(fread($file, filesize($metadataFile)), TRUE);
       fclose($file);
       if ($metadata['state'] === 'start') {
         // Start - load the first header row to find the important column
@@ -105,10 +106,27 @@ class rest_spreadsheet_verify {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing decisions file or fileId');
     }
     // Write metadata back to file.
-    $file = fopen(DOCROOT . "import/{$fileId}-metadata.json", "w");
+    $metadataFile = $metadataFile ?? self::getMetadataFilePath($fileId);
+    $file = fopen($metadataFile, "w");
     fwrite($file, json_encode($metadata));
     fclose($file);
     return $metadata;
+  }
+
+  /**
+   * Builds the path to a verification metadata file.
+   *
+   * @param string $fileId
+   *   Verification upload identifier.
+   *
+   * @return string
+   *   Metadata file path.
+   */
+  private static function getMetadataFilePath($fileId) {
+    if (!is_string($fileId) || preg_match('/\A[A-Za-z0-9._-]+\z/D', $fileId) !== 1) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid fileId parameter.');
+    }
+    return DOCROOT . "import/{$fileId}-metadata.json";
   }
 
   /**
