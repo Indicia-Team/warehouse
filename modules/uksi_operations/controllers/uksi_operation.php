@@ -2008,6 +2008,103 @@ SQL;
         }
         return $masterTable;
       }
+
+      public function backup_taxonomy() {
+
+        $tables = [
+          'taxon_relations',
+          'taxon_relation_types',
+          'taxon_ranks',
+          'taxon_media',
+          'taxon_meanings',
+          'taxon_lists_taxa_taxon_list_attributes',
+          'taxon_lists',
+          'taxon_groups',
+          'taxon_designations',
+          'taxon_codes',
+          'taxon_associations',
+          'taxa_taxon_lists',
+          'taxa_taxon_list_attributes',
+          'taxa_taxon_list_attribute_values',
+          'taxa_taxon_list_attribute_taxon_restrictions',
+          'taxa_taxon_designations',
+          'taxa',
+          'uksi_operations'
+        ];
+
+        $filename = 'uksi_backup_' . date('Ymd_His') . '.sql';
+
+        while (ob_get_level()) {
+          ob_end_clean();
+        }        
+
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        echo "-- UKSI taxonomy backup\n";
+        echo "-- Generated " . date('Y-m-d H:i:s') . "\n\n";
+
+        echo "-- Replace indicia with desired schema before running
+                  SET search_path TO indicia; \n\n";
+
+        echo "BEGIN; \n";
+
+        foreach ($tables as $table) {
+          echo "TRUNCATE TABLE $table CASCADE; ". "\n";       
+        }
+
+        foreach ($tables as $table) {
+
+          echo "\n-- TABLE: {$table}\n\n";
+
+        $result = $this->db->query("SELECT count(*) AS cnt FROM $table");
+        $row = $result->current();
+
+        echo "-- $table = {$row->cnt}\n";   
+        echo "-- Start $table" . "\n";
        
+
+          $result = $this->db->query("SELECT * FROM $table");
+          $count = 0;
+
+          foreach ($result as $row) {
+
+            $fields = [];
+            $values = [];
+
+            foreach ($row as $field => $value) {
+
+              $fields[] = $field;
+
+              if ($value === null) {
+                $values[] = 'NULL';
+              } elseif (is_bool($value)) {
+                $values[] = $value ? 'TRUE' : 'FALSE';
+              } else {
+                $values[] = "'" . str_replace("'", "''", $value) . "'";
+              }
+            }
+
+            echo sprintf(
+              "INSERT INTO %s (%s) VALUES (%s);\n",
+              $table,
+              implode(',', $fields),
+              implode(',', $values)
+            );
+
+              if (++$count % 1000 == 0) {
+                flush();
+              }     
+              
+
+          }
+          echo "-- End $table" . "\n";
+          echo "\n\n";
+        }
+
+        echo "COMMIT;\n";
+
+        exit;
+      }     
 
 }

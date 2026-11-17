@@ -32,6 +32,22 @@ $returnPath = url::site() . "uksi_operation/importer";
   <input type="submit" value="Upload file" class="btn btn-default" />
 </form>
 
+
+<hr />
+
+<h3>Taxonomy Backup</h3>
+
+<div class="alert alert-warning">
+  <strong>Recommended:</strong> Download a backup before applying
+  reconciliation changes.
+</div>
+
+<a
+  class="btn btn-primary"
+  href="<?php echo url::site('uksi_operation/backup_taxonomy'); ?>">
+  Backup Taxonomy
+</a>
+
 <hr />
 
 <h3>UKSI Master Reconciliation</h3>
