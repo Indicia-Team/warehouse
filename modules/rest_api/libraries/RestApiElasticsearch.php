@@ -752,7 +752,7 @@ class RestApiElasticsearch {
       foreach ($esCsvTemplate as $source) {
         $this->copyIntoCsvRow($item, $source['field'], $row);
       }
-      fputcsv($handle, $row);
+      fputcsv($handle, $row, escape: '\\');
     };
   }
 

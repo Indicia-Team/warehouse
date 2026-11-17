@@ -154,7 +154,7 @@ class rest_spreadsheet_verify {
           $row[$metadata['commentColIndex']],
           'The value in the ID column in this row is incorrect. Expecting a whole number.',
         ];
-        fputcsv($errorsFile, $errorRow);
+        fputcsv($errorsFile, $errorRow, escape: '\\');
         $metadata['errorsFound']++;
         continue;
       }
@@ -174,7 +174,7 @@ class rest_spreadsheet_verify {
             $providedComment,
             'The value in the *Decision status* column in this row is not recognised.',
           ];
-          fputcsv($errorsFile, $errorRow);
+          fputcsv($errorsFile, $errorRow, escape: '\\');
           $metadata['errorsFound']++;
           continue;
         }
@@ -200,7 +200,7 @@ class rest_spreadsheet_verify {
         ];
       }
       // Save the info about changes that need to be made.
-      fputcsv($verificationsFile, $verificationData);
+      fputcsv($verificationsFile, $verificationData, escape: '\\'s);
       $metadata['verificationsFound']++;
     }
     self::checkAllIdsInFilter($ids, $metadata['id_prefix'], $metadata);
@@ -467,7 +467,7 @@ class rest_spreadsheet_verify {
       '*Decision status*',
       '*Decision comment*',
       'Error description',
-    ]);
+    ], escape: '\\');
     fclose($file);
     $file = fopen(DOCROOT . "import/{$fileId}-verifications.json", "w");
     fclose($file);
