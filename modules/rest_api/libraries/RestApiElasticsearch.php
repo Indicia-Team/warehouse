@@ -139,6 +139,7 @@ class RestApiElasticsearch {
       ['caption' => 'Website', 'field' => 'metadata.website.title'],
       ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
       ['caption' => 'Media', 'field' => '#occurrence_media#'],
+      ['caption' => 'Import GUID', 'field' => 'metadata.import_guid'],
     ],
     'easy-download' => [
       ['caption' => 'ID', 'field' => 'id'],
@@ -233,6 +234,7 @@ class RestApiElasticsearch {
         'caption' => 'Automated checks',
         'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
       ],
+      ['caption' => 'Import GUID', 'field' => 'metadata.import_guid'],
     ],
     'easy-download-dna' => [
       ['caption' => 'ID', 'field' => 'id'],
@@ -327,6 +329,7 @@ class RestApiElasticsearch {
         'caption' => 'Automated checks',
         'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
       ],
+      ['caption' => 'Import GUID', 'field' => 'metadata.import_guid'],
       [
         'caption' => 'Associated sequences',
         'field' => 'dna_derived_data.associated_sequences',
@@ -441,6 +444,7 @@ class RestApiElasticsearch {
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Verified by', 'field' => 'identification.verifier.name'],
       ['caption' => 'Rank', 'field' => 'taxon.taxon_rank'],
+      ['caption' => 'Import GUID', 'field' => 'metadata.import_guid'],
     ]
   ];
 
