@@ -2,7 +2,7 @@
   <query>
     SELECT #columns#
     FROM scratchpad_lists s
-    LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id
+    LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id AND e.deleted=false
     LEFT JOIN cache_termlists_terms t ON t.id=s.scratchpad_type_id
     #joins#
     WHERE (s.website_id in (#website_ids#) or s.website_id is null)
