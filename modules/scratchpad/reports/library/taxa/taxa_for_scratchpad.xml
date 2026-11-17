@@ -10,6 +10,7 @@
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key AND cttlany.taxon_list_id=cttl.taxon_list_id
     #joins#
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
+    AND sle.deleted=false
   </query>
   <order_bys>
     <order_by>cttlany.taxonomic_sort_order, cttlany.taxon</order_by>

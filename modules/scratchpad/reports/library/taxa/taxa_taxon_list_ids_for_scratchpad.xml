@@ -9,6 +9,7 @@
     JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
+    AND sle.deleted=false
   </query>
   <params>
     <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
