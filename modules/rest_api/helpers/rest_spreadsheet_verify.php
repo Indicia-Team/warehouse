@@ -200,7 +200,7 @@ class rest_spreadsheet_verify {
         ];
       }
       // Save the info about changes that need to be made.
-      fputcsv($verificationsFile, $verificationData, escape: '\\'s);
+      fputcsv($verificationsFile, $verificationData, escape: '\\');
       $metadata['verificationsFound']++;
     }
     self::checkAllIdsInFilter($ids, $metadata['id_prefix'], $metadata);
