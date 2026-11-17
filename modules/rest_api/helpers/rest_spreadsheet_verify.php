@@ -164,7 +164,7 @@ class rest_spreadsheet_verify {
       $id = $row[$metadata['idColIndex']];
       $ids[] = $id;
       $metadata['totalChecked']++;
-      if (!preg_match('/\d+/', $id)) {
+      if (!preg_match('/^\d+$/', $id)) {
         // Log invalid ID value.
         $errorRow = [
           $id,
