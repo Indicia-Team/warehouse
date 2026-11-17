@@ -26,14 +26,13 @@ require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
+use PhpOffice\PhpSpreadsheet\Reader\IReader;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
-
-define('ROWS_PER_BATCH', 50);
 
 /**
  * Shim function to allow client site code to work.
  */
-function hostsite_get_config_value($context, $name, $default = FALSE) {
+function hostsite_get_config_value(string $context, string $name, mixed $default = FALSE): mixed {
   if ($context === 'iform' && $name === 'master_checklist_id') {
     return warehouse::getMasterTaxonListId();
   }
@@ -51,6 +50,8 @@ require_once $restVerifyFilterCompatibilityFile;
  */
 class rest_spreadsheet_verify {
 
+  private const ROWS_PER_BATCH = 50;
+
   /**
    * Processes the next task/batch of a verification spreadsheet.
    *
@@ -59,7 +60,7 @@ class rest_spreadsheet_verify {
    *
    * @todo Check the row is in the filter.
    */
-  public static function verifySpreadsheet() {
+  public static function verifySpreadsheet(): array {
     // Tolerate form or post data.
     if (empty($_POST)) {
       $postData = json_decode(file_get_contents('php://input'), TRUE);
@@ -122,7 +123,7 @@ class rest_spreadsheet_verify {
    * @return string
    *   Metadata file path.
    */
-  private static function getMetadataFilePath($fileId) {
+  private static function getMetadataFilePath(mixed $fileId): string {
     if (!is_string($fileId) || preg_match('/\A[A-Za-z0-9._-]+\z/D', $fileId) !== 1) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid fileId parameter.');
     }
@@ -135,7 +136,7 @@ class rest_spreadsheet_verify {
    * @param array $metadata
    *   File metadata.
    */
-  private static function checkNextBatch(array &$metadata) {
+  private static function checkNextBatch(array &$metadata): void {
     // Load the files we are processing.
     $importFileName = DOCROOT . "import/$metadata[fileId].$metadata[type]";
     $errorsFile = fopen(DOCROOT . "import/$metadata[fileId]-errors.csv", "a");
@@ -144,7 +145,7 @@ class rest_spreadsheet_verify {
     // Limit the rows we are reading to this batch.
     // Range reader offset is indexed from 1, plus 1 more to skip header.
     $offset = $metadata['totalChecked'] + 2;
-    $reader->setReadFilter(new IndiciaImportRangeReadFilter($offset, ROWS_PER_BATCH, [
+    $reader->setReadFilter(new IndiciaImportRangeReadFilter($offset, self::ROWS_PER_BATCH, [
       $metadata['idColIndex'],
       $metadata['statusColIndex'],
       $metadata['commentColIndex'],
@@ -153,7 +154,7 @@ class rest_spreadsheet_verify {
     $spreadsheet = $reader->load($importFileName);
     $data = $spreadsheet->getActiveSheet()->toArray();
     $ids = [];
-    for ($i = $offset - 1; $i < $offset - 1 + ROWS_PER_BATCH; $i++) {
+    for ($i = $offset - 1; $i < $offset - 1 + self::ROWS_PER_BATCH; $i++) {
       // If failed to read more rows, then done.
       if (!isset($data[$i])) {
         // State switches to processing, or indicate that checks failed.
@@ -239,7 +240,7 @@ class rest_spreadsheet_verify {
    * @param string $idPrefix
    *   ID prefix to filter to, in case multiple warehouses in the ES index.
    */
-  private static function checkAllIdsInFilter(array $ids, $idPrefix, array $metadata) {
+  private static function checkAllIdsInFilter(array $ids, string $idPrefix, array $metadata): void {
     require_once 'client_helpers/ElasticsearchProxyHelper.php';
     require_once 'client_helpers/helper_base.php';
     $readAuth = helper_base::get_read_auth(0 - $metadata['user_id'], kohana::config('indicia.private_key'));
@@ -299,7 +300,7 @@ class rest_spreadsheet_verify {
    *   indexes are keys containing status info and the values are sub-arrays of
    *   record IDs that should be updated to that status.
    */
-  private static function applyVerificationsToEs(array $metadata, array $esUpdates) {
+  private static function applyVerificationsToEs(array $metadata, array $esUpdates): void {
     foreach ($esUpdates as $key => $ids) {
       list($status, $subStatus, $query) = str_split($key);
       $scripts = [];
@@ -355,7 +356,7 @@ class rest_spreadsheet_verify {
    * @param string $response
    *   JSON response returned by Elasticsearch.
    */
-  private static function checkEsUpdateResponse($response) {
+  private static function checkEsUpdateResponse(string $response): void {
     $response = json_decode($response, TRUE);
     if (!is_array($response) || !empty($response['failures'])) {
       RestObjects::$apiResponse->fail(
@@ -372,7 +373,7 @@ class rest_spreadsheet_verify {
    * @param array $metadata
    *   File upload tracking metadata.
    */
-  private static function processNextBatch(array &$metadata) {
+  private static function processNextBatch(array &$metadata): void {
     $verificationsFile = fopen(DOCROOT . "import/$metadata[fileId]-verifications.json", "r");
     // If not on first batch, skip to correct place in file.
     if (isset($metadata['filepos'])) {
@@ -381,7 +382,7 @@ class rest_spreadsheet_verify {
     $done = 0;
     $db = new Database();
     $esUpdates = [];
-    while ($done < ROWS_PER_BATCH) {
+    while ($done < self::ROWS_PER_BATCH) {
       $row = fgetcsv($verificationsFile, escape: "\\");
       $metadata['filepos'] = ftell($verificationsFile);
       if ($row === FALSE) {
@@ -436,7 +437,7 @@ class rest_spreadsheet_verify {
    * @return string
    *   Filename prefix generated for saved file.
    */
-  private static function moveFileToImportsDir() {
+  private static function moveFileToImportsDir(): string {
     $maxUploadSize = Kohana::config('indicia.maxUploadSize');
     $files = Validation::factory($_FILES)->add_rules(
       'upload::valid', 'upload::type[csv,xls,xlsx]', "upload::size[$maxUploadSize]"
@@ -461,7 +462,7 @@ class rest_spreadsheet_verify {
    * @return array
    *   Processing metadata.
    */
-  private static function createTrackingFiles($fileId) {
+  private static function createTrackingFiles(string $fileId): array {
     $tokens = explode('.', strtolower($_FILES['decisions']['name']));
     $metadata = [
       'fileId' => $fileId,
@@ -495,7 +496,7 @@ class rest_spreadsheet_verify {
   /**
    * Ensures the API call has everything we need.
    */
-  private static function checkPrerequisites() {
+  private static function checkPrerequisites(): void {
     if (empty($_POST['user_id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing user authentication.');
     }
@@ -503,7 +504,7 @@ class rest_spreadsheet_verify {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing filter_id parameter.');
     }
     if (empty($_FILES['decisions'])) {
-      RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing filter_id parameter.');
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing decisions file parameter.');
     }
     if (empty($_POST['es_endpoint'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Missing es_endpoint parameter.');
@@ -528,7 +529,7 @@ class rest_spreadsheet_verify {
   /**
    * Retrieves the appropriate class for reading the spreadsheet.
    */
-  private static function getReader($metadata) {
+  private static function getReader(array $metadata): IReader {
     if ($metadata['type'] === 'csv') {
       $reader = new Csv();
     }
@@ -559,7 +560,7 @@ class rest_spreadsheet_verify {
    *   Metadata for file upload. Relevant column indexes found in header row
    *   will be appended.
    */
-  private static function readHeaderRow(array $rowData, array &$metadata) {
+  private static function readHeaderRow(array $rowData, array &$metadata): void {
     $metadata['idColIndex'] = array_search('ID', $rowData);
     $metadata['statusColIndex'] = array_search('*Decision status*', $rowData);
     $metadata['commentColIndex'] = array_search('*Decision comment*', $rowData);
@@ -578,10 +579,10 @@ class rest_spreadsheet_verify {
    * @param array $metadata
    *   File upload tracking metadata.
    *
-   * @return string
-   *   Status code, e.g. V1 or Q.
+   * @return array|false
+   *   Status code components, or false if the status is not recognised.
    */
-  private static function getRecordStatus(array $row, array $metadata) {
+  private static function getRecordStatus(array $row, array $metadata): array|false {
     // Uppercase and resolve spacing issues.
     $origStatus = strtoupper(trim(preg_replace('/\s+/', ' ', $row[$metadata['statusColIndex']])));
     // Tolerate some alternative ways of writing the term.
@@ -621,7 +622,7 @@ class rest_spreadsheet_verify {
    * @param string $statusCode
    *   Verification status and substatus.
    */
-  private static function getRecordStatusTerm($statusCode) {
+  private static function getRecordStatusTerm(string $statusCode): string {
     $recordStatusLookup = [
       'V' => 'Accepted',
       'V1' => 'Accepted as correct',
