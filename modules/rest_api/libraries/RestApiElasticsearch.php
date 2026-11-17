@@ -739,7 +739,7 @@ class RestApiElasticsearch {
    *
    * @param array $itemList
    *   Decoded list of data from an Elasticsearch search.
-   * @param int $handle
+   * @param resource $handle
    *   File or output buffer handle.
    */
   private function esToCsv(array $itemList, $handle) {
