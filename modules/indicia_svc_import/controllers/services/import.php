@@ -1065,7 +1065,7 @@ class Import_Controller extends Service_Base_Controller {
     if ($importGuidToAppend) {
       $data[] = $importGuidToAppend;
     }
-    fputcsv($errorHandle, $data);
+    fputcsv($errorHandle, $data, escape: '\\');
     $metadata['errorCount'] = $metadata['errorCount'] + 1;
   }
 
@@ -1594,7 +1594,7 @@ class Import_Controller extends Service_Base_Controller {
           $headers[] = 'Import ID';
         }
       }
-      fputcsv($errorHandle, $headers);
+      fputcsv($errorHandle, $headers, escape: '\\');
     }
     return $errorHandle;
   }
