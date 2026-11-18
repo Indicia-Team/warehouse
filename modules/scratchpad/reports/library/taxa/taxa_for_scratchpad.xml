@@ -5,11 +5,15 @@
   <query taxa_taxon_lists_id_field="cttl.preferred_taxa_taxon_list_id">
     SELECT DISTINCT #columns#
     FROM scratchpad_list_entries sle
+    JOIN scratchpad_lists sl ON sl.id=sle.scratchpad_list_id
+      AND sl.deleted=false
+      AND sl.website_id IN (#website_ids#)
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
     JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key AND cttlany.taxon_list_id=cttl.taxon_list_id
     #joins#
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
+    AND sle.deleted=false
   </query>
   <order_bys>
     <order_by>cttlany.taxonomic_sort_order, cttlany.taxon</order_by>

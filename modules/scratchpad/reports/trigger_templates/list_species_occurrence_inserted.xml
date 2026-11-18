@@ -6,9 +6,20 @@
     from cache_occurrences_functional o
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=o.taxon_meaning_id
-    join scratchpad_list_entries sle on sle.entry_id=cttl.id and sle.scratchpad_list_id=#scratchpad_list_id#
+    join scratchpad_list_entries sle on sle.entry_id=cttl.id
+      and sle.scratchpad_list_id=#scratchpad_list_id#
+      and sle.deleted=false
     join scratchpad_lists sl on sl.id=#scratchpad_list_id# and sl.deleted=false
-    join index_websites_website_agreements iwwa on iwwa.from_website_id=o.website_id and iwwa.to_website_id=#website_id# and iwwa.provide_for_#sharing#=true
+    join index_websites_website_agreements iwwa on iwwa.from_website_id=o.website_id
+      and iwwa.to_website_id=#website_id#
+      and CASE '#sharing#'
+        WHEN 'data_flow' THEN iwwa.provide_for_data_flow
+        WHEN 'peer_review' THEN iwwa.provide_for_peer_review
+        WHEN 'moderation' THEN iwwa.provide_for_moderation
+        WHEN 'reporting' THEN iwwa.provide_for_reporting
+        WHEN 'verification' THEN iwwa.provide_for_verification
+        ELSE false
+      END=true
     left join determinations d on d.occurrence_id=o.id and d.deleted=false
       and d.updated_on&gt;'#date#'
     where o.updated_on&gt;'#date#'

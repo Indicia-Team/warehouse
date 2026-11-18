@@ -119,6 +119,7 @@ $lang = [
   ],
   'location_id' => [
     'required' => 'This record must be linked to a location.',
+    'default' => 'The location is not available to the current website.',
   ],
   'machine_involvement' => [
     'minimum' => 'The machine involvement value must be in a range 0-5.',
@@ -224,6 +225,7 @@ $lang = [
   ],
   'website_id' => [
     'required' => 'The website cannot be blank.',
+    'default' => 'The website is not available to the current user.',
   ],
   'website_url' => [
     'url' => 'This must be a valid URL (if schema not provided, http:// is assumed).',
@@ -238,6 +240,12 @@ $lang = [
   ],
   'association_type_id' => [
     'required' => 'The association type must be supplied.',
+  ],
+  'group_id' => [
+    'default' => 'The group is not available to the current website.',
+  ],
+  'scratchpad_list_id' => [
+    'default' => 'The scratchpad list is not available to the current website.',
   ],
   'from_occurrence_id' => [
     'required' => 'The association from_occurrence_id must be supplied.',
