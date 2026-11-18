@@ -277,7 +277,12 @@ class Authentication_Bulk_Delete_Database {
   }
 }
 
-if (!empty($scenario['utility_action'])) {
+if (!empty($scenario['import_reverse'])) {
+  require_once $root . '/modules/indicia_svc_import/controllers/services/import_2.php';
+  require_once __DIR__ . '/import_reverse.php';
+  class_alias('Import_Reverse_Database', 'Database');
+}
+elseif (!empty($scenario['utility_action'])) {
   require_once __DIR__ . '/utility_actions.php';
   class_alias('Utility_Action_Database', 'Database');
 }
@@ -306,6 +311,9 @@ $controllerClass = !empty($scenario['media']) ? Data_Controller::class : Data_ut
 if (str_starts_with($scenario['utility_action'] ?? '', 'rules:')) {
   $controllerClass = Custom_verification_rules_Controller::class;
 }
+elseif (!empty($scenario['import_reverse'])) {
+  $controllerClass = Import_2_Controller::class;
+}
 $reflection = new ReflectionClass($controllerClass);
 $controller = $reflection->newInstanceWithoutConstructor();
 $invoke = static function ($name, ...$arguments) use ($reflection, $controller) {
@@ -323,6 +331,9 @@ try {
   }
   elseif (!empty($scenario['bulk'])) {
     $controller->bulk_delete_occurrences();
+  }
+  elseif (!empty($scenario['import_reverse'])) {
+    $controller->import_reverse();
   }
   elseif (!empty($scenario['media'])) {
     $_FILES = ['media_upload' => ['name' => 'test.jpg']];
@@ -389,7 +400,10 @@ $result = [
 foreach ($seed->exists(str_repeat('a', 40)) as $path) {
   $result['expiries'][] = (int) substr($path, strrpos($path, '~') + 1);
 }
-if (Database::$link && empty($scenario['utility_action'])) {
+if (Database::$link && !empty($scenario['import_reverse'])) {
+  $result['reversible'] = pg_fetch_result(pg_query(Database::$link, 'SELECT reversible FROM imports WHERE id = 1'), 0, 0) === 't';
+}
+elseif (Database::$link && empty($scenario['utility_action'])) {
   foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_occurrences_nonfunctional', 'cache_samples_functional', 'cache_samples_nonfunctional'] as $table) {
     $sql = "SELECT id FROM $table" . (in_array($table, ['occurrences', 'samples']) ? ' WHERE deleted' : '') . ' ORDER BY id';
     $result['records'][$table] = array_map('intval', array_column(pg_fetch_all(pg_query(Database::$link, $sql)), 'id'));

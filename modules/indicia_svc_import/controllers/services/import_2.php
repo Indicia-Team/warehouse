@@ -730,25 +730,51 @@ SQL;
   }
 
   /**
-   * Allow reversal of imports.
+   * Reverse an eligible occurrence import owned by the authenticated user.
    *
-   * At time of writing, only supports occurrence imports (and samples related
-   * to the occurrences).
+   * Requires user-specific website write credentials or Warehouse write
+   * credentials. The caller must also have access to the import's website.
+   * The acting user is derived from the credentials, not from POST data.
    */
   public function import_reverse() {
-    $db = new Database();
-    if (!empty($_POST['warehouse_user_id'])) {
-      $warehouseUserId = (int) $_POST['warehouse_user_id'];
+    header('Content-Type: application/json');
+    try {
+      $this->authenticate('write');
+      $warehouseUserId = $this->getAuthenticatedUserId();
+      if ($warehouseUserId === NULL) {
+        throw new AuthorisationError('Import reversal requires user-specific write credentials.');
+      }
     }
-    else {
+    catch (AuthenticationError | AuthorisationError $e) {
+      Kohana::log('info', 'Import reversal rejected: verified write identity required.');
+      http_response_code(403);
+      echo json_encode([
+        'status' => 'Forbidden',
+        'msg' => 'Import reversal requires user-specific write credentials.',
+      ]);
+      return;
+    }
+    $guidToReverse = $_POST['guid_to_reverse'] ?? NULL;
+    if (!is_string($guidToReverse) || !preg_match('/\A[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\z/i', $guidToReverse)) {
       http_response_code(400);
       echo json_encode([
         'status' => 'Bad Request',
-        'msg' => 'Missing warehouse_user_id parameter.',
+        'msg' => 'Missing or invalid guid_to_reverse parameter.',
       ]);
-      return FALSE;
+      return;
     }
-    $guidToReverse = $_POST['guid_to_reverse'];
+    $db = new Database();
+    $importId = $this->getReversibleImportId($db, $guidToReverse, $warehouseUserId);
+    if ($importId === NULL) {
+      Kohana::log('info', 'Import reversal rejected: no eligible import in the authenticated user scope.');
+      http_response_code(403);
+      echo json_encode([
+        'status' => 'Forbidden',
+        'msg' => 'This import is not available for reversal.',
+      ]);
+      return;
+    }
+
     if (!empty($_POST['reverse_mode'])) {
       $reverseMode = $_POST['reverse_mode'];
     }
@@ -765,13 +791,7 @@ SQL;
     $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
     $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
 
-    $importTableSql = <<<SQL
-      update imports
-      set reversible = false
-      where import_guid = ?;
-    SQL;
-
-    $db->query($importTableSql, [$guidToReverse]);
+    $db->query('UPDATE imports SET reversible = false WHERE id = ?', [$importId]);
 
     // Create the files users will download when reversal is complete.
     if (!empty($updatedOccurrences)) {
@@ -815,6 +835,40 @@ SQL;
       $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
     }
     echo json_encode($response);
+  }
+
+  /**
+   * Find an eligible, unambiguous import within the caller's website scope.
+   */
+  private function getReversibleImportId(Database $db, string $guid, int $userId): ?int {
+    $imports = $db->query(<<<SQL
+      SELECT i.id, i.website_id
+      FROM imports i
+      WHERE i.import_guid = ?
+        AND i.created_by_id = ?
+        AND i.entity = 'occurrence'
+        AND i.deleted = false
+        AND i.reversible = true
+        AND NOT EXISTS (
+          SELECT 1 FROM imports other
+          WHERE other.import_guid = i.import_guid AND other.id <> i.id
+        )
+        AND i.inserted + i.updated = (
+          SELECT count(*) FROM occurrences o WHERE o.import_guid = i.import_guid
+        )
+      SQL, [$guid, $userId])->result_array();
+    if (!$imports) {
+      return NULL;
+    }
+    $import = $imports[0];
+    $websiteId = (int) $import->website_id;
+    if ($websiteId <= 0) {
+      return NULL;
+    }
+    $websiteAllowed = $this->in_warehouse
+      ? $this->user_is_core_admin || in_array($websiteId, array_map('intval', $this->userWebsites), TRUE)
+      : $websiteId === $this->website_id;
+    return $websiteAllowed ? (int) $import->id : NULL;
   }
 
   /**

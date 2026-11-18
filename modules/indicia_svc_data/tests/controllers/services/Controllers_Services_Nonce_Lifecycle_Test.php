@@ -691,4 +691,74 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
   public static function bulkModes(): array {
     return [[TRUE], [FALSE]];
   }
+
+  public function testImportReversalRejectsUnverifiedIdentityBeforeDatabaseAccess(): void {
+    $nonce = str_repeat('a', 40);
+    $guid = 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA';
+    foreach ([[], ['nonce' => $nonce, 'auth_token' => sha1("$nonce:password")]] as $credentials) {
+      $result = $this->runScenario([
+        'import_reverse' => TRUE,
+        'post' => $credentials + ['guid_to_reverse' => $guid, 'warehouse_user_id' => 2],
+      ]);
+      $this->assertNull($result['exception']);
+      $this->assertSame(403, $result['status']);
+      $this->assertSame(0, $result['database_calls']);
+    }
+  }
+
+  public function testImportReversalRequiresWriteRatherThanReadCredentials(): void {
+    $nonce = str_repeat('a', 40);
+    $result = $this->runScenario([
+      'import_reverse' => TRUE,
+      'entries' => [[$nonce, '1', 'read']],
+      'post' => [
+        'nonce' => $nonce,
+        'auth_token' => sha1("$nonce:password:2") . ':2',
+        'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+      ],
+    ]);
+    $this->assertSame(403, $result['status']);
+    $this->assertSame(0, $result['database_calls']);
+  }
+
+  public function testImportReversalRequiresOwnershipWebsiteScopeAndEligibility(): void {
+    if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
+      $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
+    }
+    $nonce = str_repeat('a', 40);
+    $guid = 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA';
+    $post = [
+      'nonce' => $nonce,
+      'auth_token' => sha1("$nonce:password:2") . ':2',
+      'guid_to_reverse' => $guid,
+      'warehouse_user_id' => 3,
+    ];
+    $cases = [
+      'owner' => [[], 200, FALSE],
+      'other owner despite posted identity' => [[2 => 3], 403, TRUE],
+      'other website' => [[1 => 2], 403, TRUE],
+      'ineligible row count' => [[7 => 1], 403, TRUE],
+      'not reversible' => [[5 => 'f'], 403, FALSE],
+      'deleted' => [[6 => 't'], 403, TRUE],
+      'unsupported entity' => [[4 => 'location'], 403, TRUE],
+    ];
+    foreach ($cases as $name => [$import, $status, $reversible]) {
+      $result = $this->runScenario(['import_reverse' => TRUE, 'post' => $post, 'import' => $import]);
+      $this->assertNull($result['exception'], $name);
+      $this->assertSame($status, $result['status'], $name);
+      $this->assertSame($reversible, $result['reversible'], $name);
+    }
+
+    foreach ([2 => 200, 3 => 403] as $websiteId => $status) {
+      $result = $this->runScenario([
+        'import_reverse' => TRUE,
+        'entries' => [[$nonce, '-4', 'write']],
+        'post' => array_replace($post, ['auth_token' => sha1("$nonce:warehouse-key")]),
+        'import' => [1 => $websiteId, 2 => 4],
+      ]);
+      $this->assertNull($result['exception']);
+      $this->assertSame($status, $result['status']);
+      $this->assertSame($status !== 200, $result['reversible']);
+    }
+  }
 }
