@@ -6,12 +6,25 @@ require_once 'client_helpers/submission_builder.php';
 class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
 
   private $auth;
+  private $db;
 
   public function setup() {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
+    $this->db = new Database();
     // make the tokens re-usable
     $this->auth['write_tokens']['persist_auth']=true;
     parent::setup();
+  }
+
+  private function submitScratchpad($array, $structure = NULL) {
+    if ($structure === NULL) {
+      $structure = array(
+        'model' => 'scratchpad_list',
+        'metaFields' => array('entries'),
+      );
+    }
+    $s = submission_builder::build_submission($array, $structure);
+    return data_entry_helper::forward_post_to('scratchpad_list', $s, $this->auth['write_tokens']);
   }
 
   private function doTestCreate($array) {
@@ -117,6 +130,201 @@ class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
     $this->doTestRead($array, $listId);
     $this->doTestUpdate($array, $listId);
     $this->doTestDelete($array, $listId);
+  }
+
+  /**
+   * Test that a scratchpad can be linked to valid group and location records.
+   */
+  function testCreateWithGroupAndLocation() {
+    $array = array(
+      'scratchpad_list:title' => 'Scratchpad with links',
+      'scratchpad_list:description' => 'Test linked records',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 1,
+      'metaFields:entries' => '1;2',
+      'groups_scratchpad_list:group_id' => 1,
+      'locations_scratchpad_list:location_id' => 1,
+    );
+    $structure = array(
+      'model' => 'scratchpad_list',
+      'metaFields' => array('entries'),
+      'subModels' => array(
+        'groups_scratchpad_list' => array('fk' => 'scratchpad_list_id'),
+        'locations_scratchpad_list' => array('fk' => 'scratchpad_list_id'),
+      ),
+    );
+
+    $response = $this->submitScratchpad($array, $structure);
+    $this->assertArrayHasKey('success', $response, 'Valid scratchpad links were not saved');
+    $listId = $response['success'];
+
+    $groupLink = $this->db->query(
+      'SELECT group_id FROM groups_scratchpad_lists
+       WHERE scratchpad_list_id=? AND deleted=false',
+      [$listId]
+    )->current();
+    $locationLink = $this->db->query(
+      'SELECT location_id FROM locations_scratchpad_lists
+       WHERE scratchpad_list_id=? AND deleted=false',
+      [$listId]
+    )->current();
+    $this->assertSame('1', (string) $groupLink->group_id);
+    $this->assertSame('1', (string) $locationLink->location_id);
+  }
+
+  /**
+   * Invalid child links must fail the complete parent save.
+   */
+  function testRejectsInvalidLocationAssociation() {
+    $array = array(
+      'scratchpad_list:title' => 'Invalid location scratchpad',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 1,
+      'metaFields:entries' => '1',
+      'locations_scratchpad_list:location_id' => 999999,
+    );
+    $structure = array(
+      'model' => 'scratchpad_list',
+      'metaFields' => array('entries'),
+      'subModels' => array(
+        'locations_scratchpad_list' => array('fk' => 'scratchpad_list_id'),
+      ),
+    );
+
+    $response = $this->submitScratchpad($array, $structure);
+    $this->assertArrayHasKey('error', $response, 'An invalid location link was accepted');
+    $this->assertSame(
+      0,
+      (int) $this->db->query(
+        'SELECT count(*) AS count FROM scratchpad_lists WHERE title=?',
+        [$array['scratchpad_list:title']]
+      )->current()->count,
+      'The parent scratchpad was not rolled back after an invalid location link'
+    );
+  }
+
+  /**
+   * Invalid group links must also fail the complete parent save.
+   */
+  function testRejectsInvalidGroupAssociation() {
+    $array = array(
+      'scratchpad_list:title' => 'Invalid group scratchpad',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 1,
+      'metaFields:entries' => '1',
+      'groups_scratchpad_list:group_id' => 999999,
+    );
+    $structure = array(
+      'model' => 'scratchpad_list',
+      'metaFields' => array('entries'),
+      'subModels' => array(
+        'groups_scratchpad_list' => array('fk' => 'scratchpad_list_id'),
+      ),
+    );
+
+    $response = $this->submitScratchpad($array, $structure);
+    $this->assertArrayHasKey('error', $response, 'An invalid group link was accepted');
+    $this->assertSame(
+      0,
+      (int) $this->db->query(
+        'SELECT count(*) AS count FROM scratchpad_lists WHERE title=?',
+        [$array['scratchpad_list:title']]
+      )->current()->count,
+      'The parent scratchpad was not rolled back after an invalid group link'
+    );
+  }
+
+  /**
+   * A submitted website must match the authenticated website context.
+   */
+  function testRejectsOtherWebsite() {
+    $array = array(
+      'scratchpad_list:title' => 'Other website scratchpad',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 2,
+      'metaFields:entries' => '1',
+    );
+
+    $response = $this->submitScratchpad($array);
+    $this->assertArrayHasKey('error', $response, 'A scratchpad for another website was accepted');
+    $this->assertSame(
+      0,
+      (int) $this->db->query(
+        'SELECT count(*) AS count FROM scratchpad_lists WHERE title=?',
+        [$array['scratchpad_list:title']]
+      )->current()->count
+    );
+  }
+
+  /**
+   * Updating with no entries soft-deletes all existing entries.
+   */
+  function testUpdateWithNoEntries() {
+    $array = array(
+      'scratchpad_list:title' => 'Empty scratchpad',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 1,
+      'metaFields:entries' => '1;2',
+    );
+    $createResponse = $this->submitScratchpad($array);
+    $this->assertArrayHasKey('success', $createResponse);
+    $listId = $createResponse['success'];
+
+    $array['scratchpad_list:id'] = $listId;
+    $array['metaFields:entries'] = '';
+    $updateResponse = $this->submitScratchpad($array);
+    $this->assertArrayHasKey('success', $updateResponse, 'An empty scratchpad update failed');
+
+    $entries = $this->db->query(
+      'SELECT count(*) AS count FROM scratchpad_list_entries
+       WHERE scratchpad_list_id=? AND deleted=false',
+      [$listId]
+    )->current();
+    $this->assertSame('0', (string) $entries->count);
+  }
+
+  /**
+   * Entry metadata is stored and malformed metadata rejects the update.
+   */
+  function testEntryMetadataValidation() {
+    $array = array(
+      'scratchpad_list:title' => 'Metadata scratchpad',
+      'scratchpad_list:entity' => 'taxa_taxon_list',
+      'website_id' => 1,
+      'metaFields:entries' => '1;2',
+      'metaFields:entries_metadata' => json_encode(array(
+        '1' => array('source' => 'first'),
+        '2' => array('source' => 'second'),
+      )),
+    );
+    $structure = array(
+      'model' => 'scratchpad_list',
+      'metaFields' => array('entries', 'entries_metadata'),
+    );
+    $createResponse = $this->submitScratchpad($array, $structure);
+    $this->assertArrayHasKey('success', $createResponse);
+    $listId = $createResponse['success'];
+
+    $metadata = $this->db->query(
+      'SELECT metadata FROM scratchpad_list_entries
+       WHERE scratchpad_list_id=? AND entry_id=1',
+      [$listId]
+    )->current()->metadata;
+    $this->assertSame(array('source' => 'first'), json_decode($metadata, TRUE));
+
+    $array['scratchpad_list:id'] = $listId;
+    $array['scratchpad_list:title'] = 'Metadata scratchpad unchanged';
+    $array['metaFields:entries_metadata'] = '{invalid';
+    $response = $this->submitScratchpad($array, $structure);
+    $this->assertArrayHasKey('error', $response, 'Malformed entry metadata was accepted');
+    $this->assertSame(
+      'Metadata scratchpad',
+      $this->db->query(
+        'SELECT title FROM scratchpad_lists WHERE id=?',
+        [$listId]
+      )->current()->title,
+      'The scratchpad update was not rolled back after malformed metadata'
+    );
   }
 
 }
