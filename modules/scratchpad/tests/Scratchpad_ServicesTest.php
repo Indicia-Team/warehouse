@@ -8,12 +8,12 @@ class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
   private $auth;
   private $db;
 
-  public function setup() {
+  public function setUp(): void {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     $this->db = new Database();
     // make the tokens re-usable
     $this->auth['write_tokens']['persist_auth']=true;
-    parent::setup();
+    parent::setUp();
   }
 
   private function submitScratchpad($array, $structure = NULL) {
