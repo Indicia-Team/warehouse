@@ -2,7 +2,8 @@
   <query>
     SELECT #columns#
     FROM scratchpad_lists s
-    LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id AND e.deleted=false
+    LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id
+      AND e.deleted=false
     LEFT JOIN cache_termlists_terms t ON t.id=s.scratchpad_type_id
     #joins#
     WHERE (s.website_id in (#website_ids#) or s.website_id is null)
@@ -13,7 +14,7 @@
   </order_bys>
   <params>
     <param name="created_by_id" display="Creator's User ID" description="Warehouse user ID of the filter creator"
-           datatype="text" default="">
+           datatype="integer" default="">
       <where>s.created_by_id=#created_by_id#</where>
     </param>
     <param name="entity" display="Entity" description="Filter to lists for a given entity"

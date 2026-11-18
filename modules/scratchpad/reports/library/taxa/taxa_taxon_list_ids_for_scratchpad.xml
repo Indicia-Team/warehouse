@@ -5,6 +5,9 @@
   <query>
     SELECT DISTINCT #columns#
     FROM scratchpad_list_entries sle
+    JOIN scratchpad_lists sl ON sl.id=sle.scratchpad_list_id
+      AND sl.deleted=false
+      AND sl.website_id IN (#website_ids#)
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
     JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
@@ -14,7 +17,8 @@
   <params>
     <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
            datatype="integer" />
-    <param name="taxon_list_ids" display="Taxon list ID" description="Limit the output to taxa in this list">
+    <param name="taxon_list_ids" display="Taxon list ID" description="Limit the output to taxa in this list"
+           datatype="integer[]">
       <where>cttlany.taxon_list_id in (#taxon_list_ids#)</where>
     </param>
   </params>
