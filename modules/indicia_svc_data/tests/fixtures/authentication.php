@@ -401,7 +401,18 @@ foreach ($seed->exists(str_repeat('a', 40)) as $path) {
   $result['expiries'][] = (int) substr($path, strrpos($path, '~') + 1);
 }
 if (Database::$link && !empty($scenario['import_reverse'])) {
+  $result['blocks_unrelated_writes'] = Database::$blocksUnrelatedWrites;
   $result['reversible'] = pg_fetch_result(pg_query(Database::$link, 'SELECT reversible FROM imports WHERE id = 1'), 0, 0) === 't';
+  if (!empty($scenario['reversal_records'])) {
+    foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_samples_functional'] as $table) {
+      $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';
+      $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));
+    }
+    foreach (glob($scenario['directory'] . '/upload/*.csv') as $file) {
+      unlink($file);
+    }
+    rmdir($scenario['directory'] . '/upload');
+  }
 }
 elseif (Database::$link && empty($scenario['utility_action'])) {
   foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_occurrences_nonfunctional', 'cache_samples_functional', 'cache_samples_nonfunctional'] as $table) {

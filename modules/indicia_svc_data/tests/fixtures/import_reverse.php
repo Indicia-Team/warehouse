@@ -1,12 +1,19 @@
 <?php
 
 /**
- * Connection-local data for import reversal authorization tests.
+ * Connection-local data for import reversal tests.
  */
+class url {
+  public static function base(): string {
+    return '/';
+  }
+}
+
 class Import_Reverse_Database {
 
   public static $calls = 0;
   public static $link;
+  public static $blocksUnrelatedWrites;
 
   public function __construct() {
     global $scenario;
@@ -19,7 +26,8 @@ class Import_Reverse_Database {
     pg_query(self::$link, <<<'SQL'
       CREATE TEMP TABLE imports (
         id int, website_id int, created_by_id int, import_guid text,
-        entity text, reversible boolean, deleted boolean, inserted int, updated int
+        entity text, reversible boolean, deleted boolean, inserted int, updated int,
+        global_values json NOT NULL DEFAULT '{}', mappings json NOT NULL DEFAULT '{}'
       );
       CREATE TEMP TABLE occurrences (
         id int, sample_id int, import_guid text, deleted boolean,
@@ -43,8 +51,24 @@ class Import_Reverse_Database {
       CREATE TEMP TABLE cache_samples_functional (id int);
       CREATE TEMP TABLE cache_samples_nonfunctional (id int);
       SQL);
-    $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 0, 0], $scenario['import'] ?? []);
-    pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', $import);
+    $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}'], $scenario['import'] ?? []);
+    pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', $import);
+    if (!empty($scenario['reversal_records'])) {
+      mkdir($scenario['directory'] . '/upload');
+      $_SERVER['DOCUMENT_ROOT'] = $scenario['directory'];
+      pg_query_params(self::$link, <<<'SQL'
+        INSERT INTO samples (id, import_guid, parent_id, deleted) VALUES
+          (1, $1, NULL, false), (2, NULL, 1, false), (3, $1, NULL, false);
+        SQL, [$import[3]]);
+      pg_query_params(self::$link, <<<'SQL'
+        INSERT INTO occurrences (id, sample_id, import_guid, deleted) VALUES
+          (1, 3, $1, false), (2, 2, 'LATER-IMPORT', false);
+        SQL, [$import[3]]);
+      pg_query(self::$link, <<<'SQL'
+        INSERT INTO cache_occurrences_functional SELECT id FROM occurrences;
+        INSERT INTO cache_samples_functional SELECT id FROM samples;
+        SQL);
+    }
   }
 
   public function getLink() {
@@ -52,6 +76,17 @@ class Import_Reverse_Database {
   }
 
   public function query($sql, array $params = []) {
+    if ($sql === 'COMMIT') {
+      self::$blocksUnrelatedWrites = pg_fetch_result(pg_query(self::$link, <<<'SQL'
+        SELECT EXISTS (
+          SELECT 1 FROM pg_locks
+          WHERE pid = pg_backend_pid()
+            AND granted
+            AND relation IN ('samples'::regclass, 'occurrences'::regclass)
+            AND mode IN ('ShareLock', 'ShareRowExclusiveLock', 'ExclusiveLock', 'AccessExclusiveLock')
+        )
+        SQL), 0, 0) === 't';
+    }
     // The controller uses Kohana's question-mark bindings.
     $index = 0;
     $sql = preg_replace_callback('/\?/', static function () use (&$index) {

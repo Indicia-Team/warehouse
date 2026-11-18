@@ -764,8 +764,8 @@ SQL;
       return;
     }
     $db = new Database();
-    $importId = $this->getReversibleImportId($db, $guidToReverse, $warehouseUserId);
-    if ($importId === NULL) {
+    $import = $this->getReversibleImport($db, $guidToReverse, $warehouseUserId);
+    if ($import === NULL) {
       Kohana::log('info', 'Import reversal rejected: no eligible import in the authenticated user scope.');
       http_response_code(403);
       echo json_encode([
@@ -781,17 +781,28 @@ SQL;
     else {
       $reverseMode = 'normal';
     }
-    /* Reverse occurrences first, otherwise the auto cascade from the sample
-    deletions will make it harder to inform the user of which exact occurrence rows
-    have been reversed */
-    $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
-    // Also get rows not reversed, so they can be reported to the user.
+    $db->query('BEGIN');
+    try {
+      // Serialize attempts to reverse this import, not writes to other records.
+      $import = $this->getReversibleImport($db, $guidToReverse, $warehouseUserId, TRUE);
+      if ($import === NULL) {
+        $db->query('ROLLBACK');
+        Kohana::log('info', 'Import reversal rejected: import is no longer eligible.');
+        http_response_code(403);
+        echo json_encode(['status' => 'Forbidden', 'msg' => 'This import is not available for reversal.']);
+        return;
+      }
+      $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $db->query('UPDATE imports SET reversible = false WHERE id = ?', [(int) $import->id]);
+      $db->query('COMMIT');
+    }
+    catch (Throwable $e) {
+      $db->query('ROLLBACK');
+      throw $e;
+    }
     $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
-    // Same for samples.
-    $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
     $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
-
-    $db->query('UPDATE imports SET reversible = false WHERE id = ?', [$importId]);
 
     // Create the files users will download when reversal is complete.
     if (!empty($updatedOccurrences)) {
@@ -840,7 +851,8 @@ SQL;
   /**
    * Find an eligible, unambiguous import within the caller's website scope.
    */
-  private function getReversibleImportId(Database $db, string $guid, int $userId): ?int {
+  private function getReversibleImport(Database $db, string $guid, int $userId, bool $lock = FALSE): ?object {
+    $lockClause = $lock ? 'FOR UPDATE OF i' : '';
     $imports = $db->query(<<<SQL
       SELECT i.id, i.website_id
       FROM imports i
@@ -849,13 +861,24 @@ SQL;
         AND i.entity = 'occurrence'
         AND i.deleted = false
         AND i.reversible = true
+        AND i.updated = 0
+        AND i.inserted > 0
+        -- An existing sample can be tagged even if the occurrence update fails.
+        AND COALESCE(i.global_values->>'config:allowUpdates', '0') NOT IN ('1', 'true')
+        AND NOT jsonb_exists_any(i.global_values::jsonb, ARRAY['sample:id', 'occurrence:id'])
+        AND NOT EXISTS (
+          SELECT 1
+          FROM jsonb_path_query(i.mappings::jsonb, '$.**.warehouseField') field
+          WHERE field IN ('"sample:id"', '"occurrence:id"')
+        )
         AND NOT EXISTS (
           SELECT 1 FROM imports other
           WHERE other.import_guid = i.import_guid AND other.id <> i.id
         )
-        AND i.inserted + i.updated = (
+        AND i.inserted >= (
           SELECT count(*) FROM occurrences o WHERE o.import_guid = i.import_guid
         )
+      $lockClause
       SQL, [$guid, $userId])->result_array();
     if (!$imports) {
       return NULL;
@@ -868,7 +891,7 @@ SQL;
     $websiteAllowed = $this->in_warehouse
       ? $this->user_is_core_admin || in_array($websiteId, array_map('intval', $this->userWebsites), TRUE)
       : $websiteId === $this->website_id;
-    return $websiteAllowed ? (int) $import->id : NULL;
+    return $websiteAllowed ? $import : NULL;
   }
 
   /**
@@ -998,94 +1021,36 @@ SQL;
    */
   private function reverseOccurrences($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
     $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
-    $occurrencesUpdateSQL = <<<SQL
-      UPDATE occurrences o_update
-      SET deleted=true,
-      updated_on=now(),
-      updated_by_id=$warehouseUserId
-      FROM occurrences o\n
-    SQL;
-
-    $cacheOccsFunctionalDeletionSQL = <<<SQL
-      DELETE
-      FROM cache_occurrences_functional
-      WHERE id in (
-      SELECT o.id
-      FROM occurrences o\n
-    SQL;
-
-    $cacheOccsNonFunctionalDeletionSQL = <<<SQL
-      DELETE
-      FROM cache_occurrences_nonfunctional
-      WHERE id in (
-      SELECT o.id
-      FROM occurrences o\n
-    SQL;
-
-    $occurrencesJoinSQL = <<<SQL
-    JOIN imports i on i.import_guid = o.import_guid
-      AND i.import_guid = $guidToReverseEsc
-    /* Left Join to samples, as  we don't care if occurrences are attached to a
-       a sample that isn't part of import and that has been changed. */
-    LEFT JOIN samples s
-      ON s.id = o.sample_id
-      AND s.import_guid = i.import_guid
-      AND s.deleted=false
-    WHERE
-    o.import_guid = $guidToReverseEsc
-    /* We can't easily tell difference between inserted occurrences that are updated,
-    and updated occurrences that are updated again. As we are only going to be reversing the former
-    (even in "reverse regardless of changes" mode), we need a way to only include these.
-    We can do this by getting the most recent occurrences for the import, limited by the imports
-    table inserted value, this will exclude updated occurrences that are updated a second time.
-    Note that this method would not work if the user did further imports that affected these inserted rows,
-    however we already exclude imports like this from the reverser's import select drop-down */
-    AND o.id in (
-      select id
-      FROM occurrences o2
-      WHERE
-        o2.import_guid = $guidToReverseEsc
-      ORDER BY o2.id DESC
-      LIMIT i.inserted
-    )\n
-    SQL;
-
-    $cacheOccsFunctionalDeletionSQL .= $occurrencesJoinSQL;
-    $cacheOccsNonFunctionalDeletionSQL .= $occurrencesJoinSQL;
-    // The main occurrences SQL is slightly different as doesn't use "in"
-    // clause, so needs a bit of extra SQL.
-    $occurrencesUpdateSQL .= $occurrencesJoinSQL .
-    "AND o.id = o_update.id AND o.deleted=false\n";
-
-    /* Only update occurrences where the created_on date/time is the same
-    and the sample from that same import hasn't been updated either. */
-    if (!empty($reverseMode) && $reverseMode == 'do_not_reverse_updated') {
-      $occurrencesNoChangesSQL = <<<SQL
-      AND (s.id IS NULL OR s.created_on = s.updated_on)
-      AND o.created_on = o.updated_on\n
+    $unchanged = '';
+    if ($reverseMode === 'do_not_reverse_updated') {
+      $unchanged = <<<SQL
+        AND o.created_on = o.updated_on
+        AND NOT EXISTS (
+          SELECT 1 FROM samples s WHERE s.id = o.sample_id
+            AND s.import_guid = $guidToReverseEsc AND s.deleted = false
+            AND (s.created_on = s.updated_on) IS NOT TRUE
+        )
       SQL;
-
-      $cacheOccsFunctionalDeletionSQL .= $occurrencesNoChangesSQL;
-      $cacheOccsNonFunctionalDeletionSQL .= $occurrencesNoChangesSQL;
-      $occurrencesUpdateSQL .= $occurrencesNoChangesSQL;
     }
-    // Return the updated rows (in similar way as a select statement would)
-    // Can't use "RETURNING *" as that includes columns from the joins
-    // and messes up result (e.g the ID comes out wrong as both the occurrence
-    // and import tables have it).
-    $occurrencesUpdateSQL .= <<<SQL
-    RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
-    o.website_id, o.external_key, o.comment, o.taxa_taxon_list_id, o.record_status, o.verified_by_id,
-    o.verified_on, o.zero_abundance, o.last_verification_check_date, o.training, o.sensitivity_precision,
-    o.release_status, o.record_substatus, o.record_decision_source, o.import_guid
-    SQL;
-    // These first two statements need a closing bracket,
-    // as they use an "in" clause.
-    $db->query($cacheOccsFunctionalDeletionSQL . ')');
-    $db->query($cacheOccsNonFunctionalDeletionSQL . ')');
-    $updatedOccurrences = $db->query($occurrencesUpdateSQL)->result_array();
-
-    return $updatedOccurrences;
+    // Use the rows actually updated: a competing writer may retag a candidate
+    // while the reversal waits for its row lock.
+    return $db->query(<<<SQL
+      WITH reversed AS (
+        UPDATE occurrences o
+        SET deleted = true, updated_on = now(), updated_by_id = $warehouseUserId
+        WHERE o.import_guid = $guidToReverseEsc AND o.deleted = false
+        $unchanged
+        RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
+          o.website_id, o.external_key, o.comment, o.taxa_taxon_list_id, o.record_status, o.verified_by_id,
+          o.verified_on, o.zero_abundance, o.last_verification_check_date, o.training, o.sensitivity_precision,
+          o.release_status, o.record_substatus, o.record_decision_source, o.import_guid
+      ), functional AS (
+        DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM reversed)
+      ), nonfunctional AS (
+        DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM reversed)
+      )
+      SELECT * FROM reversed
+      SQL)->result_array();
   }
 
   /**
@@ -1145,75 +1110,33 @@ SQL;
    */
   private function reverseSamples($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
     $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
-    $samplesUpdateSQL = <<<SQL
-      UPDATE samples s_update
-      SET deleted=true,
-      updated_on=now(),
-      updated_by_id=$warehouseUserId
-      FROM samples as s\n
-    SQL;
-
-    $cacheSmpsFunctionalDeletionSQL = <<<SQL
-      DELETE
-      FROM cache_samples_functional
-      where id in (
-      SELECT s.id
-      FROM samples s\n
-    SQL;
-
-    $cacheSmpsNonFunctionalDeletionSQL = <<<SQL
-      DELETE
-      FROM cache_samples_nonfunctional
-      where id in (
-      SELECT s.id
-      FROM samples s\n
-    SQL;
-
-    $samplesJoinSQL = <<<SQL
-    LEFT JOIN occurrences o
-      ON o.sample_id = s.id
-      AND o.deleted=false
-    WHERE
-      s.import_guid = $guidToReverseEsc
-      /* Don't delete a sample if still contains occurrences after occurrence processing */
-      AND o.id IS NULL
-      AND s.deleted=false\n
-    SQL;
-
-    $cacheSmpsFunctionalDeletionSQL .= $samplesJoinSQL;
-    $cacheSmpsNonFunctionalDeletionSQL .= $samplesJoinSQL;
-    // The main occurrences SQL is slightly different as doesn't use "in"
-    // clause, so needs a bit of extra SQL.
-    $samplesUpdateSQL .= $samplesJoinSQL .
-    "AND s.id = s_update.id\n";
-
-    if (!empty($reverseMode) && $reverseMode == 'do_not_reverse_updated') {
-      $samplesNoChangesSQL = <<<SQL
-        AND s.created_on = s.updated_on\n
-      SQL;
-
-      $cacheSmpsFunctionalDeletionSQL .= $samplesNoChangesSQL;
-      $cacheSmpsNonFunctionalDeletionSQL .= $samplesNoChangesSQL;
-      $samplesUpdateSQL .= $samplesNoChangesSQL;
-    }
-    // Return the updated rows (in similar way as a select statement would)
-    // Can't use "RETURNING *" as that includes columns from the joins
-    // and messes up result (e.g the ID comes out wrong as both the sample
-    // and import tables have it).
-    $samplesUpdateSQL .= <<<SQL
-    RETURNING s.id, s.survey_id, s.location_id,s.date_start,s.date_end,s.date_type,
-    s.entered_sref, s.entered_sref_system, s.location_name, s.created_on,
-    s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names,
-    s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status,
-    s.verified_by_id, s.verified_on, s.licence_id,s.training, s.import_guid
-    SQL;
-    // These first two statements need a closing bracket,
-    // as they use an "in" clause.
-    $db->query($cacheSmpsFunctionalDeletionSQL . ')');
-    $db->query($cacheSmpsNonFunctionalDeletionSQL . ')');
-    $updatedSamples = $db->query($samplesUpdateSQL)->result_array();
-
-    return $updatedSamples;
+    $unchanged = $reverseMode === 'do_not_reverse_updated' ? 'AND s.created_on = s.updated_on' : '';
+    // Keep visible dependants, but accept that a concurrent attachment may
+    // become invalid when its parent is deleted rather than lock both tables.
+    return $db->query(<<<SQL
+      WITH reversed AS (
+        UPDATE samples s
+        SET deleted = true, updated_on = now(), updated_by_id = $warehouseUserId
+        WHERE s.import_guid = $guidToReverseEsc AND s.deleted = false
+          AND NOT EXISTS (
+            SELECT 1 FROM occurrences o WHERE o.sample_id = s.id AND o.deleted = false
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM samples child WHERE child.parent_id = s.id AND child.deleted = false
+          )
+          $unchanged
+        RETURNING s.id, s.survey_id, s.location_id, s.date_start, s.date_end, s.date_type,
+          s.entered_sref, s.entered_sref_system, s.location_name, s.created_on,
+          s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names,
+          s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status,
+          s.verified_by_id, s.verified_on, s.licence_id, s.training, s.import_guid
+      ), functional AS (
+        DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM reversed)
+      ), nonfunctional AS (
+        DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM reversed)
+      )
+      SELECT * FROM reversed
+      SQL)->result_array();
   }
 
   /**

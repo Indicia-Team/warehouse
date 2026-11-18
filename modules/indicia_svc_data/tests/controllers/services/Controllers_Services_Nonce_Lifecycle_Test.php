@@ -737,7 +737,11 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       'owner' => [[], 200, FALSE],
       'other owner despite posted identity' => [[2 => 3], 403, TRUE],
       'other website' => [[1 => 2], 403, TRUE],
-      'ineligible row count' => [[7 => 1], 403, TRUE],
+      'no inserts' => [[7 => 0], 403, TRUE],
+      'updated rows' => [[8 => 1], 403, TRUE],
+      'update-enabled import' => [[9 => '{"config:allowUpdates":"1"}'], 403, TRUE],
+      'existing sample mapping' => [[10 => '{"Sample ID":{"warehouseField":"sample:id"}}'], 403, TRUE],
+      'existing occurrence global value' => [[9 => '{"occurrence:id":42}'], 403, TRUE],
       'not reversible' => [[5 => 'f'], 403, FALSE],
       'deleted' => [[6 => 't'], 403, TRUE],
       'unsupported entity' => [[4 => 'location'], 403, TRUE],
@@ -760,5 +764,31 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       $this->assertSame($status, $result['status']);
       $this->assertSame($status !== 200, $result['reversible']);
     }
+  }
+
+  public function testInsertOnlyReversalKeepsRetaggedOccurrencesAndSamplesWithLiveChildren(): void {
+    if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
+      $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
+    }
+    $nonce = str_repeat('a', 40);
+    $result = $this->runScenario([
+      'import_reverse' => TRUE,
+      'reversal_records' => TRUE,
+      'import' => [7 => 2],
+      'post' => [
+        'nonce' => $nonce,
+        'auth_token' => sha1("$nonce:password:2") . ':2',
+        'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+        'reverse_mode' => 'reverse_all',
+      ],
+    ]);
+    $this->assertNull($result['exception']);
+    $this->assertSame(200, $result['status']);
+    $this->assertFalse($result['reversible']);
+    $this->assertFalse($result['blocks_unrelated_writes']);
+    $this->assertSame([2], $result['survivors']['occurrences']);
+    $this->assertSame([1, 2], $result['survivors']['samples']);
+    $this->assertSame([2], $result['survivors']['cache_occurrences_functional']);
+    $this->assertSame([1, 2], $result['survivors']['cache_samples_functional']);
   }
 }
