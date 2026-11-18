@@ -84,7 +84,6 @@ class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
     ));
     $d = data_entry_helper::forward_post_to('scratchpad_list', $s, $this->auth['write_tokens']);
     Kohana::log('debug', "Submission response to scratchpad_list delete " . print_r($d, TRUE));
-    print_r($d);
     $this->assertTrue(isset($d['success']), 'Delete a scratchpad_list did not return success response');
     $r = data_entry_helper::get_population_data(array(
       'table' => 'scratchpad_list',
