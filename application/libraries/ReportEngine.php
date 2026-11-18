@@ -1205,19 +1205,17 @@ class ReportEngine {
     foreach ($this->providedParams as $name => $value) {
       if (isset($paramDefs[$name])) {
         if ($value === '') {
-          $empty = isset($paramDefs[$name]['emptyvalue']) ? $paramDefs[$name]['emptyvalue'] : '';
-          // Empty integer params should be handled as 0 (NULL would be ideal,
-          // but we can't test for it in the same fashion as a number).
-          $query = preg_replace("/#$name#/", $empty, $query);
+          $query = str_replace("#$name#", $this->renderParamValue($name, $value, $paramDefs[$name]), $query);
         }
         else {
-          if ($paramDefs[$name]['datatype'] === 'idlist') {
-            // idlist is a special parameter type which creates an IN (...)
-            // clause. Lets you optionally provide a list of ids for a report.
-            $query = preg_replace("/#$name#/", "AND " . $paramDefs[$name]['fieldname'] . " IN ($value)", $query);
-          }
-          elseif ($paramDefs[$name]['datatype'] === 'excludeidlist') {
-            $query = preg_replace("/#$name#/", "AND " . $paramDefs[$name]['fieldname'] . " NOT IN ($value)", $query);
+          if (in_array($paramDefs[$name]['datatype'], ['idlist', 'excludeidlist'], TRUE)) {
+            $list = $this->renderParamValue($name, $value, $paramDefs[$name]);
+            // A fieldname requests a complete filter rather than just the list.
+            if (!empty($paramDefs[$name]['fieldname'])) {
+              $listOperator = $paramDefs[$name]['datatype'] === 'idlist' ? 'IN' : 'NOT IN';
+              $list = "AND {$paramDefs[$name]['fieldname']} $listOperator ($list)";
+            }
+            $query = str_replace("#$name#", $list, $query);
           }
           elseif ($paramDefs[$name]['datatype'] === 'smpattrs') {
             $query = $this->mergeAttrListParam($query, 'sample', $value);
@@ -1250,54 +1248,11 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'person', $value);
           }
           else {
-            // Sanitise.
-            if (in_array($paramDefs[$name]['datatype'], ['text', 'string'])) {
-              // Ensure value is escaped for apostrophes.
-              $value = $this->reportDb->escape_str($value);
-            }
-            elseif (in_array($paramDefs[$name]['datatype'], ['text[]', 'string[]'])) {
-              // Array check on text parameter values.
-              if (strlen($value)) {
-                $arr = str_getcsv($value, ",", "'", "\\");
-                foreach ($arr as &$item) {
-                  $item = $this->reportDb->escape_str($item);
-                }
-                $value = "'" . implode("','", $arr) . "'";
-              }
-            }
-            elseif (($paramDefs[$name]['datatype'] === 'integer' ||
-                     $paramDefs[$name]['datatype'] === 'float') &&
-                     !is_numeric($value)) {
-              throw new exception("Invalid numeric parameter value $value for $name");
-            }
-            elseif ($paramDefs[$name]['datatype'] === 'integer[]' ||
-                     $paramDefs[$name]['datatype'] === 'float[]') {
-              // Array check on numeric parameter values.
-              $arr = explode(',', $value);
-              foreach ($arr as $item) {
-                if (!is_numeric($item)) {
-                  throw new exception("Invalid numeric array parameter value $value");
-                }
-              }
-            }
-            elseif ($paramDefs[$name]['datatype'] === 'date' &&
-                    preg_match('/^\d\d?[\/\-]\d\d?[\/\-]\d{4}$/', $value)) {
-              // Force ISO date for SQL safety.
-              // @todo This needs further work for i18n if non-European.
-              $date = DateTime::createFromFormat('d/m/Y', $value);
-              if (!$date) {
-                throw new exception("Invalid date parameter value $value");
-              }
-              $value = $date->format('Y-m-d');
-            }
-            else {
-              // Datatype not specified, so assume text.
-              $value = pg_escape_string($this->reportDb->getLink(), $value);
-            }
+            $value = $this->renderParamValue($name, $value, $paramDefs[$name]);
             if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value !== 'NULL') {
               // Ensure the original value can be used as well as the processed
               // value.
-              $query = preg_replace("/#$name-unprocessed#/", $value, $query);
+              $query = str_replace("#$name-unprocessed#", $value, $query);
               // Preprocessor can be a single query string, or a keyed array of
               // preprocess queries to run.
               $preprocessors = is_array($paramDefs[$name]['preprocess'])
@@ -1305,14 +1260,12 @@ class ReportEngine {
               // Use each preprocessing query to calculate the actual param
               // value to use.
               $websiteFilter = $this->websiteIds ? implode(',', $this->websiteIds) : 'select id from websites';
-              $masterTaxonListId = warehouse::getMasterTaxonListId();
               foreach ($preprocessors as $token => $qry) {
-                $prequery = str_replace(
-                  ["#$name#", '#website_ids#', '#master_list_id#'],
-                  // $value is already escaped.
-                  [$value, $websiteFilter, $masterTaxonListId],
-                  $qry
-                );
+                $replacements = ["#$name#" => $value, '#website_ids#' => $websiteFilter];
+                if (strpos($qry, '#master_list_id#') !== FALSE) {
+                  $replacements['#master_list_id#'] = warehouse::getMasterTaxonListId();
+                }
+                $prequery = strtr($qry, $replacements);
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);
                 $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
                 if (empty($pqValue)) {
@@ -1325,11 +1278,11 @@ class ReportEngine {
                     $pqValue = "'-999999'";
                   }
                 }
-                $query = preg_replace("/#$token#/", $pqValue, $query);
+                $query = str_replace("#$token#", $pqValue, $query);
               }
             }
             else {
-              $query = preg_replace("/#$name#/", $value, $query);
+              $query = str_replace("#$name#", $value, $query);
             }
           }
         }
@@ -2343,13 +2296,12 @@ SQL;
     foreach ($valueList as $value) {
       foreach ($paramDef['wheres'] as $whereDef) {
         if ($this->includeParamComponent($whereDef, $value)) {
-          // Report-defined WHERE fragments interpolate their parameter token,
-          // so replace it only after applying the parameter's declared type.
-          $whereSql = str_replace(
-            "#$paramName#",
-            $this->sanitiseParamValueForWhere($paramName, $value, $paramDef),
-            $whereDef['sql']
-          );
+          $whereSql = $whereDef['sql'];
+          $token = "#$paramName#";
+          // Leave preprocessor-owned tokens for the main substitution pass.
+          if (empty($paramDef['preprocess']) && strpos($whereSql, $token) !== FALSE) {
+            $whereSql = str_replace($token, $this->renderParamValue($paramName, $value, $paramDef), $whereSql);
+          }
           $filterClauses[] = "($whereSql)";
         }
       }
@@ -2370,7 +2322,7 @@ SQL;
   }
 
   /**
-   * Sanitise a parameter value before inserting it into a custom where clause.
+   * Render a parameter value for its SQL token, without adding a filter clause.
    *
    * @param string $paramName
    *   Parameter name.
@@ -2380,10 +2332,13 @@ SQL;
    *   Parameter definition from the report.
    *
    * @return string
-   *   SQL-safe parameter value.
+   *   Validated or escaped value; scalar text tokens need quotes in the report.
    */
-  private function sanitiseParamValueForWhere($paramName, $value, array $paramDef) {
-    $datatype = $paramDef['datatype'] ?? 'text';
+  private function renderParamValue($paramName, $value, array $paramDef) {
+    if ($value === '') {
+      return $paramDef['emptyvalue'] ?? '';
+    }
+    $datatype = $paramDef['datatype'] ?? '';
     if (in_array($datatype, ['text', 'string'], TRUE)) {
       return $this->reportDb->escape_str($value);
     }
@@ -2395,10 +2350,18 @@ SQL;
       }
       return "'" . implode("','", $values) . "'";
     }
-    // Numeric values are inserted without SQL quotes, so reject malformed
-    // values rather than allowing them into the report query.
-    if (in_array($datatype, ['integer', 'float'], TRUE) && !is_numeric($value)) {
-      throw new exception("Invalid numeric parameter value $value for $paramName");
+    if (in_array($datatype, ['idlist', 'excludeidlist'], TRUE)) {
+      $value = trim($value);
+      if (!preg_match('/\A[0-9]+(?:\s*,\s*[0-9]+)*\z/', $value)) {
+        throw new exception("Invalid ID list for report parameter $paramName");
+      }
+      return $value;
+    }
+    if (in_array($datatype, ['integer', 'float'], TRUE)) {
+      if (!is_numeric($value)) {
+        throw new exception("Invalid numeric parameter value $value for $paramName");
+      }
+      return $value;
     }
     if (in_array($datatype, ['integer[]', 'float[]'], TRUE)) {
       $values = explode(',', $value);
@@ -2408,6 +2371,14 @@ SQL;
         }
       }
       return implode(',', $values);
+    }
+    if ($datatype === 'date' && preg_match('/^\d\d?[\/\-]\d\d?[\/\-]\d{4}$/', $value)) {
+      // Avoid interpreting European dates according to PostgreSQL's DateStyle.
+      $date = DateTime::createFromFormat('d/m/Y', str_replace('-', '/', $value));
+      if (!$date) {
+        throw new exception("Invalid date parameter value $value");
+      }
+      return $date->format('Y-m-d');
     }
     // Other datatypes are escaped as scalar values; report SQL supplies any
     // required quoting around the token.
