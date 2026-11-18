@@ -236,7 +236,8 @@ class ImportTools {
       // Return an empty iterator to trigger end of file handling in the caller.
       return [];
     }
-    return $file->getActiveSheet()->getRowIterator($rowsRead + 2);
+    $endRow = min($rowsRead + 1 + $limit, $file->getActiveSheet()->getHighestRow());
+    return $file->getActiveSheet()->getRowIterator($rowsRead + 2, $endRow);
   }
 
   /**

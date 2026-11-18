@@ -1,9 +1,11 @@
 <?php
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit coverage for import_2 controller validation and request helpers.
+ * Coverage for import_2 controller validation, requests and staging.
  *
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
@@ -58,6 +60,59 @@ class Import2Test extends TestCase {
     $this->assertNull($method->invoke($this->controller, [
       ['warehouseField' => 'occurrence:comment'],
     ]));
+  }
+
+  public function testXlsStagingCountsOnlyNonBlankRows(): void {
+    $fileName = uniqid('test_import_') . '.xls';
+    $path = DOCROOT . 'import/' . $fileName;
+    $spreadsheet = new Spreadsheet();
+    $db = new Database();
+    $config = [
+      'entity' => 'occurrence',
+      'parentEntity' => 'sample',
+      'columns' => ['Comment' => ['tempDbField' => 'comment']],
+      'state' => 'loadingRecords',
+      'processingMode' => 'immediate',
+      'rowsLoaded' => 0,
+    ];
+    try {
+      $sheet = $spreadsheet->getActiveSheet();
+      $sheet->setCellValue('A1', 'Comment');
+      $sheet->setCellValue('A2', 'First record');
+      $sheet->setCellValue('A3', " \t ");
+      // Leave a full batch blank before the next record.
+      $sheet->setCellValue('A1003', 0);
+      $sheet->setCellValue('A1004', ' ');
+      (new Xls($spreadsheet))->save($path);
+      $tools = new ImportTools();
+      $config['totalRows'] = $tools->getRowCountForFile($fileName);
+      $config['files'][$fileName] = ['rowCount' => $config['totalRows'], 'rowsRead' => 0];
+
+      $createTable = $this->controllerClass->getMethod('createTempTable');
+      $createTable->setAccessible(TRUE);
+      $createTable->invokeArgs($this->controller, [$fileName, &$config]);
+      $loadBatch = $this->controllerClass->getMethod('loadNextRecordsBatch');
+      $loadBatch->setAccessible(TRUE);
+      for ($i = 0; $i < 3 && $config['state'] === 'loadingRecords'; $i++) {
+        $loadBatch->invokeArgs($this->controller, [$fileName, &$config]);
+      }
+
+      $this->assertSame('loaded', $config['state']);
+      $this->assertSame(2, $config['rowsLoaded']);
+      $this->assertSame(2, $config['totalRows']);
+      $this->assertEquals(100, $config['progress']);
+      $rows = $db->query("SELECT comment FROM import_temp.$config[tableName] ORDER BY _row_id")->result_array();
+      $this->assertSame(['First record', '0'], array_column($rows, 'comment'));
+    }
+    finally {
+      $spreadsheet->disconnectWorksheets();
+      if (is_file($path)) {
+        unlink($path);
+      }
+      if (isset($config['tableName'])) {
+        $db->query("DROP TABLE IF EXISTS import_temp.$config[tableName]");
+      }
+    }
   }
 
 }
