@@ -2608,44 +2608,27 @@ SQL;
     $this->validateImportColumns($config['columns']);
     $importTools = new ImportTools();
     // Larger batch size for big imports is more efficient at expensive of progress granularity.
-    $batchLimit = max(min(round($config['totalRows'] / 20), 5000), 500);
-    $file = $importTools->openSpreadsheet($fileName, $config, $batchLimit);
+    $batchLimit = max(min((int) round($config['totalRows'] / 20), 5000), 500);
+    $fileInfo = $config['files'][$fileName];
+    $sourceRowsInBatch = min($batchLimit, $fileInfo['rowCount'] - $fileInfo['rowsRead']);
+    $file = $sourceRowsInBatch > 0 ? $importTools->openSpreadsheet($fileName, $config, $sourceRowsInBatch) : [];
     $rows = [];
-    $rowsDoneInBatch = 0;
     $db = new Database();
-    $foundDataInBatch = FALSE;
     foreach ($file as $rowObject) {
-      if (!$rowObject->isEmpty()) {
-        $data = $importTools->rowToArray($rowObject);
-        $foundDataInBatch = TRUE;
-        // Trim the data.
-        $data = array_map(function ($value) {
-          return trim($value ?? '');
-        }, $data);
-        if (implode('', $data) <> '') {
-          // Pad to correct number of columns.
-          $data = array_pad($data, count($config['columns']), '');
-          // Escape ready for SQL.
-          $data = array_map(function ($s) use ($db) {
-            return pg_escape_literal($db->getLink(), $s);
-          }, $data);
-          // Also allow for their being too many columns (wider data row than
-          // column titles provided).
-          if (count($data) > count($config['columns'])) {
-            $data = array_slice($data, 0, count($config['columns']));
-          }
-          $rows[] = '(' . implode(', ', $data) . ')';
-        }
-        $config['rowsLoaded']++;
+      if ($rowObject->isEmpty()) {
+        continue;
       }
-      else {
-        // Skipping empty row so correct the total expected.
-        $config['totalRows']--;
+      $data = array_map(fn ($value) => trim($value ?? ''), $importTools->rowToArray($rowObject));
+      if (implode('', $data) === '') {
+        continue;
       }
-      $config['files'][$fileName]['rowsRead']++;
-      $rowsDoneInBatch++;
+      // Pad or truncate to match the number of column titles.
+      $data = array_slice(array_pad($data, count($config['columns']), ''), 0, count($config['columns']));
+      $data = array_map(fn ($value) => pg_escape_literal($db->getLink(), $value), $data);
+      $rows[] = '(' . implode(', ', $data) . ')';
     }
-    if (count($rows)) {
+    $rowsLoaded = count($rows);
+    if ($rowsLoaded > 0) {
       $fieldNames = $this->getColumnTempDbFieldMappings($db, $config['columns']);
       $fields = implode(', ', $fieldNames);
       $rowsList = implode("\n,", $rows);
@@ -2660,23 +2643,19 @@ SQL;
         throw new Exception($errorCheck);
       }
     }
+    // The reader can omit trailing blank positions in a batch. Advance by the
+    // source range, but count only staged rows towards checking and importing.
+    $config['files'][$fileName]['rowsRead'] += $sourceRowsInBatch;
+    $config['rowsLoaded'] += $rowsLoaded;
+    $config['totalRows'] -= $sourceRowsInBatch - $rowsLoaded;
     if ($config['totalRows'] === 0) {
       throw new Exception('The import file does not contain any data to import.');
     }
-    // An entire empty batch causes us to stop. Most likely the user saved a
-    // spreadsheet with multiple empty rows at the bottom.
-    if (!$foundDataInBatch) {
-      $blankRowsToDiscard = $config['files'][$fileName]['rowCount'] - $config['files'][$fileName]['rowsRead'];
-      $config['totalRows'] -= $blankRowsToDiscard;
-      $config['files'][$fileName]['rowCount'] -= $blankRowsToDiscard;
-      // If original row count was for mostly empty rows, we may have switched
-      // to background processing unnecessarily so check if we can switch back.
-      if ($config['totalRows'] <= import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD && $config['processingMode'] === 'background') {
-        $config['processingMode'] = 'immediate';
-      }
+    if ($config['totalRows'] <= import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD && $config['processingMode'] === 'background') {
+      $config['processingMode'] = 'immediate';
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
-    if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
+    if ($config['files'][$fileName]['rowsRead'] >= $fileInfo['rowCount']) {
       $config['state'] = ($fileName === array_key_last($config['files'])) ? 'loaded' : 'nextFile';
     }
   }
@@ -2738,7 +2717,7 @@ SQL;
         }
       }
       // Capture the file's total row count.
-      $fileRowCount = $importTools->getRowCountForFile($file);
+      $fileRowCount = max(0, $importTools->getRowCountForFile($file));
       $fileMetadata[$file] = [
         'rowCount' => $fileRowCount,
         // Rows loaded into the temp table for this file (excludes blanks).
