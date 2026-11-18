@@ -2343,7 +2343,14 @@ SQL;
     foreach ($valueList as $value) {
       foreach ($paramDef['wheres'] as $whereDef) {
         if ($this->includeParamComponent($whereDef, $value)) {
-          $filterClauses[] = "($whereDef[sql])";
+          // Report-defined WHERE fragments interpolate their parameter token,
+          // so replace it only after applying the parameter's declared type.
+          $whereSql = str_replace(
+            "#$paramName#",
+            $this->sanitiseParamValueForWhere($paramName, $value, $paramDef),
+            $whereDef['sql']
+          );
+          $filterClauses[] = "($whereSql)";
         }
       }
     }
@@ -2360,6 +2367,51 @@ SQL;
       $query = str_replace('#filters#', "AND $filterSql\n#filters#", $query);
     }
     return $query;
+  }
+
+  /**
+   * Sanitise a parameter value before inserting it into a custom where clause.
+   *
+   * @param string $paramName
+   *   Parameter name.
+   * @param mixed $value
+   *   Parameter value.
+   * @param array $paramDef
+   *   Parameter definition from the report.
+   *
+   * @return string
+   *   SQL-safe parameter value.
+   */
+  private function sanitiseParamValueForWhere($paramName, $value, array $paramDef) {
+    $datatype = $paramDef['datatype'] ?? 'text';
+    if (in_array($datatype, ['text', 'string'], TRUE)) {
+      return $this->reportDb->escape_str($value);
+    }
+    if (in_array($datatype, ['text[]', 'string[]'], TRUE)) {
+      // Array values are rendered as a quoted SQL list for use in IN clauses.
+      $values = str_getcsv($value, ',', "'", '\\');
+      foreach ($values as &$item) {
+        $item = $this->reportDb->escape_str($item);
+      }
+      return "'" . implode("','", $values) . "'";
+    }
+    // Numeric values are inserted without SQL quotes, so reject malformed
+    // values rather than allowing them into the report query.
+    if (in_array($datatype, ['integer', 'float'], TRUE) && !is_numeric($value)) {
+      throw new exception("Invalid numeric parameter value $value for $paramName");
+    }
+    if (in_array($datatype, ['integer[]', 'float[]'], TRUE)) {
+      $values = explode(',', $value);
+      foreach ($values as $item) {
+        if (!is_numeric($item)) {
+          throw new exception("Invalid numeric array parameter value $value");
+        }
+      }
+      return implode(',', $values);
+    }
+    // Other datatypes are escaped as scalar values; report SQL supplies any
+    // required quoting around the token.
+    return pg_escape_string($this->reportDb->getLink(), $value);
   }
 
   /**

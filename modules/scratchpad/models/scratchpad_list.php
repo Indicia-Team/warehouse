@@ -44,6 +44,12 @@ class Scratchpad_list_Model extends ORM {
     $array->add_rules('website_id', 'required');
     $array->add_rules('website_id', 'integer');
     $array->add_rules('scratchpad_type_id', 'integer');
+    // The authenticated website context must match the submitted owner.
+    if ($this->identifiers['website_id'] !== NULL &&
+        isset($array['website_id']) &&
+        (int) $array['website_id'] !== (int) $this->identifiers['website_id']) {
+      $array->add_error('website_id', 'default');
+    }
     $this->unvalidatedFields = [
       'description',
       'expires_on',
@@ -80,22 +86,41 @@ class Scratchpad_list_Model extends ORM {
   public function postSubmit($isInsert) {
     if (array_key_exists('metaFields', $this->submission) &&
         array_key_exists('entries', $this->submission['metaFields'])) {
-      $entries = explode(';', $this->submission['metaFields']['entries']['value']);
+      // An empty value means that all existing entries should be soft-deleted.
+      $entriesValue = trim($this->submission['metaFields']['entries']['value']);
+      $entries = $entriesValue === '' ? [] : explode(';', $entriesValue);
       $entriesCsv = implode(',', $entries);
       $metadataJson = $this->submission['metaFields']['entries_metadata']['value'] ?? NULL;
       $metadata = $metadataJson ? json_decode($metadataJson, TRUE) : NULL;
-      warehouse::validateIntCsvListParam($entriesCsv);
+      // Metadata is optional, but malformed JSON must fail the whole save.
+      if ($metadataJson && json_last_error() !== JSON_ERROR_NONE) {
+        throw new Exception('Invalid scratchpad entry metadata JSON');
+      }
+      if ($metadata !== NULL && !is_array($metadata)) {
+        throw new Exception('Scratchpad entry metadata must be an object');
+      }
+      if ($entriesCsv !== '') {
+        warehouse::validateIntCsvListParam($entriesCsv);
+      }
       $userId = $this->getUserId();
       if (!$isInsert) {
-        $this->db->query(<<<SQL
-          UPDATE scratchpad_list_entries
+        // Avoid NOT IN () when the submitted list intentionally has no entries.
+        $deleteQuery = 'UPDATE scratchpad_list_entries
           SET deleted = true, updated_on = now(), updated_by_id = ?
-          WHERE scratchpad_list_id=$this->id
-          AND entry_id NOT IN ($entriesCsv)
-        SQL, [$userId]);
+          WHERE scratchpad_list_id=?';
+        $deleteParams = [$userId, $this->id];
+        if ($entriesCsv !== '') {
+          $deleteQuery .= " AND entry_id NOT IN ($entriesCsv)";
+        }
+        $this->db->query($deleteQuery, $deleteParams);
       }
       foreach ($entries as $entry_id) {
         $entryMetadata = $metadata[$entry_id] ?? NULL;
+        // Encode once so inserts and updates compare and store the same JSON.
+        $entryMetadataJson = json_encode($entryMetadata);
+        if ($entryMetadataJson === FALSE) {
+          throw new Exception('Unable to encode scratchpad entry metadata');
+        }
         if ($this->db->query(
             "select 1 from scratchpad_list_entries where scratchpad_list_id=? and entry_id=?",
             [$this->id, $entry_id]
@@ -105,7 +130,7 @@ class Scratchpad_list_Model extends ORM {
               INSERT INTO scratchpad_list_entries (scratchpad_list_id, entry_id, metadata, created_on, created_by_id, updated_on, updated_by_id)
               SELECT ?, ?, ?, now(), ?, now(), ?
             SQL,
-            [$this->id, $entry_id, json_encode($entryMetadata), $userId, $userId]
+            [$this->id, $entry_id, $entryMetadataJson, $userId, $userId]
           );
         }
         else {
@@ -117,7 +142,7 @@ class Scratchpad_list_Model extends ORM {
               WHERE scratchpad_list_id=? AND entry_id=?
               AND (deleted=true OR metadata::text <> ?)
             SQL,
-            [$userId, json_encode($entryMetadata), $this->id, $entry_id, json_encode($entryMetadata)]
+            [$userId, $entryMetadataJson, $this->id, $entry_id, $entryMetadataJson]
           );
         }
       }
