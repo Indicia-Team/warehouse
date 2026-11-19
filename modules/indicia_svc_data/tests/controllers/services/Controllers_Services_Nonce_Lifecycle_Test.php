@@ -767,6 +767,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       'existing sample mapping' => [[10 => '{"Sample ID":{"warehouseField":"sample:id"}}'], 403, TRUE],
       'existing occurrence global value' => [[9 => '{"occurrence:id":42}'], 403, TRUE],
       'not reversible' => [[5 => 'f'], 403, FALSE],
+      'already reversed despite flag' => [[11 => '2026-01-01 12:00:00', 12 => 4], 403, TRUE],
       'deleted' => [[6 => 't'], 403, TRUE],
       'unsupported entity' => [[4 => 'location'], 403, TRUE],
     ];
@@ -775,6 +776,14 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       $this->assertNull($result['exception'], $name);
       $this->assertSame($status, $result['status'], $name);
       $this->assertSame($reversible, $result['reversible'], $name);
+      if ($status === 200) {
+        $this->assertNotNull($result['reversed_on'], $name);
+        $this->assertSame(2, $result['reversed_by_id'], $name);
+      }
+      else {
+        $this->assertSame($import[11] ?? NULL, $result['reversed_on'], $name);
+        $this->assertSame($import[12] ?? NULL, $result['reversed_by_id'], $name);
+      }
     }
 
     foreach ([2 => 200, 3 => 403] as $websiteId => $status) {

@@ -804,7 +804,11 @@ SQL;
       }
       $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
       $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $db->query('UPDATE imports SET reversible = false WHERE id = ?', [(int) $import->id]);
+      $db->query(<<<SQL
+        UPDATE imports
+        SET reversed_on = now(), reversed_by_id = ?, reversible = false
+        WHERE id = ?
+        SQL, [$warehouseUserId, (int) $import->id]);
       $db->query('COMMIT');
     }
     catch (Throwable $e) {
@@ -869,6 +873,7 @@ SQL;
         AND i.entity = 'occurrence'
         AND i.deleted = false
         AND i.reversible = true
+        AND i.reversed_on IS NULL
         AND i.updated = 0
         AND i.inserted > 0
         -- An existing sample can be tagged even if the occurrence update fails.

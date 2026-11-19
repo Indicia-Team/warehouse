@@ -12,6 +12,7 @@
     ) counts
     WHERE i.created_by_id = #currentUser#
       AND i.reversible = true
+      AND i.reversed_on IS NULL
       AND (#website_id# = -1 OR i.website_id = #website_id#)
       AND i.deleted = false
       AND i.entity = 'occurrence'

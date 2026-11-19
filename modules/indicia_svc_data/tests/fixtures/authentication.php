@@ -402,7 +402,10 @@ foreach ($seed->exists(str_repeat('a', 40)) as $path) {
 }
 if (Database::$link && !empty($scenario['import_reverse'])) {
   $result['blocks_unrelated_writes'] = Database::$blocksUnrelatedWrites;
-  $result['reversible'] = pg_fetch_result(pg_query(Database::$link, 'SELECT reversible FROM imports WHERE id = 1'), 0, 0) === 't';
+  $import = pg_fetch_assoc(pg_query(Database::$link, 'SELECT reversible, reversed_on, reversed_by_id FROM imports WHERE id = 1'));
+  $result['reversible'] = $import['reversible'] === 't';
+  $result['reversed_on'] = $import['reversed_on'];
+  $result['reversed_by_id'] = isset($import['reversed_by_id']) ? (int) $import['reversed_by_id'] : NULL;
   if (!empty($scenario['reversal_records'])) {
     foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_samples_functional'] as $table) {
       $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';

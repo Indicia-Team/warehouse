@@ -39,6 +39,18 @@ class ImportRecoveryTest extends TestCase {
     }
   }
 
+  public function testSavingImportMetadataDoesNotReenableReversal(): void {
+    $timestamp = '2026-01-01 12:00:00';
+    $existing = $this->runScenario([
+      'action' => 'save-import',
+      'import' => ['id' => 42, 'reversed_on' => $timestamp, 'reversible' => FALSE],
+    ]);
+    $this->assertFalse($existing['response']['reversible']);
+    $this->assertSame($timestamp, $existing['response']['reversed_on']);
+    $new = $this->runScenario(['action' => 'save-import']);
+    $this->assertTrue($new['response']['reversible']);
+  }
+
   public function testRecoveryDownloadIncludesImportedAndUnimportedRowsWithMatchingHeaders(): void {
     $result = $this->runScenario(['action' => 'export', 'options' => ['include-all-rows' => 'true']]);
 

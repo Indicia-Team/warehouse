@@ -36,6 +36,10 @@ class inflector {
 class Service_Base_Controller {}
 
 class ImportRecoveryRecord extends stdClass {
+  public $id = 0;
+  public $reversible = FALSE;
+  public $reversed_on = NULL;
+
   public function set_metadata() {}
   public function save() {}
   public function getAllErrors() {
@@ -44,8 +48,15 @@ class ImportRecoveryRecord extends stdClass {
 }
 
 class ORM {
+  public static $import;
+
   public static function factory(...$args) {
-    return new ImportRecoveryRecord();
+    global $scenario;
+    $import = new ImportRecoveryRecord();
+    foreach ($scenario['import'] ?? [] as $field => $value) {
+      $import->$field = $value;
+    }
+    return self::$import = $import;
   }
 }
 
@@ -121,7 +132,11 @@ $config = [
 ];
 import2ChunkHandler::saveConfig('recovery', $config);
 
-if ($scenario['action'] === 'export') {
+if ($scenario['action'] === 'save-import') {
+  import2ChunkHandler::saveImportRecord($config);
+  $response = ORM::$import;
+}
+elseif ($scenario['action'] === 'export') {
   $_GET = ['config-id' => 'recovery'] + ($scenario['options'] ?? []);
   ob_start();
   (new Import_2_Controller())->get_errors_file();

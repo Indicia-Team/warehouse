@@ -27,7 +27,8 @@ class Import_Reverse_Database {
       CREATE TEMP TABLE imports (
         id int, website_id int, created_by_id int, import_guid text,
         entity text, reversible boolean, deleted boolean, inserted int, updated int,
-        global_values json NOT NULL DEFAULT '{}', mappings json NOT NULL DEFAULT '{}'
+        global_values json NOT NULL DEFAULT '{}', mappings json NOT NULL DEFAULT '{}',
+        reversed_on timestamp, reversed_by_id int
       );
       CREATE TEMP TABLE occurrences (
         id int, sample_id int, import_guid text, deleted boolean,
@@ -51,8 +52,8 @@ class Import_Reverse_Database {
       CREATE TEMP TABLE cache_samples_functional (id int);
       CREATE TEMP TABLE cache_samples_nonfunctional (id int);
       SQL);
-    $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}'], $scenario['import'] ?? []);
-    pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', $import);
+    $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}', NULL, NULL], $scenario['import'] ?? []);
+    pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)', $import);
     if (!empty($scenario['reversal_records'])) {
       define('DOCROOT', $scenario['directory'] . '/');
       mkdir(DOCROOT . 'download', 0700);
