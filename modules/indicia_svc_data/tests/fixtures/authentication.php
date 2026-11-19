@@ -408,10 +408,12 @@ if (Database::$link && !empty($scenario['import_reverse'])) {
       $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';
       $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));
     }
-    foreach (glob($scenario['directory'] . '/upload/*.csv') as $file) {
+    $result['exports_on_disk'] = [];
+    foreach (glob(DOCROOT . 'download/*.csv') as $file) {
+      $result['exports_on_disk'][basename($file)] = file_get_contents($file);
       unlink($file);
     }
-    rmdir($scenario['directory'] . '/upload');
+    rmdir(DOCROOT . 'download');
   }
 }
 elseif (Database::$link && empty($scenario['utility_action'])) {

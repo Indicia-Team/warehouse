@@ -54,8 +54,8 @@ class Import_Reverse_Database {
     $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}'], $scenario['import'] ?? []);
     pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', $import);
     if (!empty($scenario['reversal_records'])) {
-      mkdir($scenario['directory'] . '/upload');
-      $_SERVER['DOCUMENT_ROOT'] = $scenario['directory'];
+      define('DOCROOT', $scenario['directory'] . '/');
+      mkdir(DOCROOT . 'download', 0700);
       pg_query_params(self::$link, <<<'SQL'
         INSERT INTO samples (id, import_guid, parent_id, deleted) VALUES
           (1, $1, NULL, false), (2, NULL, 1, false), (3, $1, NULL, false);

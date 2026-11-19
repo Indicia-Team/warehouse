@@ -814,46 +814,44 @@ SQL;
     $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
     $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
 
-    // Create the files users will download when reversal is complete.
-    if (!empty($updatedOccurrences)) {
-      self::createReversalDetailsFile('occurrence', $updatedOccurrences, $guidToReverse, 'reversed');
-    }
-    if (!empty($untouchedOccurrences)) {
-      self::createReversalDetailsFile('occurrence', $untouchedOccurrences, $guidToReverse, 'untouched');
-    }
-    if (!empty($updatedSamples)) {
-      self::createReversalDetailsFile('sample', $updatedSamples, $guidToReverse, 'reversed');
-    }
-    if (!empty($untouchedSamples)) {
-      self::createReversalDetailsFile('sample', $untouchedSamples, $guidToReverse, 'untouched');
-    }
     $response = [
       'status' => 'OK',
       'samplesOutcome' => empty($updatedSamples) ? 'No samples were reversed.' : 'Imported samples were reversed.',
       'samplesDetails' => [],
       'occurrencesOutcome' => empty($updatedOccurrences) ? 'No occurrences were reversed.' : 'Imported occurrences were reversed.',
       'occurrencesDetails' => [],
+      'exports' => [],
+      'exportErrors' => [],
     ];
     if (empty($updatedSamples)) {
       $response['samplesDetails'][] =
         'This may happen if none of the samples you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered samples were found.';
     }
-    if (!empty($updatedSamples)) {
-      $response['samplesDetails'][] = 'Details of reversed samples are <a href="' . url::base() . "upload/reversed_import_rows_samples_$guidToReverse.csv\">here</a>.";
-    }
     if (!empty($untouchedSamples)) {
-      $response['samplesDetails'][] = 'Details of samples not reversed are <a href="' . url::base() . "upload/untouched_import_rows_samples_$guidToReverse.csv\">here</a></p>";
       $response['samplesDetails'][] = "Samples that were removed from the database before today's reversal will not be shown in the untouched samples download file.";
     }
     if (empty($updatedOccurrences)) {
       $response['occurrencesDetails'][] = 'This may happen if none of the occurrences you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered occurrences were found.';
     }
-    if (!empty($updatedOccurrences)) {
-      $response['occurrencesDetails'][] = 'Details of reversed occurrences are <a href="' . url::base() . "upload/reversed_import_rows_occurrences_$guidToReverse.csv\">here</a></p>";
-    }
     if (!empty($untouchedOccurrences)) {
-      $response['samplesDetails'][] = 'Details of occurrences not reversed are <a href="' . url::base() . "upload/untouched_import_rows_occurrences_$guidToReverse.csv\">here</a></p>";
       $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
+    }
+    foreach ([
+      'reversed_occurrences' => $updatedOccurrences,
+      'untouched_occurrences' => $untouchedOccurrences,
+      'reversed_samples' => $updatedSamples,
+      'untouched_samples' => $untouchedSamples,
+    ] as $kind => $rows) {
+      if (!$rows) {
+        continue;
+      }
+      try {
+        $response['exports'][$kind] = self::createReversalDetailsFile($rows);
+      }
+      catch (RuntimeException $e) {
+        Kohana::log('error', 'Import reversal export failed: ' . $e->getMessage());
+        $response['exportErrors'][] = $kind;
+      }
     }
     echo json_encode($response);
   }
@@ -894,14 +892,13 @@ SQL;
       return NULL;
     }
     $import = $imports[0];
-    $websiteId = (int) $import->website_id;
-    if ($websiteId <= 0) {
-      return NULL;
-    }
-    $websiteAllowed = $this->in_warehouse
+    return $this->reversalWebsiteAllowed((int) $import->website_id) ? $import : NULL;
+  }
+
+  private function reversalWebsiteAllowed(int $websiteId): bool {
+    return $websiteId > 0 && ($this->in_warehouse
       ? $this->user_is_core_admin || in_array($websiteId, array_map('intval', $this->userWebsites), TRUE)
-      : $websiteId === $this->website_id;
-    return $websiteAllowed ? $import : NULL;
+      : $websiteId === $this->website_id);
   }
 
   /**
@@ -1188,50 +1185,45 @@ SQL;
     return $untouchedSmpsFromAllSmps;
   }
 
-  /**
-   * Create a file containing rows related to the reversal.
-   *
-   * @param string $entity
-   *   Include the type of data in the file name.
-   * @param array $rowsToProcess
-   *   Rows to put in the file.
-   * @param string $guidToReverse
-   *   Unique identifier of the import to put in the file name.
-   * @param string $type
-   *   Reversed row, or untouched row. Used in filename.
-   */
-  private function createReversalDetailsFile($entity, array $rowsToProcess, $guidToReverse, $type) {
-    if (!empty($rowsToProcess)) {
-      if ($type === 'reversed') {
-        $fp = fopen($_SERVER['DOCUMENT_ROOT'] . "/upload/reversed_import_rows_" . $entity . "s_$guidToReverse.csv","wb");
+  private static function createReversalDetailsFile(array $rows): string {
+    $dir = DOCROOT . 'download';
+    foreach (glob("$dir/reversal-*.csv") ?: [] as $oldFile) {
+      if (preg_match('/\Areversal-[0-9a-f-]{36}\.csv\z/', basename($oldFile))
+          && ($modified = @filemtime($oldFile)) !== FALSE && $modified <= time() - 86400) {
+        @unlink($oldFile);
       }
-      else {
-        $fp = fopen($_SERVER['DOCUMENT_ROOT'] . "/upload/untouched_import_rows_" . $entity . "s_$guidToReverse.csv","wb");
+    }
+    // The URL is a bearer secret; do not derive it from the import GUID.
+    $uuid = random_bytes(16);
+    $uuid[6] = chr((ord($uuid[6]) & 0x0f) | 0x40);
+    $uuid[8] = chr((ord($uuid[8]) & 0x3f) | 0x80);
+    $name = vsprintf('reversal-%s%s-%s-%s-%s-%s%s%s.csv', str_split(bin2hex($uuid), 4));
+    $path = "$dir/$name";
+    $file = @fopen($path, 'xb');
+    if (!$file) {
+      throw new RuntimeException('Unable to create reversal CSV in the download directory.');
+    }
+    $complete = FALSE;
+    try {
+      if (fputcsv($file, array_keys((array) reset($rows)), ',', '"', '') === FALSE) {
+        throw new RuntimeException('Unable to write reversal export header.');
       }
-      // Create header row using the key from first row in array.
-      $headerString = '';
-      foreach ($rowsToProcess[0] as $header => $value) {
-        $headerString = $headerString . $header . ',';
-      }
-      // Get rid of comma which we don't want on end.
-      $headerString = rtrim($headerString, ',');
-      // Make sure new line is at end of header row.
-      $headerString = $headerString . "\r\n";
-      $dataRowsString = '';
-      // Now process the values from each row in the array.
-      for ($idx = 0; $idx < count($rowsToProcess); $idx++) {
-        // For each row, comma separate each value.
-        foreach ($rowsToProcess[$idx] as $value) {
-          $dataRowsString = $dataRowsString . $value . ',';
+      foreach ($rows as $row) {
+        if (fputcsv($file, (array) $row, ',', '"', '') === FALSE) {
+          throw new RuntimeException('Unable to write reversal export row.');
         }
-        // Again, get rid of comma off end.
-        $dataRowsString = rtrim($dataRowsString, ',');
-        // Again, make sure new line is at end of data row.
-        $dataRowsString = $dataRowsString . "\r\n";
       }
-      $completedFile = $headerString . $dataRowsString;
-      fwrite($fp, $completedFile);
-      fclose($fp);
+      if (!fflush($file)) {
+        throw new RuntimeException('Unable to flush reversal export.');
+      }
+      $complete = TRUE;
+      return $name;
+    }
+    finally {
+      fclose($file);
+      if (!$complete) {
+        unlink($path);
+      }
     }
   }
 

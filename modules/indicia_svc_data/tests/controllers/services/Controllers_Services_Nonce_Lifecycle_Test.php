@@ -814,5 +814,12 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame([1, 2], $result['survivors']['samples']);
     $this->assertSame([2], $result['survivors']['cache_occurrences_functional']);
     $this->assertSame([1, 2], $result['survivors']['cache_samples_functional']);
+    $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
+    $this->assertSame(['reversed_occurrences', 'reversed_samples', 'untouched_samples'], array_keys($response['exports']));
+    $this->assertCount(3, $result['exports_on_disk']);
+    foreach ($response['exports'] as $name) {
+      $this->assertMatchesRegularExpression('/\Areversal-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.csv\z/', $name);
+      $this->assertStringStartsWith('id,', $result['exports_on_disk'][$name]);
+    }
   }
 }
