@@ -826,9 +826,39 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
     $this->assertSame(['reversed_occurrences', 'reversed_samples', 'untouched_samples'], array_keys($response['exports']));
     $this->assertCount(3, $result['exports_on_disk']);
-    foreach ($response['exports'] as $name) {
+    $expectedFields = [
+      'reversed_occurrences' => [
+        'comment' => "Said, \"here\"\\\r\nNext line",
+        'external_key' => "'=1+1",
+        'record_decision_source' => "'@SUM(1)",
+      ],
+      'reversed_samples' => [
+        'comment' => "'  +1+1",
+        'external_key' => "'-1+1",
+        'recorder_names' => "'\tRecorder",
+        'entered_sref' => "'\r\nGrid",
+      ],
+      'untouched_samples' => ['comment' => "'\u{FF1D}1+1"],
+    ];
+    foreach ($response['exports'] as $kind => $name) {
       $this->assertMatchesRegularExpression('/\Areversal-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.csv\z/', $name);
-      $this->assertStringStartsWith('id,', $result['exports_on_disk'][$name]);
+      $file = fopen('php://temp', 'w+b');
+      try {
+        fwrite($file, $result['exports_on_disk'][$name]);
+        rewind($file);
+        $headers = fgetcsv($file, escape: '');
+        $fields = fgetcsv($file, escape: '');
+        $this->assertSame('id', $headers[0]);
+        $this->assertCount(count($headers), $fields);
+        $row = array_combine($headers, $fields);
+        foreach ($expectedFields[$kind] as $field => $expected) {
+          $this->assertSame($expected, $row[$field], "$kind: $field");
+        }
+        $this->assertFalse(fgetcsv($file, escape: ''));
+      }
+      finally {
+        fclose($file);
+      }
     }
   }
 

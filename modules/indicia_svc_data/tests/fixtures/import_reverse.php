@@ -63,13 +63,16 @@ class Import_Reverse_Database {
         pg_query(self::$link, 'ALTER TABLE imports ADD CHECK (reversed_by_id IS NULL)');
       }
       pg_query_params(self::$link, <<<'SQL'
-        INSERT INTO samples (id, import_guid, parent_id, deleted) VALUES
-          (1, $1, NULL, false), (2, NULL, 1, false), (3, $1, NULL, false);
-        SQL, [$import[3]]);
+        INSERT INTO samples (id, import_guid, parent_id, deleted, comment, external_key, recorder_names, entered_sref) VALUES
+          (1, $1, NULL, false, $2, NULL, NULL, NULL),
+          (2, NULL, 1, false, NULL, NULL, NULL, NULL),
+          (3, $1, NULL, false, $3, $4, $5, $6);
+        SQL, [$import[3], "\u{FF1D}1+1", '  +1+1', '-1+1', "\tRecorder", "\r\nGrid"]);
       pg_query_params(self::$link, <<<'SQL'
-        INSERT INTO occurrences (id, sample_id, import_guid, deleted) VALUES
-          (1, 3, $1, false), (2, 2, 'LATER-IMPORT', false);
-        SQL, [$import[3]]);
+        INSERT INTO occurrences (id, sample_id, import_guid, deleted, comment, external_key, record_decision_source) VALUES
+          (1, 3, $1, false, $2, $3, $4),
+          (2, 2, 'LATER-IMPORT', false, NULL, NULL, NULL);
+        SQL, [$import[3], "Said, \"here\"\\\r\nNext line", '=1+1', '@SUM(1)']);
       pg_query(self::$link, <<<'SQL'
         INSERT INTO cache_occurrences_functional SELECT id FROM occurrences;
         INSERT INTO cache_samples_functional SELECT id FROM samples;

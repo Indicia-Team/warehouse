@@ -1221,6 +1221,12 @@ SQL;
     }
   }
 
+  /**
+   * Writes a reversal CSV intended for viewing in a spreadsheet.
+   *
+   * Formula-like values gain a leading apostrophe in the export only. A
+   * program reading the raw CSV will see that apostrophe as part of the value.
+   */
   private static function createReversalDetailsFile(array $rows): string {
     // The URL is a bearer secret; do not derive it from the import GUID.
     $uuid = random_bytes(16);
@@ -1238,7 +1244,16 @@ SQL;
         throw new RuntimeException('Unable to write reversal export header.');
       }
       foreach ($rows as $row) {
-        if (fputcsv($file, (array) $row, ',', '"', '') === FALSE) {
+        $fields = (array) $row;
+        foreach ($fields as &$field) {
+          // Also catch formula markers after leading whitespace or invisible
+          // characters, and their full-width variants.
+          if (is_string($field) && preg_match('/\A(?:[\t\r\n]|[\p{Z}\p{Cc}\p{Cf}]*[=+@\-\x{FF1D}\x{FF0B}\x{FF20}\x{FF0D}])/u', $field) !== 0) {
+            $field = "'" . $field;
+          }
+        }
+        unset($field);
+        if (fputcsv($file, $fields, ',', '"', '') === FALSE) {
           throw new RuntimeException('Unable to write reversal export row.');
         }
       }
