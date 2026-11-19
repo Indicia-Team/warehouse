@@ -735,6 +735,8 @@ SQL;
    * Requires user-specific website write credentials or Warehouse write
    * credentials. The caller must also have access to the import's website.
    * The acting user is derived from the credentials, not from POST data.
+   * Requires an explicit POST reverse_mode: reverse_all,
+   * do_not_reverse_updated, or abort_reverse (no changes).
    */
   public function import_reverse() {
     header('Content-Type: application/json');
@@ -751,6 +753,20 @@ SQL;
       echo json_encode([
         'status' => 'Forbidden',
         'msg' => 'Import reversal requires user-specific write credentials.',
+      ]);
+      return;
+    }
+    $reverseMode = $_POST['reverse_mode'] ?? NULL;
+    if ($reverseMode === 'abort_reverse') {
+      echo json_encode(['status' => 'Aborted', 'msg' => 'Import reversal was cancelled.']);
+      return;
+    }
+    if (!in_array($reverseMode, ['reverse_all', 'do_not_reverse_updated'], TRUE)) {
+      Kohana::log('info', 'Import reversal rejected: missing or invalid reverse_mode parameter.');
+      http_response_code(400);
+      echo json_encode([
+        'status' => 'Bad Request',
+        'msg' => 'Specify reverse_all, do_not_reverse_updated, or abort_reverse as reverse_mode.',
       ]);
       return;
     }
@@ -775,12 +791,6 @@ SQL;
       return;
     }
 
-    if (!empty($_POST['reverse_mode'])) {
-      $reverseMode = $_POST['reverse_mode'];
-    }
-    else {
-      $reverseMode = 'normal';
-    }
     $db->query('BEGIN');
     try {
       // Serialize attempts to reverse this import, not writes to other records.

@@ -721,6 +721,29 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame(0, $result['database_calls']);
   }
 
+  public function testImportReversalAbortAndInvalidModesDoNotReachDatabase(): void {
+    $nonce = str_repeat('a', 40);
+    $post = [
+      'nonce' => $nonce,
+      'auth_token' => sha1("$nonce:password:2") . ':2',
+      'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+    ];
+    $cases = [
+      'abort' => [['reverse_mode' => 'abort_reverse'], 200, 'Aborted'],
+      'missing' => [[], 400, 'Bad Request'],
+      'empty' => [['reverse_mode' => ''], 400, 'Bad Request'],
+      'unknown' => [['reverse_mode' => 'normal'], 400, 'Bad Request'],
+      'array' => [['reverse_mode' => ['reverse_all']], 400, 'Bad Request'],
+    ];
+    foreach ($cases as $name => [$mode, $httpStatus, $status]) {
+      $result = $this->runScenario(['import_reverse' => TRUE, 'post' => $post + $mode]);
+      $this->assertNull($result['exception'], $name);
+      $this->assertSame($httpStatus, $result['status'], $name);
+      $this->assertSame($status, json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR)['status'], $name);
+      $this->assertSame(0, $result['database_calls'], $name);
+    }
+  }
+
   public function testImportReversalRequiresOwnershipWebsiteScopeAndEligibility(): void {
     if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
       $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
@@ -732,6 +755,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       'auth_token' => sha1("$nonce:password:2") . ':2',
       'guid_to_reverse' => $guid,
       'warehouse_user_id' => 3,
+      'reverse_mode' => 'do_not_reverse_updated',
     ];
     $cases = [
       'owner' => [[], 200, FALSE],
