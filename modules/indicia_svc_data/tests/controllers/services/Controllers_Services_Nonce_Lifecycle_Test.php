@@ -831,4 +831,40 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       $this->assertStringStartsWith('id,', $result['exports_on_disk'][$name]);
     }
   }
+
+  public function testImportReversalRollsBackOnExportOrDatabaseFailure(): void {
+    if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
+      $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
+    }
+    $nonce = str_repeat('a', 40);
+    foreach (['export', 'database'] as $failure) {
+      $result = $this->runScenario([
+        'import_reverse' => TRUE,
+        'reversal_records' => TRUE,
+        'reversal_failure' => $failure,
+        'import' => [7 => 2],
+        'post' => [
+          'nonce' => $nonce,
+          'auth_token' => sha1("$nonce:password:2") . ':2',
+          'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+          'reverse_mode' => 'reverse_all',
+        ],
+      ]);
+      $this->assertNull($result['exception'], $failure);
+      $this->assertSame(500, $result['status'], $failure);
+      $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
+      $this->assertSame('Error', $response['status'], $failure);
+      $this->assertStringContainsString('No changes were saved', $response['msg'], $failure);
+      $this->assertTrue($result['reversible'], $failure);
+      $this->assertNull($result['reversed_on'], $failure);
+      $this->assertNull($result['reversed_by_id'], $failure);
+      $this->assertSame([], $result['exports_on_disk'], $failure);
+      $this->assertSame([
+        'occurrences' => [1, 2],
+        'samples' => [1, 2, 3],
+        'cache_occurrences_functional' => [1, 2],
+        'cache_samples_functional' => [1, 2, 3],
+      ], $result['survivors'], $failure);
+    }
+  }
 }

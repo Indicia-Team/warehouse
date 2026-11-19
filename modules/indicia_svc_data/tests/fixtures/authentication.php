@@ -412,11 +412,13 @@ if (Database::$link && !empty($scenario['import_reverse'])) {
       $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));
     }
     $result['exports_on_disk'] = [];
-    foreach (glob(DOCROOT . 'download/*.csv') as $file) {
-      $result['exports_on_disk'][basename($file)] = file_get_contents($file);
-      unlink($file);
+    if (is_dir(DOCROOT . 'download')) {
+      foreach (glob(DOCROOT . 'download/*.csv') as $file) {
+        $result['exports_on_disk'][basename($file)] = file_get_contents($file);
+        unlink($file);
+      }
+      rmdir(DOCROOT . 'download');
     }
-    rmdir(DOCROOT . 'download');
   }
 }
 elseif (Database::$link && empty($scenario['utility_action'])) {

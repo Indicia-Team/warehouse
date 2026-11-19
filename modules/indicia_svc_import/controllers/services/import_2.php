@@ -737,6 +737,7 @@ SQL;
    * The acting user is derived from the credentials, not from POST data.
    * Requires an explicit POST reverse_mode: reverse_all,
    * do_not_reverse_updated, or abort_reverse (no changes).
+   * A reversal commits only after its CSVs have been written to download/.
    */
   public function import_reverse() {
     header('Content-Type: application/json');
@@ -791,6 +792,8 @@ SQL;
       return;
     }
 
+    $exports = [];
+    $commitAttempted = FALSE;
     $db->query('BEGIN');
     try {
       // Serialize attempts to reverse this import, not writes to other records.
@@ -804,19 +807,55 @@ SQL;
       }
       $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
       $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
+      $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
+      // Do not commit until all CSVs are ready. Their random names are not
+      // returned to the caller until after commit.
+      foreach ([
+        'reversed_occurrences' => $updatedOccurrences,
+        'untouched_occurrences' => $untouchedOccurrences,
+        'reversed_samples' => $updatedSamples,
+        'untouched_samples' => $untouchedSamples,
+      ] as $kind => $rows) {
+        if ($rows) {
+          if (!$exports) {
+            self::purgeOldReversalExports();
+          }
+          $exports[$kind] = self::createReversalDetailsFile($rows);
+        }
+      }
       $db->query(<<<SQL
         UPDATE imports
         SET reversed_on = now(), reversed_by_id = ?, reversible = false
         WHERE id = ?
         SQL, [$warehouseUserId, (int) $import->id]);
+      $commitAttempted = TRUE;
       $db->query('COMMIT');
     }
     catch (Throwable $e) {
-      $db->query('ROLLBACK');
-      throw $e;
+      error_logger::log_error('Import reversal failed.', $e);
+      $rolledBack = FALSE;
+      try {
+        $db->query('ROLLBACK');
+        $rolledBack = !$commitAttempted;
+      }
+      catch (Throwable $rollbackError) {
+        error_logger::log_error('Unable to roll back import reversal.', $rollbackError);
+      }
+      foreach ($exports as $filename) {
+        if (!@unlink(DOCROOT . 'download/' . $filename)) {
+          Kohana::log('error', 'Unable to remove a CSV from a failed import reversal.');
+        }
+      }
+      http_response_code(500);
+      echo json_encode([
+        'status' => 'Error',
+        'msg' => $rolledBack
+          ? 'Import reversal failed. No changes were saved. You can try again.'
+          : 'The Warehouse could not confirm the reversal outcome. Check the import status before trying again.',
+      ]);
+      return;
     }
-    $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
-    $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
 
     $response = [
       'status' => 'OK',
@@ -824,8 +863,7 @@ SQL;
       'samplesDetails' => [],
       'occurrencesOutcome' => empty($updatedOccurrences) ? 'No occurrences were reversed.' : 'Imported occurrences were reversed.',
       'occurrencesDetails' => [],
-      'exports' => [],
-      'exportErrors' => [],
+      'exports' => $exports,
     ];
     if (empty($updatedSamples)) {
       $response['samplesDetails'][] =
@@ -839,23 +877,6 @@ SQL;
     }
     if (!empty($untouchedOccurrences)) {
       $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
-    }
-    foreach ([
-      'reversed_occurrences' => $updatedOccurrences,
-      'untouched_occurrences' => $untouchedOccurrences,
-      'reversed_samples' => $updatedSamples,
-      'untouched_samples' => $untouchedSamples,
-    ] as $kind => $rows) {
-      if (!$rows) {
-        continue;
-      }
-      try {
-        $response['exports'][$kind] = self::createReversalDetailsFile($rows);
-      }
-      catch (RuntimeException $e) {
-        Kohana::log('error', 'Import reversal export failed: ' . $e->getMessage());
-        $response['exportErrors'][] = $kind;
-      }
     }
     echo json_encode($response);
   }
@@ -1190,7 +1211,7 @@ SQL;
     return $untouchedSmpsFromAllSmps;
   }
 
-  private static function createReversalDetailsFile(array $rows): string {
+  private static function purgeOldReversalExports(): void {
     $dir = DOCROOT . 'download';
     foreach (glob("$dir/reversal-*.csv") ?: [] as $oldFile) {
       if (preg_match('/\Areversal-[0-9a-f-]{36}\.csv\z/', basename($oldFile))
@@ -1198,12 +1219,15 @@ SQL;
         @unlink($oldFile);
       }
     }
+  }
+
+  private static function createReversalDetailsFile(array $rows): string {
     // The URL is a bearer secret; do not derive it from the import GUID.
     $uuid = random_bytes(16);
     $uuid[6] = chr((ord($uuid[6]) & 0x0f) | 0x40);
     $uuid[8] = chr((ord($uuid[8]) & 0x3f) | 0x80);
     $name = vsprintf('reversal-%s%s-%s-%s-%s-%s%s%s.csv', str_split(bin2hex($uuid), 4));
-    $path = "$dir/$name";
+    $path = DOCROOT . "download/$name";
     $file = @fopen($path, 'xb');
     if (!$file) {
       throw new RuntimeException('Unable to create reversal CSV in the download directory.');
@@ -1227,7 +1251,9 @@ SQL;
     finally {
       fclose($file);
       if (!$complete) {
-        unlink($path);
+        if (!@unlink($path)) {
+          Kohana::log('error', 'Unable to remove an incomplete reversal CSV.');
+        }
       }
     }
   }

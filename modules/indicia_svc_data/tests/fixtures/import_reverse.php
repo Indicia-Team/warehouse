@@ -56,7 +56,12 @@ class Import_Reverse_Database {
     pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)', $import);
     if (!empty($scenario['reversal_records'])) {
       define('DOCROOT', $scenario['directory'] . '/');
-      mkdir(DOCROOT . 'download', 0700);
+      if (($scenario['reversal_failure'] ?? NULL) !== 'export') {
+        mkdir(DOCROOT . 'download', 0700);
+      }
+      if (($scenario['reversal_failure'] ?? NULL) === 'database') {
+        pg_query(self::$link, 'ALTER TABLE imports ADD CHECK (reversed_by_id IS NULL)');
+      }
       pg_query_params(self::$link, <<<'SQL'
         INSERT INTO samples (id, import_guid, parent_id, deleted) VALUES
           (1, $1, NULL, false), (2, NULL, 1, false), (3, $1, NULL, false);
