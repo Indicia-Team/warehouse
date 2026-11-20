@@ -100,16 +100,25 @@ class ImportReversalConfirmationTest extends TestCase {
     try {
       $guid = 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA';
       $render = new ReflectionMethod(import_helper_2::class, 'reversalModeWarning');
-      $html = $render->invoke(NULL, [
+      $options = [
         'entity' => 'occurrence',
         'importReverse' => 'import_and_reverse_via_query',
         'initServerConfigUrl' => '/import-form/1',
         'website_id' => 1,
         'readAuth' => [],
-      ], $guid);
+      ];
+      $list = new ReflectionMethod(import_helper_2::class, 'getReversibleImports');
+      $list->invoke(NULL, $options);
+      $html = $render->invoke(NULL, $options, $guid);
       $this->assertStringContainsString('<dd>&lt;b&gt;import&lt;/b&gt;</dd>', $html);
       $this->assertStringContainsString('<dd>&lt;i&gt;date &amp; time&lt;/i&gt;</dd>', $html);
       $this->assertStringContainsString("name=\"reverse-guid\" value=\"$guid\"", $html);
+      $requests = ReversalConfirmationReportStub::$requests;
+      $this->assertSame('library/imports/reversible_imports_list', $requests[0]['dataSource']);
+      $this->assertSame(['currentUser' => 7, 'website_id' => 1], $requests[0]['extraParams']);
+      $this->assertSame(array_replace($requests[0], [
+        'extraParams' => $requests[0]['extraParams'] + ['import_guid' => $guid],
+      ]), $requests[1]);
     }
     finally {
       session_destroy();
@@ -120,10 +129,46 @@ class ImportReversalConfirmationTest extends TestCase {
    * @runInSeparateProcess
    * @preserveGlobalState disabled
    */
+  public function testReversalOnlyImporterDoesNotOfferUploadSteps(): void {
+    require_once 'client_helpers/import_helper_2.php';
+    function hostsite_get_user_field($field) {
+      return 7;
+    }
+    function iform_load_helpers($helpers) {
+    }
+    class_alias(ReversalConfirmationReportStub::class, 'report_helper');
+    ReversalConfirmationReportStub::$imports = [];
+
+    $options = [
+      'entity' => 'occurrence',
+      'importReverse' => 'reverse',
+      'readAuth' => ['nonce' => 'read'],
+      'writeAuth' => ['nonce' => 'write'],
+      'advancedFields' => [],
+    ] + array_fill_keys([
+      'uploadFileUrl', 'sendFileToWarehouseUrl', 'extractFileOnWarehouseUrl',
+      'initServerConfigUrl', 'loadChunkToTempTableUrl', 'preprocessUrl',
+      'processLookupMatchingUrl', 'saveLookupMatchesGroupUrl', 'importChunkUrl',
+      'getErrorFileUrl',
+    ], '/import-form/1');
+    $_GET = $_POST = [];
+    $html = import_helper_2::importer($options);
+    $this->assertStringContainsString('There are no previous imports available for you to reverse', $html);
+    $this->assertStringNotContainsString('file-upload-form', $html);
+    $_POST['next-import-step'] = 'mappingsForm';
+    $html = import_helper_2::importer($options);
+    $this->assertStringContainsString('This form only allows import reversal.', $html);
+  }
+
+  /**
+   * @runInSeparateProcess
+   * @preserveGlobalState disabled
+   */
   public function testResultRendersWarehouseContentAsText(): void {
     require_once 'client_helpers/import_helper_2.php';
     $render = new ReflectionMethod(import_helper_2::class, 'renderReversalResult');
     $name = 'reversal-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.csv';
+    $untouchedName = 'reversal-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.csv';
     import_helper_2::$base_url = 'https://warehouse.example/records&data/';
     $html = $render->invoke(NULL, ['result' => TRUE, 'output' => json_encode([
       'status' => 'OK',
@@ -131,7 +176,11 @@ class ImportReversalConfirmationTest extends TestCase {
       'occurrencesOutcome' => '<b>Occurrences</b>',
       'samplesDetails' => ['"Sample" & details'],
       'occurrencesDetails' => [],
-      'exports' => ['reversed_samples' => $name, 'reversed_occurrences' => '../invalid.csv'],
+      'exports' => [
+        'reversed_samples' => $name,
+        'reversed_occurrences' => '../invalid.csv',
+        'untouched_occurrences' => $untouchedName,
+      ],
     ], JSON_THROW_ON_ERROR)], '<b>import</b>');
     $this->assertStringContainsString('import &lt;b&gt;import&lt;/b&gt; is complete', $html);
     $this->assertStringContainsString('<h4>&lt;b&gt;Samples&lt;/b&gt;</h4>', $html);
@@ -139,6 +188,9 @@ class ImportReversalConfirmationTest extends TestCase {
     $this->assertStringContainsString('<p>&quot;Sample&quot; &amp; details</p>', $html);
     $this->assertStringContainsString("href=\"https://warehouse.example/records&amp;data/download/$name\"", $html);
     $this->assertStringNotContainsString('invalid.csv', $html);
+    [$samples, $occurrences] = explode('<h4>&lt;b&gt;Occurrences&lt;/b&gt;</h4>', $html, 2);
+    $this->assertStringNotContainsString($untouchedName, $samples);
+    $this->assertStringContainsString($untouchedName, $occurrences);
 
     $GLOBALS['indicia_templates']['warningBox'] = '<p>{message}</p>';
     $html = $render->invoke(NULL, [
@@ -152,13 +204,18 @@ class ImportReversalConfirmationTest extends TestCase {
 
 class ReversalConfirmationReportStub {
 
+  public static array $requests = [];
+
+  public static array $imports = [[
+    'import_guid' => '<b>import</b>',
+    'import_date_time' => '<i>date & time</i>',
+    'inserted' => 1,
+    'remaining' => 1,
+  ]];
+
   public static function get_report_data(array $options): array {
-    return $options['dataSource'] === 'library/imports/reversible_imports_list' ? [[
-      'import_guid' => '<b>import</b>',
-      'import_date_time' => '<i>date & time</i>',
-      'inserted' => 1,
-      'remaining' => 1,
-    ]] : [];
+    self::$requests[] = $options;
+    return $options['dataSource'] === 'library/imports/reversible_imports_list' ? self::$imports : [];
   }
 
 }

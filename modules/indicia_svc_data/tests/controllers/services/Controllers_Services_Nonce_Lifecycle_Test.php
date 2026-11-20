@@ -862,6 +862,52 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     }
   }
 
+  public function testImportReversalStreamsAllBatchesAndExportsOnlyLiveUntouchedRows(): void {
+    if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
+      $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
+    }
+    $nonce = str_repeat('a', 40);
+    $result = $this->runScenario([
+      'import_reverse' => TRUE,
+      'reversal_records' => TRUE,
+      'reversal_extra_rows' => TRUE,
+      'import' => [7 => 1002],
+      'post' => [
+        'nonce' => $nonce,
+        'auth_token' => sha1("$nonce:password:2") . ':2',
+        'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+        'reverse_mode' => 'do_not_reverse_updated',
+      ],
+    ]);
+    $this->assertNull($result['exception']);
+    $this->assertSame(200, $result['status']);
+    $this->assertSame([2, 1003], $result['survivors']['occurrences']);
+    $this->assertSame([2, 1003], $result['survivors']['cache_occurrences_functional']);
+    $this->assertSame([1, 2, 3], $result['survivors']['samples']);
+    $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
+    $this->assertSame(['reversed_occurrences', 'untouched_occurrences', 'untouched_samples'], array_keys($response['exports']));
+    $expectedIds = ['reversed_occurrences' => [1, ...range(3, 1002)], 'untouched_occurrences' => [1003]];
+    foreach ($expectedIds as $kind => $expected) {
+      $file = fopen('php://temp', 'w+b');
+      try {
+        fwrite($file, $result['exports_on_disk'][$response['exports'][$kind]]);
+        rewind($file);
+        $columns = fgetcsv($file, escape: '');
+        $this->assertSame('id', $columns[0]);
+        $this->assertNotContains('deleted', $columns);
+        $ids = [];
+        while (($row = fgetcsv($file, escape: '')) !== FALSE) {
+          $ids[] = (int) $row[0];
+        }
+        sort($ids);
+        $this->assertSame($expected, $ids, $kind);
+      }
+      finally {
+        fclose($file);
+      }
+    }
+  }
+
   public function testImportReversalRollsBackOnExportOrDatabaseFailure(): void {
     if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
       $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');

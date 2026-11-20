@@ -73,6 +73,18 @@ class Import_Reverse_Database {
           (1, 3, $1, false, $2, $3, $4),
           (2, 2, 'LATER-IMPORT', false, NULL, NULL, NULL);
         SQL, [$import[3], "Said, \"here\"\\\r\nNext line", '=1+1', '@SUM(1)']);
+      if (!empty($scenario['reversal_extra_rows'])) {
+        pg_query(self::$link, <<<'SQL'
+          UPDATE occurrences SET created_on = '2020-01-01', updated_on = '2020-01-01' WHERE id = 1;
+          UPDATE samples SET created_on = '2020-01-01', updated_on = '2020-01-01' WHERE id = 3;
+          SQL);
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO occurrences (id, sample_id, import_guid, deleted, created_on, updated_on)
+          SELECT id, 3, $1, false, '2020-01-01',
+            CASE WHEN id = 1003 THEN '2020-01-02'::timestamp ELSE '2020-01-01'::timestamp END
+          FROM generate_series(3, 1003) id;
+          SQL, [$import[3]]);
+      }
       pg_query(self::$link, <<<'SQL'
         INSERT INTO cache_occurrences_functional SELECT id FROM occurrences;
         INSERT INTO cache_samples_functional SELECT id FROM samples;

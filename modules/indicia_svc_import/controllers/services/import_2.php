@@ -805,19 +805,19 @@ SQL;
         echo json_encode(['status' => 'Forbidden', 'msg' => 'This import is not available for reversal.']);
         return;
       }
-      $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
-      $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
+      $this->reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $this->reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
       // Do not commit until all CSVs are ready. Their random names are not
       // returned to the caller until after commit.
-      foreach ([
-        'reversed_occurrences' => $updatedOccurrences,
-        'untouched_occurrences' => $untouchedOccurrences,
-        'reversed_samples' => $updatedSamples,
-        'untouched_samples' => $untouchedSamples,
-      ] as $kind => $rows) {
-        if ($rows) {
+      foreach (['occurrences' => self::REVERSAL_OCCURRENCE_COLUMNS, 'samples' => self::REVERSAL_SAMPLE_COLUMNS] as $entity => $columns) {
+        foreach ([
+          "reversed_$entity" => ["SELECT $columns FROM pg_temp.import_reversed_$entity t", []],
+          "untouched_$entity" => ["SELECT $columns FROM $entity t WHERE t.import_guid = $1 AND NOT t.deleted", [$guidToReverse]],
+        ] as $kind => [$sql, $params]) {
+          $rows = self::streamReversalRows($db, $sql, $params);
+          if (!$rows->valid()) {
+            continue;
+          }
           if (!$exports) {
             self::purgeOldReversalExports();
           }
@@ -859,23 +859,23 @@ SQL;
 
     $response = [
       'status' => 'OK',
-      'samplesOutcome' => empty($updatedSamples) ? 'No samples were reversed.' : 'Imported samples were reversed.',
+      'samplesOutcome' => isset($exports['reversed_samples']) ? 'Imported samples were reversed.' : 'No samples were reversed.',
       'samplesDetails' => [],
-      'occurrencesOutcome' => empty($updatedOccurrences) ? 'No occurrences were reversed.' : 'Imported occurrences were reversed.',
+      'occurrencesOutcome' => isset($exports['reversed_occurrences']) ? 'Imported occurrences were reversed.' : 'No occurrences were reversed.',
       'occurrencesDetails' => [],
       'exports' => $exports,
     ];
-    if (empty($updatedSamples)) {
+    if (!isset($exports['reversed_samples'])) {
       $response['samplesDetails'][] =
         'This may happen if none of the samples you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered samples were found.';
     }
-    if (!empty($untouchedSamples)) {
+    if (isset($exports['untouched_samples'])) {
       $response['samplesDetails'][] = "Samples that were removed from the database before today's reversal will not be shown in the untouched samples download file.";
     }
-    if (empty($updatedOccurrences)) {
+    if (!isset($exports['reversed_occurrences'])) {
       $response['occurrencesDetails'][] = 'This may happen if none of the occurrences you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered occurrences were found.';
     }
-    if (!empty($untouchedOccurrences)) {
+    if (isset($exports['untouched_occurrences'])) {
       $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
     }
     echo json_encode($response);
@@ -886,6 +886,8 @@ SQL;
    */
   private function getReversibleImport(Database $db, string $guid, int $userId, bool $lock = FALSE): ?object {
     $lockClause = $lock ? 'FOR UPDATE OF i' : '';
+    // Only scan the tagged records during the final, locked eligibility check.
+    $countClause = $lock ? 'AND i.inserted >= (SELECT count(*) FROM occurrences o WHERE o.import_guid = i.import_guid)' : '';
     $imports = $db->query(<<<SQL
       SELECT i.id, i.website_id
       FROM imports i
@@ -909,9 +911,7 @@ SQL;
           SELECT 1 FROM imports other
           WHERE other.import_guid = i.import_guid AND other.id <> i.id
         )
-        AND i.inserted >= (
-          SELECT count(*) FROM occurrences o WHERE o.import_guid = i.import_guid
-        )
+        $countClause
       $lockClause
       SQL, [$guid, $userId])->result_array();
     if (!$imports) {
@@ -1052,78 +1052,37 @@ SQL;
    * @return array
    *   Rows of reversed occurrences.
    */
-  private function reverseOccurrences($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
-    $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
+  private function reverseOccurrences(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): void {
+    $columns = self::REVERSAL_OCCURRENCE_COLUMNS;
+    $params = [$warehouseUserId, $guidToReverse];
     $unchanged = '';
     if ($reverseMode === 'do_not_reverse_updated') {
       $unchanged = <<<SQL
-        AND o.created_on = o.updated_on
+        AND t.created_on = t.updated_on
         AND NOT EXISTS (
-          SELECT 1 FROM samples s WHERE s.id = o.sample_id
-            AND s.import_guid = $guidToReverseEsc AND s.deleted = false
+          SELECT 1 FROM samples s WHERE s.id = t.sample_id
+            AND s.import_guid = ? AND s.deleted = false
             AND (s.created_on = s.updated_on) IS NOT TRUE
         )
       SQL;
+      $params[] = $guidToReverse;
     }
-    // Use the rows actually updated: a competing writer may retag a candidate
-    // while the reversal waits for its row lock.
-    return $db->query(<<<SQL
+    // Stage only rows actually changed: cursors cannot read a modifying CTE.
+    $db->query(<<<SQL
+      CREATE TEMP TABLE import_reversed_occurrences ON COMMIT DROP AS
       WITH reversed AS (
-        UPDATE occurrences o
-        SET deleted = true, updated_on = now(), updated_by_id = $warehouseUserId
-        WHERE o.import_guid = $guidToReverseEsc AND o.deleted = false
+        UPDATE occurrences t
+        SET deleted = true, updated_on = now(), updated_by_id = ?
+        WHERE t.import_guid = ? AND t.deleted = false
         $unchanged
-        RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
-          o.website_id, o.external_key, o.comment, o.taxa_taxon_list_id, o.record_status, o.verified_by_id,
-          o.verified_on, o.zero_abundance, o.last_verification_check_date, o.training, o.sensitivity_precision,
-          o.release_status, o.record_substatus, o.record_decision_source, o.import_guid
+        RETURNING $columns
       ), functional AS (
         DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM reversed)
       ), nonfunctional AS (
         DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM reversed)
       )
-      SELECT * FROM reversed
-      SQL)->result_array();
-  }
-
-  /**
-   * Get occurrences which weren't reversed.
-   *
-   * @param object $db
-   *   Database object.
-   * @param string $guidToReverse
-   *   Import unique identifier to reverse.
-   * @param array $updatedOccurrences
-   *   Array of occurrences that have been reversed.
-   *
-   * @return array
-   *   Array of occurrences that have not been reversed.
-   */
-  private function getUntouchedOccurrences($db, $guidToReverse, array $updatedOccurrences) {
-    $updatedOccurrenceIds = [];
-    // Get the occurrence ids only, so we can use in_array later.
-    foreach ($updatedOccurrences as $updatedOccurrenceRow) {
-      $updatedOccurrenceIds[] = $updatedOccurrenceRow->id;
-    }
-    // Get all occurrences for the import.
-    $untouchedOccurrencesSQL = <<<SQL
-      SELECT *
-      FROM occurrences o
-      WHERE o.import_guid = ?
-      AND o.deleted=false
-    SQL;
-
-    $untouchedOccsFromAllOccs = $db->query($untouchedOccurrencesSQL, [$guidToReverse])->result_array();
-    // Go through all occurrences for the import.
-    foreach ($untouchedOccsFromAllOccs as $idx => $importOcc) {
-      /* Is the occurrence id one that has been reversed.
-      If it has been reversed, we know that it shouldn't be in the untouched
-      occurrences array */
-      if (in_array($importOcc->id, $updatedOccurrenceIds)) {
-        unset($untouchedOccsFromAllOccs[$idx]);
-      }
-    }
-    return $untouchedOccsFromAllOccs;
+      SELECT $columns FROM reversed t
+      SQL, $params);
   }
 
   /**
@@ -1141,74 +1100,75 @@ SQL;
    * @return array
    *   Rows of reversed samples.
    */
-  private function reverseSamples($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
-    $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
-    $unchanged = $reverseMode === 'do_not_reverse_updated' ? 'AND s.created_on = s.updated_on' : '';
+  private function reverseSamples(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): void {
+    $columns = self::REVERSAL_SAMPLE_COLUMNS;
+    $unchanged = $reverseMode === 'do_not_reverse_updated' ? 'AND t.created_on = t.updated_on' : '';
     // Keep visible dependants, but accept that a concurrent attachment may
     // become invalid when its parent is deleted rather than lock both tables.
-    return $db->query(<<<SQL
+    $db->query(<<<SQL
+      CREATE TEMP TABLE import_reversed_samples ON COMMIT DROP AS
       WITH reversed AS (
-        UPDATE samples s
-        SET deleted = true, updated_on = now(), updated_by_id = $warehouseUserId
-        WHERE s.import_guid = $guidToReverseEsc AND s.deleted = false
+        UPDATE samples t
+        SET deleted = true, updated_on = now(), updated_by_id = ?
+        WHERE t.import_guid = ? AND t.deleted = false
           AND NOT EXISTS (
-            SELECT 1 FROM occurrences o WHERE o.sample_id = s.id AND o.deleted = false
+            SELECT 1 FROM occurrences o WHERE o.sample_id = t.id AND o.deleted = false
           )
           AND NOT EXISTS (
-            SELECT 1 FROM samples child WHERE child.parent_id = s.id AND child.deleted = false
+            SELECT 1 FROM samples child WHERE child.parent_id = t.id AND child.deleted = false
           )
           $unchanged
-        RETURNING s.id, s.survey_id, s.location_id, s.date_start, s.date_end, s.date_type,
-          s.entered_sref, s.entered_sref_system, s.location_name, s.created_on,
-          s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names,
-          s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status,
-          s.verified_by_id, s.verified_on, s.licence_id, s.training, s.import_guid
+        RETURNING $columns
       ), functional AS (
         DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM reversed)
       ), nonfunctional AS (
         DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM reversed)
       )
-      SELECT * FROM reversed
-      SQL)->result_array();
+      SELECT $columns FROM reversed t
+      SQL, [$warehouseUserId, $guidToReverse]);
   }
 
   /**
-   * Get samples which weren't reversed.
-   *
-   * @param object $db
-   *   Database object.
-   * @param string $guidToReverse
-   *   Import unique identifier to reverse.
-   * @param array $updatedSamples
-   *   Array of samples that have been reversed.
-   *
-   * @return array
-   *   Array of samples that have not been reversed.
+   * Columns shared by the reversed and untouched occurrence exports.
    */
-  private function getUntouchedSamples($db, $guidToReverse, array $updatedSamples) {
-    $updatedSampleIds = [];
-    // Get ids only so we can use in_array.
-    foreach ($updatedSamples as $updatedSampleRow) {
-      $updatedSampleIds[] = $updatedSampleRow->id;
+  private const REVERSAL_OCCURRENCE_COLUMNS = 't.id, t.sample_id, t.determiner_id, t.confidential, t.created_on, t.created_by_id,
+    t.website_id, t.external_key, t.comment, t.taxa_taxon_list_id, t.record_status, t.verified_by_id,
+    t.verified_on, t.zero_abundance, t.last_verification_check_date, t.training, t.sensitivity_precision,
+    t.release_status, t.record_substatus, t.record_decision_source, t.import_guid';
+
+  private const REVERSAL_SAMPLE_COLUMNS = 't.id, t.survey_id, t.location_id, t.date_start, t.date_end, t.date_type,
+    t.entered_sref, t.entered_sref_system, t.location_name, t.created_on,
+    t.created_by_id, t.comment, t.external_key, t.sample_method_id, t.recorder_names,
+    t.parent_id, t.input_form, t.group_id, t.privacy_precision, t.record_status,
+    t.verified_by_id, t.verified_on, t.licence_id, t.training, t.import_guid';
+
+  /**
+   * Stream projected rows in bounded batches on the reversal transaction.
+   */
+  private static function streamReversalRows(Database $db, string $sql, array $params): Generator {
+    $link = $db->getLink();
+    // Use the connection directly so consecutive FETCH calls cannot be cached.
+    if (!@pg_query_params($link, "DECLARE import_reversal_export NO SCROLL CURSOR FOR $sql", $params)) {
+      throw new RuntimeException('Unable to open reversal export cursor: ' . pg_last_error($link));
     }
-    // Get all samples for the import.
-    $untouchedSamplesSQL = <<<SQL
-      SELECT *
-      FROM samples s
-      WHERE s.import_guid = ?
-      AND s.deleted=false
-    SQL;
-    $untouchedSmpsFromAllSmps = $db->query($untouchedSamplesSQL, [$guidToReverse])->result_array();
-    // Go through all samples for the import.
-    foreach ($untouchedSmpsFromAllSmps as $idx => $importSmp) {
-      /* Is the sample id one that has been reversed.
-      If it has been reversed, we know that it shouldn't be in the untouched
-      samples array */
-      if (in_array($importSmp->id, $updatedSampleIds)) {
-        unset($untouchedSmpsFromAllSmps[$idx]);
+    do {
+      $batch = @pg_query($link, 'FETCH FORWARD 500 FROM import_reversal_export');
+      if (!$batch) {
+        throw new RuntimeException('Unable to fetch reversal export rows: ' . pg_last_error($link));
       }
+      $count = pg_num_rows($batch);
+      try {
+        while (($row = pg_fetch_assoc($batch)) !== FALSE) {
+          yield $row;
+        }
+      }
+      finally {
+        pg_free_result($batch);
+      }
+    } while ($count === 500);
+    if (!@pg_query($link, 'CLOSE import_reversal_export')) {
+      throw new RuntimeException('Unable to close reversal export cursor: ' . pg_last_error($link));
     }
-    return $untouchedSmpsFromAllSmps;
   }
 
   private static function purgeOldReversalExports(): void {
@@ -1227,7 +1187,7 @@ SQL;
    * Formula-like values gain a leading apostrophe in the export only. A
    * program reading the raw CSV will see that apostrophe as part of the value.
    */
-  private static function createReversalDetailsFile(array $rows): string {
+  private static function createReversalDetailsFile(Generator $rows): string {
     // The URL is a bearer secret; do not derive it from the import GUID.
     $uuid = random_bytes(16);
     $uuid[6] = chr((ord($uuid[6]) & 0x0f) | 0x40);
@@ -1240,11 +1200,10 @@ SQL;
     }
     $complete = FALSE;
     try {
-      if (fputcsv($file, array_keys((array) reset($rows)), ',', '"', '') === FALSE) {
+      if (fputcsv($file, array_keys($rows->current()), ',', '"', '') === FALSE) {
         throw new RuntimeException('Unable to write reversal export header.');
       }
-      foreach ($rows as $row) {
-        $fields = (array) $row;
+      foreach ($rows as $fields) {
         foreach ($fields as &$field) {
           // Also catch formula markers after leading whitespace or invisible
           // characters, and their full-width variants.
