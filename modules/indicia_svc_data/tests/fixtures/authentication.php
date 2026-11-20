@@ -279,6 +279,7 @@ class Authentication_Bulk_Delete_Database {
 
 if (!empty($scenario['import_reverse'])) {
   require_once $root . '/modules/indicia_svc_import/controllers/services/import_2.php';
+  require_once $root . '/modules/indicia_svc_import/helpers/task_import_reversal.php';
   require_once __DIR__ . '/import_reverse.php';
   class_alias('Import_Reverse_Database', 'Database');
 }
@@ -359,29 +360,56 @@ catch (Exception $e) {
   $exception = get_class($e);
 }
 $output = ob_get_clean();
+$reversalStatus = http_response_code() ?: 200;
+$taskStates = [];
 $downloads = [];
-if (!empty($scenario['reversal_downloads'])) {
-  $reversalStatus = http_response_code() ?: 200;
-  $response = json_decode($output, TRUE);
-  $token = $response['export_token'] ?? '';
-  foreach (array_merge(['database_failure'], $response['exports'] ?? [], ['invalid_token', 'invalid_kind']) as $kind) {
-    http_response_code($reversalStatus);
+if (!empty($scenario['reversal_records']) && $reversalStatus === 200) {
+  $credentials = $_POST;
+  $getTasks = static function () use ($controller, $credentials) {
+    $_POST = $credentials;
+    ob_start();
+    $controller->import_reversal_status();
+    return json_decode(ob_get_clean(), TRUE, 512, JSON_THROW_ON_ERROR)['tasks'];
+  };
+  $download = static function (string $token, string $kind) use ($controller) {
+    http_response_code(200);
     $_SERVER['REQUEST_METHOD'] = 'POST';
-    $_POST = [
-      'reversal_export_token' => $kind === 'invalid_token' ? str_repeat('0', 64) : $token,
-      'kind' => $kind === 'invalid_token' ? 'reversed_occurrences' : ($kind === 'database_failure' ? 'untouched_samples' : $kind),
-    ];
-    if ($kind === 'database_failure') {
-      pg_query(Database::$link, 'ALTER TABLE surveys RENAME TO surveys_unavailable');
-    }
+    $_POST = ['reversal_export_token' => $token, 'kind' => $kind];
     ob_start();
     $controller->download_reversal_export();
-    $downloads[$kind] = ['output' => ob_get_clean(), 'status' => http_response_code()];
-    if ($kind === 'database_failure') {
-      pg_query(Database::$link, 'ALTER TABLE surveys_unavailable RENAME TO surveys');
-    }
+    return ['output' => ob_get_clean(), 'status' => http_response_code()];
+  };
+  $taskStates['queued'] = $getTasks();
+  $token = $taskStates['queued'][0]['export_token'];
+  if (!empty($scenario['reversal_downloads'])) {
+    $downloads['pending'] = $download($token, 'reversed_occurrences');
   }
-  http_response_code(200);
+  pg_query(Database::$link, "UPDATE work_queue SET claimed_by = 'test-worker', claimed_on = now() WHERE task = 'task_import_reversal'");
+  $taskStates['reversing'] = $getTasks();
+  // A repeated submission cannot add another task, even once it is claimed.
+  ob_start();
+  $controller->import_reverse();
+  ob_end_clean();
+  $taskStates['queue_size'] = (int) pg_fetch_result(pg_query(Database::$link, "SELECT count(*) FROM work_queue WHERE task = 'task_import_reversal'"), 0, 0);
+  try {
+    task_import_reversal::process(new Database(), NULL, 'test-worker');
+  }
+  catch (Throwable $e) {
+    pg_query(Database::$link, "UPDATE work_queue SET error_detail = 'Worker failed' WHERE claimed_by = 'test-worker'");
+  }
+  $taskStates['finished'] = $getTasks();
+  $taskStates['remaining_queue_size'] = (int) pg_fetch_result(pg_query(Database::$link, "SELECT count(*) FROM work_queue WHERE task = 'task_import_reversal'"), 0, 0);
+  if (!empty($scenario['reversal_downloads'])) {
+    pg_query(Database::$link, 'ALTER TABLE surveys RENAME TO surveys_unavailable');
+    $downloads['database_failure'] = $download($token, 'untouched_samples');
+    pg_query(Database::$link, 'ALTER TABLE surveys_unavailable RENAME TO surveys');
+    foreach (['reversed_occurrences', 'untouched_occurrences', 'reversed_samples', 'untouched_samples'] as $kind) {
+      $downloads[$kind] = $download($token, $kind);
+    }
+    $downloads['invalid_token'] = $download(str_repeat('0', 64), 'reversed_occurrences');
+    $downloads['invalid_kind'] = $download($token, 'invalid_kind');
+  }
+  http_response_code($reversalStatus);
 }
 if (!empty($scenario['replay'])) {
   $before = Utility_Action_Database::$effects;
@@ -432,6 +460,7 @@ if (Database::$link && !empty($scenario['import_reverse'])) {
   $result['reversed_by_id'] = isset($import['reversed_by_id']) ? (int) $import['reversed_by_id'] : NULL;
   if (!empty($scenario['reversal_records'])) {
     $result['downloads'] = $downloads;
+    $result['task_states'] = $taskStates;
     foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_samples_functional'] as $table) {
       $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';
       $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));

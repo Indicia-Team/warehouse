@@ -781,8 +781,8 @@ SQL;
       return;
     }
     $db = new Database();
-    $import = $this->getReversibleImport($db, $guidToReverse, $warehouseUserId);
-    if ($import === NULL) {
+    $import = task_import_reversal::getEligibleImport($db, $guidToReverse, $warehouseUserId);
+    if ($import === NULL || !$this->reversalWebsiteAllowed((int) $import->website_id)) {
       Kohana::log('info', 'Import reversal rejected: no eligible import in the authenticated user scope.');
       http_response_code(403);
       echo json_encode([
@@ -792,40 +792,37 @@ SQL;
       return;
     }
 
-    $exports = [];
-    $commitAttempted = FALSE;
+    $id = (int) $import->id;
     $db->query('BEGIN');
     try {
-      // Serialize attempts to reverse this import, not writes to other records.
-      $import = $this->getReversibleImport($db, $guidToReverse, $warehouseUserId, TRUE);
-      if ($import === NULL) {
-        $db->query('ROLLBACK');
-        Kohana::log('info', 'Import reversal rejected: import is no longer eligible.');
-        http_response_code(403);
-        echo json_encode(['status' => 'Forbidden', 'msg' => 'This import is not available for reversal.']);
-        return;
-      }
-      $exports['reversed_occurrences'] = $this->reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $exports['reversed_samples'] = $this->reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $reversal = $db->query(<<<SQL
-        UPDATE imports
-        SET reversed_on = now(), reversed_by_id = ?, reversible = false
-        WHERE id = ?
-        RETURNING reversed_on, reversed_by_id,
-          EXISTS (SELECT 1 FROM occurrences t WHERE t.import_guid = imports.import_guid AND NOT t.deleted) AS untouched_occurrences,
-          EXISTS (SELECT 1 FROM samples t WHERE t.import_guid = imports.import_guid AND NOT t.deleted) AS untouched_samples
-        SQL, [$warehouseUserId, (int) $import->id])->result_array()[0];
-      $exports['untouched_occurrences'] = $reversal->untouched_occurrences === 't';
-      $exports['untouched_samples'] = $reversal->untouched_samples === 't';
-      $commitAttempted = TRUE;
+      // Serialize submissions without waiting for the worker's import row lock.
+      $db->query('SELECT pg_advisory_xact_lock(572010, ?)', [$id]);
+      $db->query(<<<SQL
+        WITH queued AS (
+          INSERT INTO work_queue (task, entity, record_id, params, cost_estimate, priority, created_on)
+          SELECT 'task_import_reversal', 'import', i.id, ?, 100, 2, now()
+          FROM imports i
+          WHERE i.id = ? AND i.reversed_on IS NULL AND i.reversible AND NOT i.deleted
+            AND NOT EXISTS (
+              SELECT 1 FROM work_queue q WHERE q.task = 'task_import_reversal'
+                AND q.record_id = i.id AND q.error_detail IS NULL
+            )
+          ON CONFLICT DO NOTHING
+          RETURNING id
+        )
+        SELECT id FROM queued
+        SQL, [json_encode([
+          'guid' => $import->import_guid,
+          'mode' => $reverseMode,
+          'user_id' => $warehouseUserId,
+          'website_id' => (int) $import->website_id,
+        ], JSON_THROW_ON_ERROR), $id]);
       $db->query('COMMIT');
     }
     catch (Throwable $e) {
-      error_logger::log_error('Import reversal failed.', $e);
-      $rolledBack = FALSE;
+      error_logger::log_error('Unable to queue import reversal.', $e);
       try {
         $db->query('ROLLBACK');
-        $rolledBack = !$commitAttempted;
       }
       catch (Throwable $rollbackError) {
         error_logger::log_error('Unable to roll back import reversal.', $rollbackError);
@@ -833,49 +830,81 @@ SQL;
       http_response_code(500);
       echo json_encode([
         'status' => 'Error',
-        'msg' => $rolledBack
-          ? 'Import reversal failed. No changes were saved. You can try again.'
-          : 'The Warehouse could not confirm the reversal outcome. Check the import status before trying again.',
+        'msg' => 'The Warehouse could not confirm submission. Check reversal tasks before trying again.',
       ]);
       return;
     }
 
-    $exports = array_keys(array_filter($exports));
-    $response = [
-      'status' => 'OK',
-      'samplesOutcome' => in_array('reversed_samples', $exports, TRUE) ? 'Imported samples were reversed.' : 'No samples were reversed.',
-      'samplesDetails' => [],
-      'occurrencesOutcome' => in_array('reversed_occurrences', $exports, TRUE) ? 'Imported occurrences were reversed.' : 'No occurrences were reversed.',
-      'occurrencesDetails' => [],
-    ];
-    if (!in_array('reversed_samples', $exports, TRUE)) {
-      $response['samplesDetails'][] =
-        'This may happen if none of the samples you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered samples were found.';
+    echo json_encode(['status' => 'Queued']);
+  }
+
+  private const REVERSAL_EXPORTS = ['reversed_samples', 'untouched_samples', 'reversed_occurrences', 'untouched_occurrences'];
+
+  /**
+   * List this user's active tasks and reversals completed today.
+   */
+  public function import_reversal_status(): void {
+    header('Content-Type: application/json');
+    header('Cache-Control: private, no-store');
+    try {
+      $this->authenticate('write');
+      $userId = $this->getAuthenticatedUserId();
+      if ($userId === NULL) {
+        throw new AuthorisationError('Reversal status requires a verified user.');
+      }
     }
-    if (!in_array('reversed_occurrences', $exports, TRUE)) {
-      $response['occurrencesDetails'][] = 'This may happen if none of the occurrences you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered occurrences were found.';
+    catch (AuthenticationError | AuthorisationError $e) {
+      Kohana::log('info', 'Reversal status rejected: verified identity required.');
+      http_response_code(403);
+      echo json_encode(['status' => 'Forbidden']);
+      return;
     }
-    if ($exports) {
-      try {
-        $token = bin2hex(random_bytes(32));
-        $grant = [
-          'import_id' => (int) $import->id,
-          'reversed_on' => $reversal->reversed_on,
-          'kinds' => $exports,
-          'expires' => time() + 86400,
-        ];
-        if (!(new Cache())->set(self::reversalDownloadCacheKey($token), $grant, NULL, 86400)) {
-          throw new RuntimeException('Unable to cache the reversal download grant.');
+    $db = new Database();
+    $rows = $db->query(<<<SQL
+      SELECT i.id, i.website_id, i.import_guid, i.reversed_on, q.created_on AS queued_on,
+        CASE WHEN i.reversed_on IS NOT NULL THEN 'complete'
+          WHEN q.error_detail IS NOT NULL THEN 'failed'
+          WHEN q.claimed_by IS NOT NULL THEN 'reversing' ELSE 'queued' END AS status
+      FROM imports i
+      LEFT JOIN LATERAL (
+        SELECT q.id, q.created_on, q.claimed_by, q.error_detail
+        FROM work_queue q
+        WHERE q.task = 'task_import_reversal' AND q.record_id = i.id
+          AND q.params->>'user_id' = i.created_by_id::text
+          AND q.params->>'website_id' = i.website_id::text
+          AND (q.error_detail IS NULL OR q.created_on >= CURRENT_DATE)
+        ORDER BY (q.error_detail IS NULL) DESC, q.id DESC LIMIT 1
+      ) q ON i.reversed_on IS NULL
+      WHERE i.created_by_id = ? AND NOT i.deleted AND i.entity = 'occurrence'
+        AND (q.id IS NOT NULL OR (i.reversed_on >= CURRENT_DATE AND i.reversed_by_id = i.created_by_id))
+      ORDER BY COALESCE(i.reversed_on, q.created_on) DESC
+      SQL, [$userId])->result_array();
+    $tasks = [];
+    foreach ($rows as $row) {
+      if (!$this->reversalWebsiteAllowed((int) $row->website_id)) {
+        continue;
+      }
+      if ($row->status !== 'failed') {
+        try {
+          $token = bin2hex(random_bytes(32));
+          if (!(new Cache())->set(self::reversalDownloadCacheKey($token), [
+            'import_id' => (int) $row->id,
+            'user_id' => $userId,
+            'website_id' => (int) $row->website_id,
+            'expires' => time() + 1800,
+          ], NULL, 1800)) {
+            throw new RuntimeException('Unable to cache reversal download grant.');
+          }
+          $row->export_token = $token;
         }
-        $response['exports'] = $exports;
-        $response['export_token'] = $token;
+        catch (Throwable $e) {
+          error_logger::log_error('Unable to issue reversal download grant.', $e);
+        }
       }
-      catch (Throwable $e) {
-        error_logger::log_error('Import reversal committed, but downloads could not be enabled.', $e);
-        $response['exportsWarning'] = 'The reversal succeeded, but downloads are unavailable.';
-      }
+      unset($row->id, $row->website_id);
+      $tasks[] = $row;
     }
-    echo json_encode($response);
+    echo json_encode(['status' => 'OK', 'tasks' => $tasks]);
   }
 
   private static function reversalDownloadCacheKey(string $token): string {
@@ -895,7 +924,7 @@ SQL;
       ? (new Cache())->get(self::reversalDownloadCacheKey($token))
       : NULL;
     if (!is_array($grant) || $grant['expires'] <= time()
-        || !is_string($kind) || !in_array($kind, $grant['kinds'], TRUE)) {
+        || !is_string($kind) || !in_array($kind, self::REVERSAL_EXPORTS, TRUE)) {
       Kohana::log('info', 'Reversal CSV request rejected: missing or invalid download grant.');
       http_response_code(403);
       header('Content-Type: text/plain; charset=UTF-8');
@@ -916,20 +945,34 @@ SQL;
       SELECT $columns
       FROM imports i
       JOIN $entity t ON t.import_guid = i.import_guid
-      WHERE i.id = $1 AND i.reversed_on = $2 AND NOT i.deleted AND NOT i.reversible
+      WHERE i.id = $1 AND i.created_by_id = $2 AND i.website_id = $3
+        AND i.reversed_by_id = i.created_by_id AND i.reversed_on IS NOT NULL AND NOT i.deleted AND NOT i.reversible
         AND $scope AND $status
       SQL;
     $csv = FALSE;
     $transactionStarted = FALSE;
     try {
       $db = new Database();
+      $params = [$grant['import_id'], $grant['user_id'], $grant['website_id']];
+      $db->query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      $transactionStarted = TRUE;
+      $completed = $db->query(<<<SQL
+        SELECT 1 FROM imports
+        WHERE id = ? AND created_by_id = ? AND website_id = ?
+          AND reversed_by_id = created_by_id AND reversed_on IS NOT NULL AND NOT deleted AND NOT reversible
+        SQL, $params)->result_array();
+      if (!$completed) {
+        $db->query('ROLLBACK');
+        http_response_code(409);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'The reversal is not complete. Check the reversal tasks page before downloading.';
+        return;
+      }
       $csv = fopen('php://temp', 'w+b');
       if (!$csv) {
         throw new RuntimeException('Unable to open temporary stream for reversal CSV.');
       }
-      $db->query('BEGIN READ ONLY');
-      $transactionStarted = TRUE;
-      $rows = self::streamReversalRows($db, $sql, [$grant['import_id'], $grant['reversed_on']]);
+      $rows = self::streamReversalRows($db, $sql, $params);
       $headers = array_map(static fn(string $column): string => substr(trim($column), 2), explode(',', $columns));
       self::writeReversalCsv($csv, $headers, $rows);
       $db->query('COMMIT');
@@ -960,46 +1003,6 @@ SQL;
         fclose($csv);
       }
     }
-  }
-
-  /**
-   * Find an eligible, unambiguous import within the caller's website scope.
-   */
-  private function getReversibleImport(Database $db, string $guid, int $userId, bool $lock = FALSE): ?object {
-    $lockClause = $lock ? 'FOR UPDATE OF i' : '';
-    // Only scan the tagged records during the final, locked eligibility check.
-    $countClause = $lock ? 'AND i.inserted >= (SELECT count(*) FROM occurrences o WHERE o.import_guid = i.import_guid)' : '';
-    $imports = $db->query(<<<SQL
-      SELECT i.id, i.website_id
-      FROM imports i
-      WHERE i.import_guid = ?
-        AND i.created_by_id = ?
-        AND i.entity = 'occurrence'
-        AND i.deleted = false
-        AND i.reversible = true
-        AND i.reversed_on IS NULL
-        AND i.updated = 0
-        AND i.inserted > 0
-        -- An existing sample can be tagged even if the occurrence update fails.
-        AND COALESCE(i.global_values->>'config:allowUpdates', '0') NOT IN ('1', 'true')
-        AND NOT jsonb_exists_any(i.global_values::jsonb, ARRAY['sample:id', 'occurrence:id'])
-        AND NOT EXISTS (
-          SELECT 1
-          FROM jsonb_path_query(i.mappings::jsonb, '$.**.warehouseField') field
-          WHERE field IN ('"sample:id"', '"occurrence:id"')
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM imports other
-          WHERE other.import_guid = i.import_guid AND other.id <> i.id
-        )
-        $countClause
-      $lockClause
-      SQL, [$guid, $userId])->result_array();
-    if (!$imports) {
-      return NULL;
-    }
-    $import = $imports[0];
-    return $this->reversalWebsiteAllowed((int) $import->website_id) ? $import : NULL;
   }
 
   private function reversalWebsiteAllowed(int $websiteId): bool {
@@ -1116,94 +1119,6 @@ SQL;
       }
     }
     return implode(', ', $indexFields);
-  }
-
-  /**
-   * Reverse occurrences.
-   *
-   * @param object $db
-   *   Database object.
-   * @param string $guidToReverse
-   *   Import unique identifier to reverse.
-   * @param int $warehouseUserId
-   *   Warehouse User ID of the person doing the reversal.
-   * @param string $reverseMode
-   *   Reverse all occurrences or ones that haven't been changed since import.
-   *
-   * @return bool
-   *   Whether any occurrences were reversed.
-   */
-  private function reverseOccurrences(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): bool {
-    $params = [$warehouseUserId, $guidToReverse];
-    $unchanged = '';
-    if ($reverseMode === 'do_not_reverse_updated') {
-      $unchanged = <<<SQL
-        AND t.created_on = t.updated_on
-        AND NOT EXISTS (
-          SELECT 1 FROM samples s WHERE s.id = t.sample_id
-            AND s.import_guid = ? AND s.deleted = false
-            AND (s.created_on = s.updated_on) IS NOT TRUE
-        )
-      SQL;
-      $params[] = $guidToReverse;
-    }
-    $result = $db->query(<<<SQL
-      WITH reversed AS (
-        UPDATE occurrences t
-        SET deleted = true, updated_on = now(), updated_by_id = ?
-        WHERE t.import_guid = ? AND t.deleted = false
-        $unchanged
-        RETURNING t.id
-      ), functional AS (
-        DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM reversed)
-      ), nonfunctional AS (
-        DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM reversed)
-      )
-      SELECT EXISTS (SELECT 1 FROM reversed) AS changed
-      SQL, $params)->result_array();
-    return $result[0]->changed === 't';
-  }
-
-  /**
-   * Reverse samples.
-   *
-   * @param object $db
-   *   Database object.
-   * @param string $guidToReverse
-   *   Import unique identifier to reverse.
-   * @param int $warehouseUserId
-   *   Warehouse User ID of the person doing the reversal.
-   * @param string $reverseMode
-   *   Reverse all samples or ones that haven't been changed since import.
-   *
-   * @return bool
-   *   Whether any samples were reversed.
-   */
-  private function reverseSamples(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): bool {
-    $unchanged = $reverseMode === 'do_not_reverse_updated' ? 'AND t.created_on = t.updated_on' : '';
-    // Keep visible dependants, but accept that a concurrent attachment may
-    // become invalid when its parent is deleted rather than lock both tables.
-    $result = $db->query(<<<SQL
-      WITH reversed AS (
-        UPDATE samples t
-        SET deleted = true, updated_on = now(), updated_by_id = ?
-        WHERE t.import_guid = ? AND t.deleted = false
-          AND NOT EXISTS (
-            SELECT 1 FROM occurrences o WHERE o.sample_id = t.id AND o.deleted = false
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM samples child WHERE child.parent_id = t.id AND child.deleted = false
-          )
-          $unchanged
-        RETURNING t.id
-      ), functional AS (
-        DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM reversed)
-      ), nonfunctional AS (
-        DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM reversed)
-      )
-      SELECT EXISTS (SELECT 1 FROM reversed) AS changed
-      SQL, [$warehouseUserId, $guidToReverse])->result_array();
-    return $result[0]->changed === 't';
   }
 
   /**

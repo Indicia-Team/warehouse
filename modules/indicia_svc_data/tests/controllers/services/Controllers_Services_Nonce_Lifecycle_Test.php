@@ -758,7 +758,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       'reverse_mode' => 'do_not_reverse_updated',
     ];
     $cases = [
-      'owner' => [[], 200, FALSE],
+      'owner' => [[], 200, TRUE],
       'other owner despite posted identity' => [[2 => 3], 403, TRUE],
       'other website' => [[1 => 2], 403, TRUE],
       'no inserts' => [[7 => 0], 403, TRUE],
@@ -777,8 +777,8 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       $this->assertSame($status, $result['status'], $name);
       $this->assertSame($reversible, $result['reversible'], $name);
       if ($status === 200) {
-        $this->assertNotNull($result['reversed_on'], $name);
-        $this->assertSame(2, $result['reversed_by_id'], $name);
+        $this->assertNull($result['reversed_on'], $name);
+        $this->assertNull($result['reversed_by_id'], $name);
       }
       else {
         $this->assertSame($import[11] ?? NULL, $result['reversed_on'], $name);
@@ -795,7 +795,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       ]);
       $this->assertNull($result['exception']);
       $this->assertSame($status, $result['status']);
-      $this->assertSame($status !== 200, $result['reversible']);
+      $this->assertTrue($result['reversible']);
     }
   }
 
@@ -826,7 +826,17 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame([2], $result['survivors']['cache_occurrences_functional']);
     $this->assertSame([1, 2], $result['survivors']['cache_samples_functional']);
     $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-    $this->assertSame(['reversed_occurrences', 'reversed_samples', 'untouched_samples'], $response['exports']);
+    $this->assertSame('Queued', $response['status']);
+    $this->assertCount(1, $result['task_states']['queued'], 'Other sites, owners and older completions are excluded.');
+    $this->assertSame('queued', $result['task_states']['queued'][0]['status']);
+    $this->assertNotEmpty($result['task_states']['queued'][0]['queued_on']);
+    $this->assertSame('reversing', $result['task_states']['reversing'][0]['status']);
+    $this->assertSame(1, $result['task_states']['queue_size']);
+    $this->assertSame('complete', $result['task_states']['finished'][0]['status']);
+    $this->assertCount(1, $result['task_states']['finished']);
+    $this->assertNotEmpty($result['task_states']['finished'][0]['reversed_on']);
+    $this->assertSame(0, $result['task_states']['remaining_queue_size']);
+    $this->assertSame(409, $result['downloads']['pending']['status']);
     $this->assertSame([], $result['exports_on_disk']);
     $this->assertSame(403, $result['downloads']['invalid_token']['status']);
     $this->assertSame(403, $result['downloads']['invalid_kind']['status']);
@@ -846,7 +856,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       ],
       'untouched_samples' => ['comment' => "'\u{FF1D}1+1"],
     ];
-    foreach ($response['exports'] as $kind) {
+    foreach (array_keys($expectedFields) as $kind) {
       $this->assertSame(200, $result['downloads'][$kind]['status']);
       $file = fopen('php://temp', 'w+b');
       try {
@@ -891,8 +901,6 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame([2, 1003], $result['survivors']['occurrences']);
     $this->assertSame([2, 1003], $result['survivors']['cache_occurrences_functional']);
     $this->assertSame([1, 2, 3], $result['survivors']['samples']);
-    $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-    $this->assertSame(['reversed_occurrences', 'untouched_occurrences', 'untouched_samples'], $response['exports']);
     $expectedIds = ['reversed_occurrences' => [1, ...range(3, 1002)], 'untouched_occurrences' => [1003]];
     foreach ($expectedIds as $kind => $expected) {
       $file = fopen('php://temp', 'w+b');
@@ -933,10 +941,9 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       ],
     ]);
     $this->assertNull($result['exception']);
-    $this->assertSame(500, $result['status']);
-    $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-    $this->assertSame('Error', $response['status']);
-    $this->assertStringContainsString('No changes were saved', $response['msg']);
+    $this->assertSame(200, $result['status']);
+    $this->assertSame('failed', $result['task_states']['finished'][0]['status']);
+    $this->assertArrayNotHasKey('export_token', $result['task_states']['finished'][0]);
     $this->assertTrue($result['reversible']);
     $this->assertNull($result['reversed_on']);
     $this->assertNull($result['reversed_by_id']);

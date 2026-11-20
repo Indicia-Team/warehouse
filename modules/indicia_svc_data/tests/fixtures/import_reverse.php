@@ -56,11 +56,25 @@ class Import_Reverse_Database {
       CREATE TEMP TABLE cache_samples_functional (id int);
       CREATE TEMP TABLE cache_samples_nonfunctional (id int);
       CREATE TEMP TABLE surveys (id int, website_id int);
+      CREATE TEMP TABLE work_queue (
+        id serial PRIMARY KEY, task text, entity text, record_id int, params json,
+        cost_estimate int, priority int, created_on timestamp, claimed_on timestamp,
+        claimed_by text, error_detail text
+      );
       SQL);
     $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}', NULL, NULL], $scenario['import'] ?? []);
     pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)', $import);
     if (!empty($scenario['reversal_records'])) {
       define('DOCROOT', $scenario['directory'] . '/');
+      if (!empty($scenario['reversal_downloads'])) {
+        pg_query(self::$link, <<<'SQL'
+          INSERT INTO imports (id, website_id, created_by_id, import_guid, entity, reversible, deleted, reversed_on, reversed_by_id)
+          VALUES
+            (2, 1, 2, 'OLDER', 'occurrence', false, false, CURRENT_DATE - INTERVAL '1 day', 2),
+            (3, 2, 2, 'OTHER-SITE', 'occurrence', false, false, now(), 2),
+            (4, 1, 3, 'OTHER-OWNER', 'occurrence', false, false, now(), 3);
+          SQL);
+      }
       if (($scenario['reversal_failure'] ?? NULL) === 'database') {
         pg_query(self::$link, 'ALTER TABLE imports ADD CHECK (reversed_by_id IS NULL)');
       }
@@ -97,7 +111,6 @@ class Import_Reverse_Database {
           CREATE TEMP TABLE sample_attribute_values (sample_id int, deleted boolean, updated_on timestamp, updated_by_id int);
           CREATE TEMP TABLE sample_comments (LIKE sample_attribute_values);
           CREATE TEMP TABLE sample_media (LIKE sample_attribute_values);
-          CREATE TEMP TABLE work_queue (entity text, record_id int);
           SQL);
         $migration = file_get_contents(dirname(__DIR__, 4) . '/modules/indicia_setup/db/version_9_27_21/202611201000_preserve_reversal_deletion_metadata.sql');
         pg_query(self::$link, str_replace('FUNCTION cascade_sample_delete(', 'FUNCTION pg_temp.cascade_sample_delete(', $migration));
@@ -123,7 +136,7 @@ class Import_Reverse_Database {
   }
 
   public function query($sql, array $params = []) {
-    if ($sql === 'COMMIT') {
+    if ($sql === 'COMMIT' && pg_num_rows(pg_query(self::$link, 'SELECT 1 FROM imports WHERE reversed_on IS NOT NULL')) > 0) {
       self::$blocksUnrelatedWrites = pg_fetch_result(pg_query(self::$link, <<<'SQL'
         SELECT EXISTS (
           SELECT 1 FROM pg_locks

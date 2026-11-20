@@ -13,6 +13,10 @@
     WHERE i.created_by_id = #currentUser#
       AND i.reversible = true
       AND i.reversed_on IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM work_queue q
+        WHERE q.task = 'task_import_reversal' AND q.record_id = i.id AND q.error_detail IS NULL
+      )
       AND (#website_id# = -1 OR i.website_id = #website_id#)
       AND i.deleted = false
       AND i.entity = 'occurrence'
