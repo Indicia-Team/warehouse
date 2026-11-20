@@ -167,8 +167,7 @@ class ImportReversalConfirmationTest extends TestCase {
   public function testResultRendersWarehouseContentAsText(): void {
     require_once 'client_helpers/import_helper_2.php';
     $render = new ReflectionMethod(import_helper_2::class, 'renderReversalResult');
-    $name = 'reversal-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.csv';
-    $untouchedName = 'reversal-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.csv';
+    $token = str_repeat('a', 64);
     import_helper_2::$base_url = 'https://warehouse.example/records&data/';
     $html = $render->invoke(NULL, ['result' => TRUE, 'output' => json_encode([
       'status' => 'OK',
@@ -176,21 +175,20 @@ class ImportReversalConfirmationTest extends TestCase {
       'occurrencesOutcome' => '<b>Occurrences</b>',
       'samplesDetails' => ['"Sample" & details'],
       'occurrencesDetails' => [],
-      'exports' => [
-        'reversed_samples' => $name,
-        'reversed_occurrences' => '../invalid.csv',
-        'untouched_occurrences' => $untouchedName,
-      ],
+      'exports' => ['reversed_samples', '../invalid.csv', 'untouched_occurrences'],
+      'export_token' => $token,
     ], JSON_THROW_ON_ERROR)], '<b>import</b>');
     $this->assertStringContainsString('import &lt;b&gt;import&lt;/b&gt; is complete', $html);
     $this->assertStringContainsString('<h4>&lt;b&gt;Samples&lt;/b&gt;</h4>', $html);
     $this->assertStringContainsString('<h4>&lt;b&gt;Occurrences&lt;/b&gt;</h4>', $html);
     $this->assertStringContainsString('<p>&quot;Sample&quot; &amp; details</p>', $html);
-    $this->assertStringContainsString("href=\"https://warehouse.example/records&amp;data/download/$name\"", $html);
+    $this->assertStringContainsString('method="post" action="https://warehouse.example/records&amp;data/index.php/services/import_2/download_reversal_export"', $html);
+    $this->assertStringContainsString("name=\"reversal_export_token\" value=\"$token\"", $html);
+    $this->assertStringContainsString('not a snapshot of the reversal', $html);
     $this->assertStringNotContainsString('invalid.csv', $html);
     [$samples, $occurrences] = explode('<h4>&lt;b&gt;Occurrences&lt;/b&gt;</h4>', $html, 2);
-    $this->assertStringNotContainsString($untouchedName, $samples);
-    $this->assertStringContainsString($untouchedName, $occurrences);
+    $this->assertStringNotContainsString('value="untouched_occurrences"', $samples);
+    $this->assertStringContainsString('value="untouched_occurrences"', $occurrences);
 
     $GLOBALS['indicia_templates']['warningBox'] = '<p>{message}</p>';
     $html = $render->invoke(NULL, [

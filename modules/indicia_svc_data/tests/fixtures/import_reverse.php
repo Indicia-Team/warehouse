@@ -18,6 +18,10 @@ class Import_Reverse_Database {
   public function __construct() {
     global $scenario;
     self::$calls++;
+    // The scenario exercises a subsequent request against the same test data.
+    if (self::$link) {
+      return;
+    }
     $dsn = getenv('INDICIA_TEST_PG_DSN');
     if (!$dsn) {
       throw new RuntimeException('Database reached');
@@ -51,14 +55,12 @@ class Import_Reverse_Database {
       CREATE TEMP TABLE cache_occurrences_nonfunctional (id int);
       CREATE TEMP TABLE cache_samples_functional (id int);
       CREATE TEMP TABLE cache_samples_nonfunctional (id int);
+      CREATE TEMP TABLE surveys (id int, website_id int);
       SQL);
     $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}', NULL, NULL], $scenario['import'] ?? []);
     pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)', $import);
     if (!empty($scenario['reversal_records'])) {
       define('DOCROOT', $scenario['directory'] . '/');
-      if (($scenario['reversal_failure'] ?? NULL) !== 'export') {
-        mkdir(DOCROOT . 'download', 0700);
-      }
       if (($scenario['reversal_failure'] ?? NULL) === 'database') {
         pg_query(self::$link, 'ALTER TABLE imports ADD CHECK (reversed_by_id IS NULL)');
       }
@@ -85,9 +87,33 @@ class Import_Reverse_Database {
           FROM generate_series(3, 1003) id;
           SQL, [$import[3]]);
       }
+      pg_query_params(self::$link, 'INSERT INTO surveys VALUES (1, $1)', [$import[1]]);
       pg_query(self::$link, <<<'SQL'
-        INSERT INTO cache_occurrences_functional SELECT id FROM occurrences;
-        INSERT INTO cache_samples_functional SELECT id FROM samples;
+        UPDATE samples SET survey_id = 1;
+        UPDATE occurrences SET website_id = (SELECT website_id FROM surveys WHERE id = 1);
+        SQL);
+      if (!empty($scenario['reversal_prior_deletions'])) {
+        pg_query(self::$link, <<<'SQL'
+          CREATE TEMP TABLE sample_attribute_values (sample_id int, deleted boolean, updated_on timestamp, updated_by_id int);
+          CREATE TEMP TABLE sample_comments (LIKE sample_attribute_values);
+          CREATE TEMP TABLE sample_media (LIKE sample_attribute_values);
+          CREATE TEMP TABLE work_queue (entity text, record_id int);
+          SQL);
+        $migration = file_get_contents(dirname(__DIR__, 4) . '/modules/indicia_setup/db/version_9_27_21/202611201000_preserve_reversal_deletion_metadata.sql');
+        pg_query(self::$link, str_replace('FUNCTION cascade_sample_delete(', 'FUNCTION pg_temp.cascade_sample_delete(', $migration));
+        pg_query(self::$link, 'CREATE TRIGGER sample_delete_trigger AFTER UPDATE ON samples FOR EACH ROW EXECUTE FUNCTION pg_temp.cascade_sample_delete()');
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO occurrences (id, sample_id, website_id, import_guid, deleted, updated_on, updated_by_id)
+          VALUES (4, 3, 1, $1, true, '2020-01-01', 2)
+          SQL, [$import[3]]);
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO samples (id, parent_id, survey_id, import_guid, deleted, updated_on, updated_by_id)
+          VALUES (4, 3, 1, $1, true, '2020-01-01', 2)
+          SQL, [$import[3]]);
+      }
+      pg_query(self::$link, <<<'SQL'
+        INSERT INTO cache_occurrences_functional SELECT id FROM occurrences WHERE NOT deleted;
+        INSERT INTO cache_samples_functional SELECT id FROM samples WHERE NOT deleted;
         SQL);
     }
   }

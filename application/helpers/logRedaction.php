@@ -35,7 +35,7 @@ class logRedaction {
    *   A sanitised copy; the original request is not modified.
    */
   public static function parameters(array $parameters, array $skipped = []): array {
-    $skipped = array_merge(['nonce', 'auth_token'], array_map('strtolower', $skipped));
+    $skipped = array_merge(['nonce', 'auth_token', 'export_token', 'reversal_export_token'], array_map('strtolower', $skipped));
     $result = [];
     foreach ($parameters as $key => $value) {
       if (in_array(strtolower((string) $key), $skipped, TRUE)) {

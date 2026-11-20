@@ -807,7 +807,9 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $result = $this->runScenario([
       'import_reverse' => TRUE,
       'reversal_records' => TRUE,
-      'import' => [7 => 2],
+      'reversal_downloads' => TRUE,
+      'reversal_prior_deletions' => TRUE,
+      'import' => [7 => 3],
       'post' => [
         'nonce' => $nonce,
         'auth_token' => sha1("$nonce:password:2") . ':2',
@@ -824,8 +826,12 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame([2], $result['survivors']['cache_occurrences_functional']);
     $this->assertSame([1, 2], $result['survivors']['cache_samples_functional']);
     $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-    $this->assertSame(['reversed_occurrences', 'reversed_samples', 'untouched_samples'], array_keys($response['exports']));
-    $this->assertCount(3, $result['exports_on_disk']);
+    $this->assertSame(['reversed_occurrences', 'reversed_samples', 'untouched_samples'], $response['exports']);
+    $this->assertSame([], $result['exports_on_disk']);
+    $this->assertSame(403, $result['downloads']['invalid_token']['status']);
+    $this->assertSame(403, $result['downloads']['invalid_kind']['status']);
+    $this->assertSame(500, $result['downloads']['database_failure']['status']);
+    $this->assertStringContainsString('Try the download again', $result['downloads']['database_failure']['output']);
     $expectedFields = [
       'reversed_occurrences' => [
         'comment' => "Said, \"here\"\\\r\nNext line",
@@ -840,11 +846,11 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       ],
       'untouched_samples' => ['comment' => "'\u{FF1D}1+1"],
     ];
-    foreach ($response['exports'] as $kind => $name) {
-      $this->assertMatchesRegularExpression('/\Areversal-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.csv\z/', $name);
+    foreach ($response['exports'] as $kind) {
+      $this->assertSame(200, $result['downloads'][$kind]['status']);
       $file = fopen('php://temp', 'w+b');
       try {
-        fwrite($file, $result['exports_on_disk'][$name]);
+        fwrite($file, $result['downloads'][$kind]['output']);
         rewind($file);
         $headers = fgetcsv($file, escape: '');
         $fields = fgetcsv($file, escape: '');
@@ -871,6 +877,7 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
       'import_reverse' => TRUE,
       'reversal_records' => TRUE,
       'reversal_extra_rows' => TRUE,
+      'reversal_downloads' => TRUE,
       'import' => [7 => 1002],
       'post' => [
         'nonce' => $nonce,
@@ -885,12 +892,12 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     $this->assertSame([2, 1003], $result['survivors']['cache_occurrences_functional']);
     $this->assertSame([1, 2, 3], $result['survivors']['samples']);
     $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-    $this->assertSame(['reversed_occurrences', 'untouched_occurrences', 'untouched_samples'], array_keys($response['exports']));
+    $this->assertSame(['reversed_occurrences', 'untouched_occurrences', 'untouched_samples'], $response['exports']);
     $expectedIds = ['reversed_occurrences' => [1, ...range(3, 1002)], 'untouched_occurrences' => [1003]];
     foreach ($expectedIds as $kind => $expected) {
       $file = fopen('php://temp', 'w+b');
       try {
-        fwrite($file, $result['exports_on_disk'][$response['exports'][$kind]]);
+        fwrite($file, $result['downloads'][$kind]['output']);
         rewind($file);
         $columns = fgetcsv($file, escape: '');
         $this->assertSame('id', $columns[0]);
@@ -908,39 +915,37 @@ class Controllers_Services_Nonce_Lifecycle_Test extends TestCase {
     }
   }
 
-  public function testImportReversalRollsBackOnExportOrDatabaseFailure(): void {
+  public function testImportReversalRollsBackOnDatabaseFailure(): void {
     if (!getenv('INDICIA_TEST_PG_DSN') || !extension_loaded('pgsql')) {
       $this->markTestSkipped('Set INDICIA_TEST_PG_DSN for temporary-table import reversal tests.');
     }
     $nonce = str_repeat('a', 40);
-    foreach (['export', 'database'] as $failure) {
-      $result = $this->runScenario([
-        'import_reverse' => TRUE,
-        'reversal_records' => TRUE,
-        'reversal_failure' => $failure,
-        'import' => [7 => 2],
-        'post' => [
-          'nonce' => $nonce,
-          'auth_token' => sha1("$nonce:password:2") . ':2',
-          'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
-          'reverse_mode' => 'reverse_all',
-        ],
-      ]);
-      $this->assertNull($result['exception'], $failure);
-      $this->assertSame(500, $result['status'], $failure);
-      $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
-      $this->assertSame('Error', $response['status'], $failure);
-      $this->assertStringContainsString('No changes were saved', $response['msg'], $failure);
-      $this->assertTrue($result['reversible'], $failure);
-      $this->assertNull($result['reversed_on'], $failure);
-      $this->assertNull($result['reversed_by_id'], $failure);
-      $this->assertSame([], $result['exports_on_disk'], $failure);
-      $this->assertSame([
-        'occurrences' => [1, 2],
-        'samples' => [1, 2, 3],
-        'cache_occurrences_functional' => [1, 2],
-        'cache_samples_functional' => [1, 2, 3],
-      ], $result['survivors'], $failure);
-    }
+    $result = $this->runScenario([
+      'import_reverse' => TRUE,
+      'reversal_records' => TRUE,
+      'reversal_failure' => 'database',
+      'import' => [7 => 2],
+      'post' => [
+        'nonce' => $nonce,
+        'auth_token' => sha1("$nonce:password:2") . ':2',
+        'guid_to_reverse' => 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA',
+        'reverse_mode' => 'reverse_all',
+      ],
+    ]);
+    $this->assertNull($result['exception']);
+    $this->assertSame(500, $result['status']);
+    $response = json_decode($result['output'], TRUE, 512, JSON_THROW_ON_ERROR);
+    $this->assertSame('Error', $response['status']);
+    $this->assertStringContainsString('No changes were saved', $response['msg']);
+    $this->assertTrue($result['reversible']);
+    $this->assertNull($result['reversed_on']);
+    $this->assertNull($result['reversed_by_id']);
+    $this->assertSame([], $result['exports_on_disk']);
+    $this->assertSame([
+      'occurrences' => [1, 2],
+      'samples' => [1, 2, 3],
+      'cache_occurrences_functional' => [1, 2],
+      'cache_samples_functional' => [1, 2, 3],
+    ], $result['survivors']);
   }
 }

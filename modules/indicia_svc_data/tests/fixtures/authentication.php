@@ -359,6 +359,30 @@ catch (Exception $e) {
   $exception = get_class($e);
 }
 $output = ob_get_clean();
+$downloads = [];
+if (!empty($scenario['reversal_downloads'])) {
+  $reversalStatus = http_response_code() ?: 200;
+  $response = json_decode($output, TRUE);
+  $token = $response['export_token'] ?? '';
+  foreach (array_merge(['database_failure'], $response['exports'] ?? [], ['invalid_token', 'invalid_kind']) as $kind) {
+    http_response_code($reversalStatus);
+    $_SERVER['REQUEST_METHOD'] = 'POST';
+    $_POST = [
+      'reversal_export_token' => $kind === 'invalid_token' ? str_repeat('0', 64) : $token,
+      'kind' => $kind === 'invalid_token' ? 'reversed_occurrences' : ($kind === 'database_failure' ? 'untouched_samples' : $kind),
+    ];
+    if ($kind === 'database_failure') {
+      pg_query(Database::$link, 'ALTER TABLE surveys RENAME TO surveys_unavailable');
+    }
+    ob_start();
+    $controller->download_reversal_export();
+    $downloads[$kind] = ['output' => ob_get_clean(), 'status' => http_response_code()];
+    if ($kind === 'database_failure') {
+      pg_query(Database::$link, 'ALTER TABLE surveys_unavailable RENAME TO surveys');
+    }
+  }
+  http_response_code(200);
+}
 if (!empty($scenario['replay'])) {
   $before = Utility_Action_Database::$effects;
   ob_start();
@@ -407,6 +431,7 @@ if (Database::$link && !empty($scenario['import_reverse'])) {
   $result['reversed_on'] = $import['reversed_on'];
   $result['reversed_by_id'] = isset($import['reversed_by_id']) ? (int) $import['reversed_by_id'] : NULL;
   if (!empty($scenario['reversal_records'])) {
+    $result['downloads'] = $downloads;
     foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_samples_functional'] as $table) {
       $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';
       $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));

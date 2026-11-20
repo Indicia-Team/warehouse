@@ -737,7 +737,7 @@ SQL;
    * The acting user is derived from the credentials, not from POST data.
    * Requires an explicit POST reverse_mode: reverse_all,
    * do_not_reverse_updated, or abort_reverse (no changes).
-   * A reversal commits only after its CSVs have been written to download/.
+   * CSVs are generated separately when requested from the result page.
    */
   public function import_reverse() {
     header('Content-Type: application/json');
@@ -805,30 +805,18 @@ SQL;
         echo json_encode(['status' => 'Forbidden', 'msg' => 'This import is not available for reversal.']);
         return;
       }
-      $this->reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      $this->reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
-      // Do not commit until all CSVs are ready. Their random names are not
-      // returned to the caller until after commit.
-      foreach (['occurrences' => self::REVERSAL_OCCURRENCE_COLUMNS, 'samples' => self::REVERSAL_SAMPLE_COLUMNS] as $entity => $columns) {
-        foreach ([
-          "reversed_$entity" => ["SELECT $columns FROM pg_temp.import_reversed_$entity t", []],
-          "untouched_$entity" => ["SELECT $columns FROM $entity t WHERE t.import_guid = $1 AND NOT t.deleted", [$guidToReverse]],
-        ] as $kind => [$sql, $params]) {
-          $rows = self::streamReversalRows($db, $sql, $params);
-          if (!$rows->valid()) {
-            continue;
-          }
-          if (!$exports) {
-            self::purgeOldReversalExports();
-          }
-          $exports[$kind] = self::createReversalDetailsFile($rows);
-        }
-      }
-      $db->query(<<<SQL
+      $exports['reversed_occurrences'] = $this->reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $exports['reversed_samples'] = $this->reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
+      $reversal = $db->query(<<<SQL
         UPDATE imports
         SET reversed_on = now(), reversed_by_id = ?, reversible = false
         WHERE id = ?
-        SQL, [$warehouseUserId, (int) $import->id]);
+        RETURNING reversed_on, reversed_by_id,
+          EXISTS (SELECT 1 FROM occurrences t WHERE t.import_guid = imports.import_guid AND NOT t.deleted) AS untouched_occurrences,
+          EXISTS (SELECT 1 FROM samples t WHERE t.import_guid = imports.import_guid AND NOT t.deleted) AS untouched_samples
+        SQL, [$warehouseUserId, (int) $import->id])->result_array()[0];
+      $exports['untouched_occurrences'] = $reversal->untouched_occurrences === 't';
+      $exports['untouched_samples'] = $reversal->untouched_samples === 't';
       $commitAttempted = TRUE;
       $db->query('COMMIT');
     }
@@ -842,11 +830,6 @@ SQL;
       catch (Throwable $rollbackError) {
         error_logger::log_error('Unable to roll back import reversal.', $rollbackError);
       }
-      foreach ($exports as $filename) {
-        if (!@unlink(DOCROOT . 'download/' . $filename)) {
-          Kohana::log('error', 'Unable to remove a CSV from a failed import reversal.');
-        }
-      }
       http_response_code(500);
       echo json_encode([
         'status' => 'Error',
@@ -857,28 +840,126 @@ SQL;
       return;
     }
 
+    $exports = array_keys(array_filter($exports));
     $response = [
       'status' => 'OK',
-      'samplesOutcome' => isset($exports['reversed_samples']) ? 'Imported samples were reversed.' : 'No samples were reversed.',
+      'samplesOutcome' => in_array('reversed_samples', $exports, TRUE) ? 'Imported samples were reversed.' : 'No samples were reversed.',
       'samplesDetails' => [],
-      'occurrencesOutcome' => isset($exports['reversed_occurrences']) ? 'Imported occurrences were reversed.' : 'No occurrences were reversed.',
+      'occurrencesOutcome' => in_array('reversed_occurrences', $exports, TRUE) ? 'Imported occurrences were reversed.' : 'No occurrences were reversed.',
       'occurrencesDetails' => [],
-      'exports' => $exports,
     ];
-    if (!isset($exports['reversed_samples'])) {
+    if (!in_array('reversed_samples', $exports, TRUE)) {
       $response['samplesDetails'][] =
         'This may happen if none of the samples you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered samples were found.';
     }
-    if (isset($exports['untouched_samples'])) {
-      $response['samplesDetails'][] = "Samples that were removed from the database before today's reversal will not be shown in the untouched samples download file.";
-    }
-    if (!isset($exports['reversed_occurrences'])) {
+    if (!in_array('reversed_occurrences', $exports, TRUE)) {
       $response['occurrencesDetails'][] = 'This may happen if none of the occurrences you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered occurrences were found.';
     }
-    if (isset($exports['untouched_occurrences'])) {
-      $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
+    if ($exports) {
+      try {
+        $token = bin2hex(random_bytes(32));
+        $grant = [
+          'import_id' => (int) $import->id,
+          'reversed_on' => $reversal->reversed_on,
+          'kinds' => $exports,
+          'expires' => time() + 86400,
+        ];
+        if (!(new Cache())->set(self::reversalDownloadCacheKey($token), $grant, NULL, 86400)) {
+          throw new RuntimeException('Unable to cache the reversal download grant.');
+        }
+        $response['exports'] = $exports;
+        $response['export_token'] = $token;
+      }
+      catch (Throwable $e) {
+        error_logger::log_error('Import reversal committed, but downloads could not be enabled.', $e);
+        $response['exportsWarning'] = 'The reversal succeeded, but downloads are unavailable.';
+      }
     }
     echo json_encode($response);
+  }
+
+  private static function reversalDownloadCacheKey(string $token): string {
+    return 'import-reversal-download-' . hash('sha256', $token);
+  }
+
+  /**
+   * Generate a reference CSV for a completed reversal on request.
+   */
+  public function download_reversal_export(): void {
+    header('Cache-Control: private, no-store');
+    header('X-Content-Type-Options: nosniff');
+    $token = $_POST['reversal_export_token'] ?? NULL;
+    $kind = $_POST['kind'] ?? NULL;
+    $grant = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+      && is_string($token) && preg_match('/\A[0-9a-f]{64}\z/', $token)
+      ? (new Cache())->get(self::reversalDownloadCacheKey($token))
+      : NULL;
+    if (!is_array($grant) || $grant['expires'] <= time()
+        || !is_string($kind) || !in_array($kind, $grant['kinds'], TRUE)) {
+      Kohana::log('info', 'Reversal CSV request rejected: missing or invalid download grant.');
+      http_response_code(403);
+      header('Content-Type: text/plain; charset=UTF-8');
+      echo 'This reversal download is unavailable or has expired.';
+      return;
+    }
+
+    [$type, $entity] = explode('_', $kind, 2);
+    $columns = $entity === 'samples' ? self::REVERSAL_SAMPLE_COLUMNS : self::REVERSAL_OCCURRENCE_COLUMNS;
+    $scope = $entity === 'samples'
+      ? 'EXISTS (SELECT 1 FROM surveys s WHERE s.id = t.survey_id AND s.website_id = i.website_id)'
+      : 't.website_id = i.website_id';
+    // Both audit timestamps were set using the same transaction's now().
+    $status = $type === 'reversed'
+      ? 't.deleted AND t.updated_on = i.reversed_on AND t.updated_by_id = i.reversed_by_id'
+      : 'NOT t.deleted';
+    $sql = <<<SQL
+      SELECT $columns
+      FROM imports i
+      JOIN $entity t ON t.import_guid = i.import_guid
+      WHERE i.id = $1 AND i.reversed_on = $2 AND NOT i.deleted AND NOT i.reversible
+        AND $scope AND $status
+      SQL;
+    $csv = FALSE;
+    $transactionStarted = FALSE;
+    try {
+      $db = new Database();
+      $csv = fopen('php://temp', 'w+b');
+      if (!$csv) {
+        throw new RuntimeException('Unable to open temporary stream for reversal CSV.');
+      }
+      $db->query('BEGIN READ ONLY');
+      $transactionStarted = TRUE;
+      $rows = self::streamReversalRows($db, $sql, [$grant['import_id'], $grant['reversed_on']]);
+      $headers = array_map(static fn(string $column): string => substr(trim($column), 2), explode(',', $columns));
+      self::writeReversalCsv($csv, $headers, $rows);
+      $db->query('COMMIT');
+      $transactionStarted = FALSE;
+      if (!rewind($csv)) {
+        throw new RuntimeException('Unable to rewind reversal CSV.');
+      }
+      header('Content-Type: text/csv; charset=UTF-8');
+      header('Content-Disposition: attachment; filename="' . str_replace('_', '-', $kind) . '.csv"');
+      fpassthru($csv);
+    }
+    catch (Throwable $e) {
+      error_logger::log_error('Unable to generate reversal CSV.', $e);
+      if ($transactionStarted) {
+        try {
+          $db->query('ROLLBACK');
+        }
+        catch (Throwable $rollbackError) {
+          error_logger::log_error('Unable to close the reversal export transaction.', $rollbackError);
+        }
+      }
+      http_response_code(500);
+      header('Content-Type: text/plain; charset=UTF-8');
+      echo 'The reversal CSV could not be generated. Try the download again.';
+    }
+    finally {
+      if ($csv) {
+        fclose($csv);
+      }
+    }
   }
 
   /**
@@ -1049,11 +1130,10 @@ SQL;
    * @param string $reverseMode
    *   Reverse all occurrences or ones that haven't been changed since import.
    *
-   * @return array
-   *   Rows of reversed occurrences.
+   * @return bool
+   *   Whether any occurrences were reversed.
    */
-  private function reverseOccurrences(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): void {
-    $columns = self::REVERSAL_OCCURRENCE_COLUMNS;
+  private function reverseOccurrences(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): bool {
     $params = [$warehouseUserId, $guidToReverse];
     $unchanged = '';
     if ($reverseMode === 'do_not_reverse_updated') {
@@ -1067,22 +1147,21 @@ SQL;
       SQL;
       $params[] = $guidToReverse;
     }
-    // Stage only rows actually changed: cursors cannot read a modifying CTE.
-    $db->query(<<<SQL
-      CREATE TEMP TABLE import_reversed_occurrences ON COMMIT DROP AS
+    $result = $db->query(<<<SQL
       WITH reversed AS (
         UPDATE occurrences t
         SET deleted = true, updated_on = now(), updated_by_id = ?
         WHERE t.import_guid = ? AND t.deleted = false
         $unchanged
-        RETURNING $columns
+        RETURNING t.id
       ), functional AS (
         DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM reversed)
       ), nonfunctional AS (
         DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM reversed)
       )
-      SELECT $columns FROM reversed t
-      SQL, $params);
+      SELECT EXISTS (SELECT 1 FROM reversed) AS changed
+      SQL, $params)->result_array();
+    return $result[0]->changed === 't';
   }
 
   /**
@@ -1097,16 +1176,14 @@ SQL;
    * @param string $reverseMode
    *   Reverse all samples or ones that haven't been changed since import.
    *
-   * @return array
-   *   Rows of reversed samples.
+   * @return bool
+   *   Whether any samples were reversed.
    */
-  private function reverseSamples(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): void {
-    $columns = self::REVERSAL_SAMPLE_COLUMNS;
+  private function reverseSamples(Database $db, string $guidToReverse, int $warehouseUserId, string $reverseMode): bool {
     $unchanged = $reverseMode === 'do_not_reverse_updated' ? 'AND t.created_on = t.updated_on' : '';
     // Keep visible dependants, but accept that a concurrent attachment may
     // become invalid when its parent is deleted rather than lock both tables.
-    $db->query(<<<SQL
-      CREATE TEMP TABLE import_reversed_samples ON COMMIT DROP AS
+    $result = $db->query(<<<SQL
       WITH reversed AS (
         UPDATE samples t
         SET deleted = true, updated_on = now(), updated_by_id = ?
@@ -1118,14 +1195,15 @@ SQL;
             SELECT 1 FROM samples child WHERE child.parent_id = t.id AND child.deleted = false
           )
           $unchanged
-        RETURNING $columns
+        RETURNING t.id
       ), functional AS (
         DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM reversed)
       ), nonfunctional AS (
         DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM reversed)
       )
-      SELECT $columns FROM reversed t
-      SQL, [$warehouseUserId, $guidToReverse]);
+      SELECT EXISTS (SELECT 1 FROM reversed) AS changed
+      SQL, [$warehouseUserId, $guidToReverse])->result_array();
+    return $result[0]->changed === 't';
   }
 
   /**
@@ -1143,7 +1221,7 @@ SQL;
     t.verified_by_id, t.verified_on, t.licence_id, t.training, t.import_guid';
 
   /**
-   * Stream projected rows in bounded batches on the reversal transaction.
+   * Stream projected rows in bounded batches on the download transaction.
    */
   private static function streamReversalRows(Database $db, string $sql, array $params): Generator {
     $link = $db->getLink();
@@ -1171,64 +1249,31 @@ SQL;
     }
   }
 
-  private static function purgeOldReversalExports(): void {
-    $dir = DOCROOT . 'download';
-    foreach (glob("$dir/reversal-*.csv") ?: [] as $oldFile) {
-      if (preg_match('/\Areversal-[0-9a-f-]{36}\.csv\z/', basename($oldFile))
-          && ($modified = @filemtime($oldFile)) !== FALSE && $modified <= time() - 86400) {
-        @unlink($oldFile);
-      }
-    }
-  }
-
   /**
    * Writes a reversal CSV intended for viewing in a spreadsheet.
    *
    * Formula-like values gain a leading apostrophe in the export only. A
    * program reading the raw CSV will see that apostrophe as part of the value.
    */
-  private static function createReversalDetailsFile(Generator $rows): string {
-    // The URL is a bearer secret; do not derive it from the import GUID.
-    $uuid = random_bytes(16);
-    $uuid[6] = chr((ord($uuid[6]) & 0x0f) | 0x40);
-    $uuid[8] = chr((ord($uuid[8]) & 0x3f) | 0x80);
-    $name = vsprintf('reversal-%s%s-%s-%s-%s-%s%s%s.csv', str_split(bin2hex($uuid), 4));
-    $path = DOCROOT . "download/$name";
-    $file = @fopen($path, 'xb');
-    if (!$file) {
-      throw new RuntimeException('Unable to create reversal CSV in the download directory.');
+  private static function writeReversalCsv($file, array $headers, Generator $rows): void {
+    if (fputcsv($file, $headers, ',', '"', '') === FALSE) {
+      throw new RuntimeException('Unable to write reversal export header.');
     }
-    $complete = FALSE;
-    try {
-      if (fputcsv($file, array_keys($rows->current()), ',', '"', '') === FALSE) {
-        throw new RuntimeException('Unable to write reversal export header.');
-      }
-      foreach ($rows as $fields) {
-        foreach ($fields as &$field) {
-          // Also catch formula markers after leading whitespace or invisible
-          // characters, and their full-width variants.
-          if (is_string($field) && preg_match('/\A(?:[\t\r\n]|[\p{Z}\p{Cc}\p{Cf}]*[=+@\-\x{FF1D}\x{FF0B}\x{FF20}\x{FF0D}])/u', $field) !== 0) {
-            $field = "'" . $field;
-          }
-        }
-        unset($field);
-        if (fputcsv($file, $fields, ',', '"', '') === FALSE) {
-          throw new RuntimeException('Unable to write reversal export row.');
+    foreach ($rows as $fields) {
+      foreach ($fields as &$field) {
+        // Also catch formula markers after leading whitespace or invisible
+        // characters, and their full-width variants.
+        if (is_string($field) && preg_match('/\A(?:[\t\r\n]|[\p{Z}\p{Cc}\p{Cf}]*[=+@\-\x{FF1D}\x{FF0B}\x{FF20}\x{FF0D}])/u', $field) !== 0) {
+          $field = "'" . $field;
         }
       }
-      if (!fflush($file)) {
-        throw new RuntimeException('Unable to flush reversal export.');
+      unset($field);
+      if (fputcsv($file, $fields, ',', '"', '') === FALSE) {
+        throw new RuntimeException('Unable to write reversal export row.');
       }
-      $complete = TRUE;
-      return $name;
     }
-    finally {
-      fclose($file);
-      if (!$complete) {
-        if (!@unlink($path)) {
-          Kohana::log('error', 'Unable to remove an incomplete reversal CSV.');
-        }
-      }
+    if (!fflush($file)) {
+      throw new RuntimeException('Unable to flush reversal export.');
     }
   }
 
