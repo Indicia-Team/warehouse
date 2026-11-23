@@ -277,7 +277,13 @@ class Authentication_Bulk_Delete_Database {
   }
 }
 
-if (!empty($scenario['utility_action'])) {
+if (!empty($scenario['import_reverse'])) {
+  require_once $root . '/modules/indicia_svc_import/controllers/services/import_2.php';
+  require_once $root . '/modules/indicia_svc_import/helpers/task_import_reversal.php';
+  require_once __DIR__ . '/import_reverse.php';
+  class_alias('Import_Reverse_Database', 'Database');
+}
+elseif (!empty($scenario['utility_action'])) {
   require_once __DIR__ . '/utility_actions.php';
   class_alias('Utility_Action_Database', 'Database');
 }
@@ -306,6 +312,9 @@ $controllerClass = !empty($scenario['media']) ? Data_Controller::class : Data_ut
 if (str_starts_with($scenario['utility_action'] ?? '', 'rules:')) {
   $controllerClass = Custom_verification_rules_Controller::class;
 }
+elseif (!empty($scenario['import_reverse'])) {
+  $controllerClass = Import_2_Controller::class;
+}
 $reflection = new ReflectionClass($controllerClass);
 $controller = $reflection->newInstanceWithoutConstructor();
 $invoke = static function ($name, ...$arguments) use ($reflection, $controller) {
@@ -323,6 +332,9 @@ try {
   }
   elseif (!empty($scenario['bulk'])) {
     $controller->bulk_delete_occurrences();
+  }
+  elseif (!empty($scenario['import_reverse'])) {
+    $controller->import_reverse();
   }
   elseif (!empty($scenario['media'])) {
     $_FILES = ['media_upload' => ['name' => 'test.jpg']];
@@ -348,6 +360,57 @@ catch (Exception $e) {
   $exception = get_class($e);
 }
 $output = ob_get_clean();
+$reversalStatus = http_response_code() ?: 200;
+$taskStates = [];
+$downloads = [];
+if (!empty($scenario['reversal_records']) && $reversalStatus === 200) {
+  $credentials = $_POST;
+  $getTasks = static function () use ($controller, $credentials) {
+    $_POST = $credentials;
+    ob_start();
+    $controller->import_reversal_status();
+    return json_decode(ob_get_clean(), TRUE, 512, JSON_THROW_ON_ERROR)['tasks'];
+  };
+  $download = static function (string $token, string $kind) use ($controller) {
+    http_response_code(200);
+    $_SERVER['REQUEST_METHOD'] = 'POST';
+    $_POST = ['reversal_export_token' => $token, 'kind' => $kind];
+    ob_start();
+    $controller->download_reversal_export();
+    return ['output' => ob_get_clean(), 'status' => http_response_code()];
+  };
+  $taskStates['queued'] = $getTasks();
+  $token = $taskStates['queued'][0]['export_token'];
+  if (!empty($scenario['reversal_downloads'])) {
+    $downloads['pending'] = $download($token, 'reversed_occurrences');
+  }
+  pg_query(Database::$link, "UPDATE work_queue SET claimed_by = 'test-worker', claimed_on = now() WHERE task = 'task_import_reversal'");
+  $taskStates['reversing'] = $getTasks();
+  // A repeated submission cannot add another task, even once it is claimed.
+  ob_start();
+  $controller->import_reverse();
+  ob_end_clean();
+  $taskStates['queue_size'] = (int) pg_fetch_result(pg_query(Database::$link, "SELECT count(*) FROM work_queue WHERE task = 'task_import_reversal'"), 0, 0);
+  try {
+    task_import_reversal::process(new Database(), NULL, 'test-worker');
+  }
+  catch (Throwable $e) {
+    pg_query(Database::$link, "UPDATE work_queue SET error_detail = 'Worker failed' WHERE claimed_by = 'test-worker'");
+  }
+  $taskStates['finished'] = $getTasks();
+  $taskStates['remaining_queue_size'] = (int) pg_fetch_result(pg_query(Database::$link, "SELECT count(*) FROM work_queue WHERE task = 'task_import_reversal'"), 0, 0);
+  if (!empty($scenario['reversal_downloads'])) {
+    pg_query(Database::$link, 'ALTER TABLE surveys RENAME TO surveys_unavailable');
+    $downloads['database_failure'] = $download($token, 'untouched_samples');
+    pg_query(Database::$link, 'ALTER TABLE surveys_unavailable RENAME TO surveys');
+    foreach (['reversed_occurrences', 'untouched_occurrences', 'reversed_samples', 'untouched_samples'] as $kind) {
+      $downloads[$kind] = $download($token, $kind);
+    }
+    $downloads['invalid_token'] = $download(str_repeat('0', 64), 'reversed_occurrences');
+    $downloads['invalid_kind'] = $download($token, 'invalid_kind');
+  }
+  http_response_code($reversalStatus);
+}
 if (!empty($scenario['replay'])) {
   $before = Utility_Action_Database::$effects;
   ob_start();
@@ -389,7 +452,30 @@ $result = [
 foreach ($seed->exists(str_repeat('a', 40)) as $path) {
   $result['expiries'][] = (int) substr($path, strrpos($path, '~') + 1);
 }
-if (Database::$link && empty($scenario['utility_action'])) {
+if (Database::$link && !empty($scenario['import_reverse'])) {
+  $result['blocks_unrelated_writes'] = Database::$blocksUnrelatedWrites;
+  $import = pg_fetch_assoc(pg_query(Database::$link, 'SELECT reversible, reversed_on, reversed_by_id FROM imports WHERE id = 1'));
+  $result['reversible'] = $import['reversible'] === 't';
+  $result['reversed_on'] = $import['reversed_on'];
+  $result['reversed_by_id'] = isset($import['reversed_by_id']) ? (int) $import['reversed_by_id'] : NULL;
+  if (!empty($scenario['reversal_records'])) {
+    $result['downloads'] = $downloads;
+    $result['task_states'] = $taskStates;
+    foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_samples_functional'] as $table) {
+      $filter = str_starts_with($table, 'cache_') ? '' : ' WHERE NOT deleted';
+      $result['survivors'][$table] = array_map('intval', pg_fetch_all_columns(pg_query(Database::$link, "SELECT id FROM $table$filter ORDER BY id")));
+    }
+    $result['exports_on_disk'] = [];
+    if (is_dir(DOCROOT . 'download')) {
+      foreach (glob(DOCROOT . 'download/*.csv') as $file) {
+        $result['exports_on_disk'][basename($file)] = file_get_contents($file);
+        unlink($file);
+      }
+      rmdir(DOCROOT . 'download');
+    }
+  }
+}
+elseif (Database::$link && empty($scenario['utility_action'])) {
   foreach (['occurrences', 'samples', 'cache_occurrences_functional', 'cache_occurrences_nonfunctional', 'cache_samples_functional', 'cache_samples_nonfunctional'] as $table) {
     $sql = "SELECT id FROM $table" . (in_array($table, ['occurrences', 'samples']) ? ' WHERE deleted' : '') . ' ORDER BY id';
     $result['records'][$table] = array_map('intval', array_column(pg_fetch_all(pg_query(Database::$link, $sql)), 'id'));

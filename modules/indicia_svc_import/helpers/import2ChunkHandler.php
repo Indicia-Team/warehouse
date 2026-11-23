@@ -705,7 +705,10 @@ class import2ChunkHandler {
     $import->inserted = $config['rowsInserted'];
     $import->updated = $config['rowsUpdated'];
     $import->errors = $config['errorsCount'];
-    $import->reversible = TRUE;
+    // Only initialize the flag; a later metadata save must not undo reversal.
+    if (!$import->id) {
+      $import->reversible = TRUE;
+    }
     $import->mappings = json_encode($config['columns']);
     $import->global_values = json_encode($config['global-values']);
     if ($importInfo) {
