@@ -50,6 +50,34 @@ class NotFoundException extends Exception {}
 class Import_2_Controller extends Service_Base_Controller {
 
   /**
+   * Report names available when exporting the results of an import reversal.
+   *
+   * @var string[]
+   */
+  private const REVERSAL_EXPORTS = ['reversed_samples', 'untouched_samples', 'reversed_occurrences', 'untouched_occurrences'];
+
+  /**
+   * Columns shared by the reversed and untouched occurrence exports.
+   *
+   * @var string
+   */
+  private const REVERSAL_OCCURRENCE_COLUMNS = 't.id, t.sample_id, t.determiner_id, t.confidential, t.created_on, t.created_by_id,
+    t.website_id, t.external_key, t.comment, t.taxa_taxon_list_id, t.record_status, t.verified_by_id,
+    t.verified_on, t.zero_abundance, t.last_verification_check_date, t.training, t.sensitivity_precision,
+    t.release_status, t.record_substatus, t.record_decision_source, t.import_guid';
+
+  /**
+   * Columns shared by the reversed and untouched sample exports.
+   *
+   * @var string
+   */
+  private const REVERSAL_SAMPLE_COLUMNS = 't.id, t.survey_id, t.location_id, t.date_start, t.date_end, t.date_type,
+    t.entered_sref, t.entered_sref_system, t.location_name, t.created_on,
+    t.created_by_id, t.comment, t.external_key, t.sample_method_id, t.recorder_names,
+    t.parent_id, t.input_form, t.group_id, t.privacy_precision, t.record_status,
+    t.verified_by_id, t.verified_on, t.licence_id, t.training, t.import_guid';
+
+  /**
    * Fetches the list of available import plugins.
    *
    * Public controller function so can be called from form config on the
@@ -838,8 +866,6 @@ SQL;
     echo json_encode(['status' => 'Queued']);
   }
 
-  private const REVERSAL_EXPORTS = ['reversed_samples', 'untouched_samples', 'reversed_occurrences', 'untouched_occurrences'];
-
   /**
    * List this user's active tasks and reversals completed today.
    */
@@ -1120,20 +1146,6 @@ SQL;
     }
     return implode(', ', $indexFields);
   }
-
-  /**
-   * Columns shared by the reversed and untouched occurrence exports.
-   */
-  private const REVERSAL_OCCURRENCE_COLUMNS = 't.id, t.sample_id, t.determiner_id, t.confidential, t.created_on, t.created_by_id,
-    t.website_id, t.external_key, t.comment, t.taxa_taxon_list_id, t.record_status, t.verified_by_id,
-    t.verified_on, t.zero_abundance, t.last_verification_check_date, t.training, t.sensitivity_precision,
-    t.release_status, t.record_substatus, t.record_decision_source, t.import_guid';
-
-  private const REVERSAL_SAMPLE_COLUMNS = 't.id, t.survey_id, t.location_id, t.date_start, t.date_end, t.date_type,
-    t.entered_sref, t.entered_sref_system, t.location_name, t.created_on,
-    t.created_by_id, t.comment, t.external_key, t.sample_method_id, t.recorder_names,
-    t.parent_id, t.input_form, t.group_id, t.privacy_precision, t.record_status,
-    t.verified_by_id, t.verified_on, t.licence_id, t.training, t.import_guid';
 
   /**
    * Stream projected rows in bounded batches on the download transaction.
