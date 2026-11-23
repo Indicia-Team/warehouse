@@ -29,15 +29,17 @@ class Helper_Work_Queue_Load_Test extends TestCase {
     $this->queue = $this->reflectionClass->newInstanceWithoutConstructor();
   }
 
-  public function testCostLimitsAreUnrestrictedBelowHalfLoad() {
+  public function testCostLimitsAreUnrestrictedUntilPrioritySpecificThresholds() {
     $this->assertSame([1 => 100, 2 => 100, 3 => 100], $this->costLimits(0));
-    $this->assertSame([1 => 100, 2 => 100, 3 => 100], $this->costLimits(50));
+    $this->assertSame([1 => 100, 2 => 100, 3 => 100], $this->costLimits(30));
+    $this->assertSame([1 => 100, 2 => 100, 3 => 43], $this->costLimits(40));
+    $this->assertSame([1 => 100, 2 => 61, 3 => 16], $this->costLimits(50));
   }
 
   public function testCostLimitsReduceAsLoadRises() {
-    $this->assertSame([1 => 68, 2 => 52, 3 => 42], $this->costLimits(66));
+    $this->assertSame([1 => 68, 2 => 20, 3 => 2], $this->costLimits(66));
     $limits = $this->costLimits(80);
-    $this->assertSame([1 => 40, 2 => 19, 3 => 11], $limits);
+    $this->assertSame([1 => 40, 2 => 4, 3 => 0], $limits);
     $this->assertLessThan($this->costLimits(66)[1], $limits[1]);
     $this->assertLessThan($this->costLimits(66)[2], $limits[2]);
     $this->assertLessThan($this->costLimits(66)[3], $limits[3]);
