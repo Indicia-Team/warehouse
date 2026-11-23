@@ -1,6 +1,6 @@
 <report
     title="List of occurrence imports (v2 importer)"
-    description="Lists each import event and the count of records added by it."
+    description="Lists each import event, its record count, and when it was queued for reversal or reversed."
 >
   <query>
     SELECT #columns#
@@ -8,6 +8,11 @@
     JOIN users u ON u.id=i.created_by_id
     JOIN people p ON p.id=u.person_id
     JOIN websites w ON w.id=i.website_id
+    LEFT JOIN LATERAL (
+      SELECT min(q.created_on) AS queued_on
+      FROM work_queue q
+      WHERE q.task = 'task_import_reversal' AND q.record_id = i.id AND q.error_detail IS NULL
+    ) reversal_queue ON i.reversed_on IS NULL
     WHERE website_id in (#sharing_website_ids#)
     AND i.deleted=false
     AND i.training='#training#'
@@ -35,8 +40,11 @@
     <column name="imported_by" display="Imported by" sql="coalesce(p.first_name || ' ', '') || p.surname" datatype="text" />
     <column name="records" display="# Records" sql="i.inserted + i.updated" datatype="integer" />
     <column name="description" display="Import metadata" datatype="text"
-      sql="coalesce(i.description, '') || case when i.reversed_on is null then '' else ' (reversed on ' || to_char(i.reversed_on, 'DD/MM/YYYY HH24:MI') || ')' end"  />
+      sql="coalesce(i.description, '') || case
+        when i.reversed_on is not null then ' (reversed on ' || to_char(i.reversed_on, 'DD/MM/YYYY HH24:MI') || ')'
+        when reversal_queue.queued_on is not null then ' (queued for reversal on ' || to_char(reversal_queue.queued_on, 'DD/MM/YYYY HH24:MI') || ')'
+        else '' end" />
     <column name="import_guid" display="Import ID" sql="i.import_guid" datatype="text" />
-    <column name="reversible" visible="false" sql="(i.reversible and i.reversed_on is null)" datatype="boolean" />
+    <column name="reversible" visible="false" sql="(i.reversible and i.reversed_on is null and reversal_queue.queued_on is null)" datatype="boolean" />
   </columns>
 </report>
