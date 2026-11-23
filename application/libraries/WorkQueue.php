@@ -29,7 +29,9 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class WorkQueue {
 
-  private const FULL_WORKLOAD_THRESHOLD = 50;
+  private const PRIORITY_1_START_THRESHOLD = 50;
+  private const PRIORITY_2_START_THRESHOLD = 40;
+  private const PRIORITY_3_START_THRESHOLD = 30;
   private const SATURATED_WORKLOAD_THRESHOLD = 95;
 
   private static $shutdownFunctionRegistered = FALSE;
@@ -178,7 +180,7 @@ SQL;
    *   Array of recommended maximum cost estimates keyed by priority (1-3).
    */
   private function findMaxCostPriority() {
-    $utilisation = $this->getServerLoad() + 40;
+    $utilisation = $this->getServerLoad();
     $maxCostByPriority = $this->calculateMaxCostByPriority($utilisation);
     global $argv;
     if (isset($argv)) {
@@ -250,9 +252,8 @@ SQL;
   /**
    * Calculate task cost limits from CPU utilisation.
    *
-   * Leave the queue unrestricted until the server is half busy, then reduce
-   * the permitted cost progressively. Lower priority tasks are reduced more
-   * aggressively so that cheap high-priority work can still make progress.
+   * Start reducing permitted task costs at a lower load for lower-priority
+   * tasks, preserving capacity for higher-priority work.
    *
    * @param float $utilisation
    *   CPU utilisation as a percentage from 0 to 100.
@@ -262,20 +263,27 @@ SQL;
    */
   private function calculateMaxCostByPriority($utilisation) {
     $utilisation = max(0, min(100, (float) $utilisation));
-    if ($utilisation <= self::FULL_WORKLOAD_THRESHOLD) {
-      $headroom = 1;
-    }
-    elseif ($utilisation >= self::SATURATED_WORKLOAD_THRESHOLD) {
-      $headroom = 0;
-    }
-    else {
-      $headroom = (self::SATURATED_WORKLOAD_THRESHOLD - $utilisation) /
-        (self::SATURATED_WORKLOAD_THRESHOLD - self::FULL_WORKLOAD_THRESHOLD);
+    $headroomByPriority = [];
+    foreach ([
+      1 => self::PRIORITY_1_START_THRESHOLD,
+      2 => self::PRIORITY_2_START_THRESHOLD,
+      3 => self::PRIORITY_3_START_THRESHOLD,
+    ] as $priority => $startThreshold) {
+      if ($utilisation <= $startThreshold) {
+        $headroomByPriority[$priority] = 1;
+      }
+      elseif ($utilisation >= self::SATURATED_WORKLOAD_THRESHOLD) {
+        $headroomByPriority[$priority] = 0;
+      }
+      else {
+        $headroomByPriority[$priority] = (self::SATURATED_WORKLOAD_THRESHOLD - $utilisation) /
+          (self::SATURATED_WORKLOAD_THRESHOLD - $startThreshold);
+      }
     }
     return [
-      1 => (int) round(10 + 90 * $headroom),
-      2 => (int) round(100 * $headroom ** 1.5),
-      3 => (int) round(100 * $headroom ** 2),
+      1 => (int) round(10 + 90 * $headroomByPriority[1]),
+      2 => (int) round(100 * $headroomByPriority[2] ** 2.5),
+      3 => (int) round(100 * $headroomByPriority[3] ** 5),
     ];
   }
 

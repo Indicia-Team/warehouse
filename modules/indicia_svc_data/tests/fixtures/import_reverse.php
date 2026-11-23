@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * Connection-local data for import reversal tests.
+ */
+class url {
+  public static function base(): string {
+    return '/';
+  }
+}
+
+class Import_Reverse_Database {
+
+  public static $calls = 0;
+  public static $link;
+  public static $blocksUnrelatedWrites;
+
+  public function __construct() {
+    global $scenario;
+    self::$calls++;
+    // The scenario exercises a subsequent request against the same test data.
+    if (self::$link) {
+      return;
+    }
+    $dsn = getenv('INDICIA_TEST_PG_DSN');
+    if (!$dsn) {
+      throw new RuntimeException('Database reached');
+    }
+    self::$link = pg_connect(str_replace(';', ' ', preg_replace('/^pgsql:/', '', $dsn)), PGSQL_CONNECT_FORCE_NEW);
+    pg_query(self::$link, <<<'SQL'
+      CREATE TEMP TABLE imports (
+        id int, website_id int, created_by_id int, import_guid text,
+        entity text, reversible boolean, deleted boolean, inserted int, updated int,
+        global_values json NOT NULL DEFAULT '{}', mappings json NOT NULL DEFAULT '{}',
+        reversed_on timestamp, reversed_by_id int
+      );
+      CREATE TEMP TABLE occurrences (
+        id int, sample_id int, import_guid text, deleted boolean,
+        created_on timestamp, updated_on timestamp, updated_by_id int,
+        determiner_id int, confidential boolean, created_by_id int, website_id int,
+        external_key text, comment text, taxa_taxon_list_id int, record_status text,
+        verified_by_id int, verified_on timestamp, zero_abundance boolean,
+        last_verification_check_date timestamp, training boolean, sensitivity_precision int,
+        release_status text, record_substatus text, record_decision_source text
+      );
+      CREATE TEMP TABLE samples (
+        id int, survey_id int, location_id int, date_start date, date_end date, date_type text,
+        entered_sref text, entered_sref_system text, location_name text, created_on timestamp,
+        created_by_id int, comment text, external_key text, sample_method_id int, recorder_names text,
+        parent_id int, input_form text, group_id int, privacy_precision int, record_status text,
+        verified_by_id int, verified_on timestamp, licence_id int, training boolean,
+        import_guid text, deleted boolean, updated_on timestamp, updated_by_id int
+      );
+      CREATE TEMP TABLE cache_occurrences_functional (id int);
+      CREATE TEMP TABLE cache_occurrences_nonfunctional (id int);
+      CREATE TEMP TABLE cache_samples_functional (id int);
+      CREATE TEMP TABLE cache_samples_nonfunctional (id int);
+      CREATE TEMP TABLE surveys (id int, website_id int);
+      CREATE TEMP TABLE work_queue (
+        id serial PRIMARY KEY, task text, entity text, record_id int, params json,
+        cost_estimate int, priority int, created_on timestamp, claimed_on timestamp,
+        claimed_by text, error_detail text
+      );
+      SQL);
+    $import = array_replace([1, 1, 2, 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA', 'occurrence', 't', 'f', 1, 0, '{}', '{}', NULL, NULL], $scenario['import'] ?? []);
+    pg_query_params(self::$link, 'INSERT INTO imports VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)', $import);
+    if (!empty($scenario['reversal_records'])) {
+      define('DOCROOT', $scenario['directory'] . '/');
+      if (!empty($scenario['reversal_downloads'])) {
+        pg_query(self::$link, <<<'SQL'
+          INSERT INTO imports (id, website_id, created_by_id, import_guid, entity, reversible, deleted, reversed_on, reversed_by_id)
+          VALUES
+            (2, 1, 2, 'OLDER', 'occurrence', false, false, CURRENT_DATE - INTERVAL '1 day', 2),
+            (3, 2, 2, 'OTHER-SITE', 'occurrence', false, false, now(), 2),
+            (4, 1, 3, 'OTHER-OWNER', 'occurrence', false, false, now(), 3);
+          SQL);
+      }
+      if (($scenario['reversal_failure'] ?? NULL) === 'database') {
+        pg_query(self::$link, 'ALTER TABLE imports ADD CHECK (reversed_by_id IS NULL)');
+      }
+      pg_query_params(self::$link, <<<'SQL'
+        INSERT INTO samples (id, import_guid, parent_id, deleted, comment, external_key, recorder_names, entered_sref) VALUES
+          (1, $1, NULL, false, $2, NULL, NULL, NULL),
+          (2, NULL, 1, false, NULL, NULL, NULL, NULL),
+          (3, $1, NULL, false, $3, $4, $5, $6);
+        SQL, [$import[3], "\u{FF1D}1+1", '  +1+1', '-1+1', "\tRecorder", "\r\nGrid"]);
+      pg_query_params(self::$link, <<<'SQL'
+        INSERT INTO occurrences (id, sample_id, import_guid, deleted, comment, external_key, record_decision_source) VALUES
+          (1, 3, $1, false, $2, $3, $4),
+          (2, 2, 'LATER-IMPORT', false, NULL, NULL, NULL);
+        SQL, [$import[3], "Said, \"here\"\\\r\nNext line", '=1+1', '@SUM(1)']);
+      if (!empty($scenario['reversal_extra_rows'])) {
+        pg_query(self::$link, <<<'SQL'
+          UPDATE occurrences SET created_on = '2020-01-01', updated_on = '2020-01-01' WHERE id = 1;
+          UPDATE samples SET created_on = '2020-01-01', updated_on = '2020-01-01' WHERE id = 3;
+          SQL);
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO occurrences (id, sample_id, import_guid, deleted, created_on, updated_on)
+          SELECT id, 3, $1, false, '2020-01-01',
+            CASE WHEN id = 1003 THEN '2020-01-02'::timestamp ELSE '2020-01-01'::timestamp END
+          FROM generate_series(3, 1003) id;
+          SQL, [$import[3]]);
+      }
+      pg_query_params(self::$link, 'INSERT INTO surveys VALUES (1, $1)', [$import[1]]);
+      pg_query(self::$link, <<<'SQL'
+        UPDATE samples SET survey_id = 1;
+        UPDATE occurrences SET website_id = (SELECT website_id FROM surveys WHERE id = 1);
+        SQL);
+      if (!empty($scenario['reversal_prior_deletions'])) {
+        pg_query(self::$link, <<<'SQL'
+          CREATE TEMP TABLE sample_attribute_values (sample_id int, deleted boolean, updated_on timestamp, updated_by_id int);
+          CREATE TEMP TABLE sample_comments (LIKE sample_attribute_values);
+          CREATE TEMP TABLE sample_media (LIKE sample_attribute_values);
+          SQL);
+        $migration = file_get_contents(dirname(__DIR__, 4) . '/modules/indicia_setup/db/version_9_27_21/202611201000_preserve_reversal_deletion_metadata.sql');
+        pg_query(self::$link, str_replace('FUNCTION cascade_sample_delete(', 'FUNCTION pg_temp.cascade_sample_delete(', $migration));
+        pg_query(self::$link, 'CREATE TRIGGER sample_delete_trigger AFTER UPDATE ON samples FOR EACH ROW EXECUTE FUNCTION pg_temp.cascade_sample_delete()');
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO occurrences (id, sample_id, website_id, import_guid, deleted, updated_on, updated_by_id)
+          VALUES (4, 3, 1, $1, true, '2020-01-01', 2)
+          SQL, [$import[3]]);
+        pg_query_params(self::$link, <<<'SQL'
+          INSERT INTO samples (id, parent_id, survey_id, import_guid, deleted, updated_on, updated_by_id)
+          VALUES (4, 3, 1, $1, true, '2020-01-01', 2)
+          SQL, [$import[3]]);
+      }
+      pg_query(self::$link, <<<'SQL'
+        INSERT INTO cache_occurrences_functional SELECT id FROM occurrences WHERE NOT deleted;
+        INSERT INTO cache_samples_functional SELECT id FROM samples WHERE NOT deleted;
+        SQL);
+    }
+  }
+
+  public function getLink() {
+    return self::$link;
+  }
+
+  public function query($sql, array $params = []) {
+    if ($sql === 'COMMIT' && pg_num_rows(pg_query(self::$link, 'SELECT 1 FROM imports WHERE reversed_on IS NOT NULL')) > 0) {
+      self::$blocksUnrelatedWrites = pg_fetch_result(pg_query(self::$link, <<<'SQL'
+        SELECT EXISTS (
+          SELECT 1 FROM pg_locks
+          WHERE pid = pg_backend_pid()
+            AND granted
+            AND relation IN ('samples'::regclass, 'occurrences'::regclass)
+            AND mode IN ('ShareLock', 'ShareRowExclusiveLock', 'ExclusiveLock', 'AccessExclusiveLock')
+        )
+        SQL), 0, 0) === 't';
+    }
+    // The controller uses Kohana's question-mark bindings.
+    $index = 0;
+    $sql = preg_replace_callback('/\?/', static function () use (&$index) {
+      return '$' . ++$index;
+    }, $sql);
+    $result = pg_query_params(self::$link, $sql, $params);
+    return new class($result) {
+      public function __construct(private $result) {}
+
+      public function result_array(): array {
+        return array_map(static fn(array $row) => (object) $row, pg_fetch_all($this->result));
+      }
+    };
+  }
+
+}

@@ -37,6 +37,8 @@ class Import_Model extends ORM {
     $array->add_rules('import_guid', 'required');
     $array->add_rules('mappings', 'required');
     $array->add_rules('global_values', 'required');
+    $array->add_rules('reversed_on', 'date');
+    $array->add_rules('reversed_by_id', 'integer');
 
     $this->unvalidatedFields = [
       'description',
