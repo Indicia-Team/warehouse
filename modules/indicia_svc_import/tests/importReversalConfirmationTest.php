@@ -113,6 +113,7 @@ class ImportReversalConfirmationTest extends TestCase {
       $this->assertStringContainsString('<dd>&lt;b&gt;import&lt;/b&gt;</dd>', $html);
       $this->assertStringContainsString('<dd>&lt;i&gt;date &amp; time&lt;/i&gt;</dd>', $html);
       $this->assertStringContainsString("name=\"reverse-guid\" value=\"$guid\"", $html);
+      $this->assertStringContainsString('name="reverse-mode" value="do_not_reverse_updated">Queue reversal</button>', $html);
       $requests = ReversalConfirmationReportStub::$requests;
       $this->assertSame('library/imports/reversible_imports_list', $requests[0]['dataSource']);
       $this->assertSame(['currentUser' => 7, 'website_id' => 1], $requests[0]['extraParams']);
@@ -164,6 +165,82 @@ class ImportReversalConfirmationTest extends TestCase {
    * @runInSeparateProcess
    * @preserveGlobalState disabled
    */
+  public function testQueuedNoticeSurvivesRedirectAndAppearsOnceForTheMatchingImporter(): void {
+    require_once 'client_helpers/import_helper_2.php';
+    function hostsite_get_user_field($field) {
+      return 7;
+    }
+
+    $options = [
+      'website_id' => 1,
+      'initServerConfigUrl' => '/import-form/1',
+      'importReverse' => 'reverse',
+    ];
+    $scope = new ReflectionMethod(import_helper_2::class, 'reversalScope');
+    $notice = new ReflectionMethod(import_helper_2::class, 'reversalQueuedNotice');
+    $this->assertTrue(session_start(['use_cookies' => 0, 'cache_limiter' => '']));
+    try {
+      $_SESSION['indicia:reversal-queued'] = [
+        'scope' => $scope->invoke(NULL, $options),
+        'expires' => time() + 300,
+      ];
+      $message = 'Your import reversal has been queued. You can track its progress below.';
+      $this->assertStringContainsString($message, $notice->invoke(NULL, $options, TRUE));
+      $this->assertSame('', $notice->invoke(NULL, array_replace($options, ['website_id' => 2]), FALSE));
+      $this->assertStringContainsString($message, $notice->invoke(NULL, $options, FALSE));
+      $this->assertSame('', $notice->invoke(NULL, $options, FALSE));
+    }
+    finally {
+      session_destroy();
+    }
+  }
+
+  /**
+   * @runInSeparateProcess
+   * @preserveGlobalState disabled
+   */
+  public function testCancellationReturnsToMyImportsWhenConfigured(): void {
+    require_once 'client_helpers/import_helper_2.php';
+    function hostsite_get_user_field($field) {
+      return 7;
+    }
+    function hostsite_get_url($path) {
+      return '/recording/' . $path;
+    }
+
+    $options = [
+      'entity' => 'occurrence',
+      'importReverse' => 'reverse',
+      'initServerConfigUrl' => '/import-form/1',
+      'myImportsPath' => '/my-imports',
+    ];
+    $guid = 'AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA';
+    $this->assertTrue(session_start(['use_cookies' => 0, 'cache_limiter' => '']));
+    try {
+      $issue = new ReflectionMethod(import_helper_2::class, 'issueReversalConfirmation');
+      $confirm = new ReflectionMethod(import_helper_2::class, 'confirmReversal');
+      $_SERVER['REQUEST_METHOD'] = 'POST';
+      $_POST = [
+        'reverse-guid' => $guid,
+        'reverse-mode' => 'abort_reverse',
+        'reverse-confirmation' => $issue->invoke(NULL, $options, $guid, FALSE),
+      ];
+      $html = $confirm->invoke(NULL, $options);
+      $this->assertSame(303, http_response_code());
+      $this->assertSame('reversalCancelled', import_helper_2::$indiciaData['step']);
+      $this->assertSame('/recording/my-imports', import_helper_2::$indiciaData['myImportsUrl']);
+      $this->assertStringContainsString('<a href="/recording/my-imports">Back to My Imports</a>', $html);
+      $this->assertSame([], $_SESSION['indicia:reversal-confirmations']);
+    }
+    finally {
+      session_destroy();
+    }
+  }
+
+  /**
+   * @runInSeparateProcess
+   * @preserveGlobalState disabled
+   */
   public function testTasksRenderEscapedStatusAndSeparatedDownloadActions(): void {
     require_once 'client_helpers/import_helper_2.php';
     $render = new ReflectionMethod(import_helper_2::class, 'renderReversalTasks');
@@ -180,11 +257,16 @@ class ImportReversalConfirmationTest extends TestCase {
     $this->assertStringContainsString('<td>2026-11-20 08:00:00</td>', $html);
     $this->assertStringContainsString('<td>Queued</td>', $html);
     $this->assertStringContainsString('?q=node%2F1&amp;reversal_tasks=1', $html);
+    $this->assertStringContainsString('<a href="?q=node%2F1">Return to importer</a>', $html);
     $this->assertStringNotContainsString('old-selection', $html);
     $this->assertStringContainsString('method="post" action="https://warehouse.example/records&amp;data/index.php/services/import_2/download_reversal_export"', $html);
     $this->assertStringContainsString("name=\"reversal_export_token\" value=\"$token\"", $html);
     $this->assertStringContainsString('not an audit snapshot', $html);
     $this->assertMatchesRegularExpression('/value="untouched_samples".*<\/td><td>.*value="untouched_occurrences"/s', $html);
+
+    $html = $render->invoke(NULL, [], '/recording/my-imports?status=all&scope=mine');
+    $this->assertStringContainsString('<a href="/recording/my-imports?status=all&amp;scope=mine">Back to My Imports</a>', $html);
+    $this->assertStringNotContainsString('Return to importer', $html);
   }
 
 }
