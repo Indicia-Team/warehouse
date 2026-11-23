@@ -7,11 +7,45 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
+/**
+ * Work queue worker that reverses an eligible insert-only occurrence import.
+ */
 class task_import_reversal {
 
+  /**
+   * Process one reversal task at a time.
+   *
+   * @var int
+   */
   public const BATCH_SIZE = 1;
+
+  /**
+   * The worker removes a task from the queue after successful processing.
+   *
+   * @var bool
+   */
   public const SELF_CLEANUP = TRUE;
 
+  /**
+   * Reverse the import claimed by this worker process.
+   *
+   * The import is rechecked while locked before any records are changed. All
+   * changes, including removal of the queue task, are committed together.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param object $taskType
+   *   Work queue task type information. The worker interface supplies this
+   *   value, although this worker does not need to inspect it.
+   * @param string $procId
+   *   Identifier of this work queue processing run, used to find its claimed
+   *   task.
+   *
+   * @throws Throwable
+   *   If the task cannot be decoded, is no longer eligible, or a database
+   *   operation fails. The transaction is rolled back before the exception is
+   *   rethrown.
+   */
   public static function process($db, $taskType, $procId): void {
     $db->query('BEGIN');
     try {
@@ -49,6 +83,28 @@ class task_import_reversal {
     }
   }
 
+  /**
+   * Find an import that is safe to reverse for the supplied user.
+   *
+   * Only a non-deleted, reversible, insert-only occurrence import with no
+   * updates, explicit record IDs, linked duplicate imports, or update-enabled
+   * configuration is eligible. When checking a queued task, the optional lock
+   * also verifies that all tagged records are still present.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $guid
+   *   Import GUID.
+   * @param int $userId
+   *   ID of the user who created the import.
+   * @param bool $lock
+   *   Whether to lock the import row and perform the final tagged-record count
+   *   check. Use this when the result will immediately be reversed.
+   *
+   * @return object|null
+   *   The eligible import, containing its ID, website ID, and import GUID, or
+   *   NULL when no eligible import exists.
+   */
   public static function getEligibleImport(Database $db, string $guid, int $userId, bool $lock = FALSE): ?object {
     $lockClause = $lock ? 'FOR UPDATE OF i' : '';
     // Only the worker scans the tagged records during the final eligibility check.
@@ -80,6 +136,21 @@ class task_import_reversal {
       SQL, [$guid, $userId])->result_array()[0] ?? NULL;
   }
 
+  /**
+   * Mark imported occurrences as deleted and clear their caches.
+   *
+   * In `do_not_reverse_updated` mode, occurrences and samples changed after
+   * the import are retained.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $guid
+   *   Import GUID.
+   * @param int $userId
+   *   ID of the user performing the reversal.
+   * @param string $mode
+   *   Reversal mode: `reverse_all` or `do_not_reverse_updated`.
+   */
   private static function reverseOccurrences(Database $db, string $guid, int $userId, string $mode): void {
     $params = [$userId, $guid];
     $unchanged = '';
@@ -108,6 +179,22 @@ class task_import_reversal {
       SQL, $params);
   }
 
+  /**
+   * Mark imported samples as deleted where they have no visible dependants.
+   *
+   * Samples with visible occurrences or child samples are retained so that
+   * reversing an import cannot hide records belonging to another import or
+   * attachment made after the import.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $guid
+   *   Import GUID.
+   * @param int $userId
+   *   ID of the user performing the reversal.
+   * @param string $mode
+   *   Reversal mode: `reverse_all` or `do_not_reverse_updated`.
+   */
   private static function reverseSamples(Database $db, string $guid, int $userId, string $mode): void {
     $unchanged = $mode === 'do_not_reverse_updated' ? 'AND t.created_on = t.updated_on' : '';
     // Keep visible dependants without locking out concurrent attachments.
