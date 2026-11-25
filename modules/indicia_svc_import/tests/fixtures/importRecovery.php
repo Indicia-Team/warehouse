@@ -119,7 +119,7 @@ $config = [
   'tableName' => 'recovery_test',
   'entity' => 'occurrence',
   'parentEntity' => 'sample',
-  'global-values' => ['website_id' => 1],
+  'global-values' => ['website_id' => 1] + ($scenario['global-values'] ?? []),
   'columns' => ['Comment' => ['tempDbField' => 'comment']],
   'isExcel' => FALSE,
   'totalRows' => 249,
