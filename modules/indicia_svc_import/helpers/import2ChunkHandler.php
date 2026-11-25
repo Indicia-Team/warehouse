@@ -1293,8 +1293,14 @@ SQL;
       $fieldParts = explode(':', $fieldName, 2);
       $entity = count($fieldParts) === 2 ? $fieldParts[0] : NULL;
       $field = count($fieldParts) === 2 ? $fieldParts[1] : $fieldParts[0];
-      $errorI18n = kohana::lang("form_error_messages.$field.$error");
-      $errorStr = $errorI18n === "form_error_messages.$field.$error" ? $error : $errorI18n;
+      $errorMessageKey = "form_error_messages.$field.$error";
+      $errorI18n = kohana::lang($errorMessageKey);
+      if ($errorI18n === $errorMessageKey) {
+        // Check to see if there is a global default message for this rule.
+        $errorMessageKey = "form_error_messages.$error";
+        $errorI18n = kohana::lang($errorMessageKey);
+      }
+      $errorStr = $errorI18n === $errorMessageKey ? $error : $errorI18n;
       // A date error might be reported against a vague date component
       // field, but can map back to the calculated date field if separate
       // date fields not being used.

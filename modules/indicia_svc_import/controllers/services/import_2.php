@@ -1609,7 +1609,7 @@ SQL;
     $config = import2ChunkHandler::getConfig($configId);
     $db = new Database();
     $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
-    $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($db, $config['columns'])), [
+    $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($db, $config['columns'], TRUE)), [
       // Excel row starts on 2, our _row_id is a db sequence so starts on 1.
       '_row_id+1',
       'errors',
@@ -1783,10 +1783,13 @@ SQL;
    * @return array
    *   Associative array.
    */
-  private function getColumnTempDbFieldMappings($db, array $columns) {
+  private function getColumnTempDbFieldMappings($db, array $columns, $useErrorFileTempDbField = FALSE) {
     $r = [];
     foreach ($columns as $columnLabel => $info) {
-      $r[$columnLabel] = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+      $tempDbField = $useErrorFileTempDbField && isset($info['errorFileTempDbField'])
+        ? $info['errorFileTempDbField']
+        : $info['tempDbField'];
+      $r[$columnLabel] = pg_escape_identifier($db->getLink(), $tempDbField);
     }
     return $r;
   }
@@ -2756,7 +2759,16 @@ SQL;
         $proposedFieldName .= '_' . uniqid();
       }
       $uniqueFieldNames[] = $proposedFieldName;
-      $colsAndFieldInfo[$column] = [
+      $columnLabel = $column;
+      // Ensure duplicate column titles are made unique.
+      if (array_key_exists($columnLabel, $colsAndFieldInfo)) {
+        $duplicateIndex = 2;
+        do {
+          $columnLabel = "$column ($duplicateIndex)";
+          $duplicateIndex++;
+        } while (array_key_exists($columnLabel, $colsAndFieldInfo));
+      }
+      $colsAndFieldInfo[$columnLabel] = [
         'tempDbField' => $proposedFieldName,
       ];
     }

@@ -29,6 +29,27 @@ defined('SYSPATH') or die('No direct script access.');
 class Valid extends valid_Core {
 
   /**
+   * Validate a value using the boolean representations accepted by PostgreSQL.
+   *
+   * @param mixed $value
+   *   Value to validate.
+   *
+   * @return bool
+   *   True if the value is a boolean representation.
+   */
+  public static function bool($value) {
+    if (is_bool($value)) {
+      return TRUE;
+    }
+    if (!is_scalar($value)) {
+      return FALSE;
+    }
+    return in_array(strtolower(trim((string) $value)), [
+      '1', '0', 'true', 'false', 't', 'f', 'yes', 'no', 'y', 'n', 'on', 'off',
+    ], TRUE);
+  }
+
+  /**
    * Validate a spatial reference system is recognised.
    *
    * System can be either an EPSG code or a notation code.

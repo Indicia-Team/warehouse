@@ -107,8 +107,15 @@ SQL;
     $this->assertTrue(isset($r['success']), 'Submitting a rest_api_client did not return success response');
     $clientId = $r['success'];
     // Repost same record should fail on a unique index violation.
-    $r = data_entry_helper::forward_post_to('rest_api_client', $s, self::$auth['write_tokens'] + ['secret2' => 'mysecret']);
+    try {
+      $r = data_entry_helper::forward_post_to('rest_api_client', $s, self::$auth['write_tokens'] + ['secret2' => 'mysecret']);
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus);
+      $r = json_decode($e->responseBody, TRUE);
+    }
     $this->assertNotTrue(isset($r['success']), 'Submitting a rest_api_client with a duplicate username should not succeed');
+    $this->assertArrayHasKey('error', $r, 'Submitting a rest_api_client with a duplicate username should return an error');
     // Secret should be hashed in DB.
     $saved = self::$db->query('SELECT * FROM rest_api_clients WHERE id=?', [$clientId])->current();
     $this->assertNotEquals($saved->secret, $clientData['rest_api_client:secret'], 'Saved secret has not been hashed.');
@@ -137,8 +144,15 @@ SQL;
     $r = data_entry_helper::forward_post_to('rest_api_client_connection', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a rest_api_client_connection did not return success response');
     // Repost same record should fail on a unique index violation.
-    $r = data_entry_helper::forward_post_to('rest_api_client_connection', $s, self::$auth['write_tokens']);
+    try {
+      $r = data_entry_helper::forward_post_to('rest_api_client_connection', $s, self::$auth['write_tokens']);
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus);
+      $r = json_decode($e->responseBody, TRUE);
+    }
     $this->assertNotTrue(isset($r['success']), 'Submitting a rest_api_client with a duplicate proj_id should not succeed');
+    $this->assertArrayHasKey('error', $r, 'Submitting a rest_api_client with a duplicate proj_id should return an error');
   }
 
   /**

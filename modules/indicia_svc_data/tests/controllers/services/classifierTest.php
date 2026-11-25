@@ -467,8 +467,16 @@ SQL;
         ],
       ],
     ];
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
-    $this->assertTrue(isset($r['error']), 'Submitting lookup suggestion without target attribute should fail.');
+    try {
+      $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+      $this->assertTrue(isset($r['error']), 'Submitting lookup suggestion without target attribute should fail.');
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus);
+      $error = json_decode($e->responseBody, TRUE);
+      $this->assertIsArray($error);
+      $this->assertArrayHasKey('error', $error);
+    }
 
     // Case 2: multiple target attribute IDs provided.
     $array = [
@@ -517,8 +525,16 @@ SQL;
         ],
       ],
     ];
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
-    $this->assertTrue(isset($r['error']), 'Submitting lookup suggestion with multiple target attributes should fail.');
+    try {
+      $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+      $this->assertTrue(isset($r['error']), 'Submitting lookup suggestion with multiple target attributes should fail.');
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus);
+      $error = json_decode($e->responseBody, TRUE);
+      $this->assertIsArray($error);
+      $this->assertArrayHasKey('error', $error);
+    }
 
     $insertedCount = (int) self::$db->query(
       "select count(*) as count from classification_lookup_suggestions where term_given in ('No target term', 'Multi target term')"

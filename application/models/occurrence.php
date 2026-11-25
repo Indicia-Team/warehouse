@@ -201,6 +201,13 @@ class Occurrence_Model extends ORM {
     $array->add_rules('machine_involvement', 'integer', 'minimum[0]', 'maximum[5]');
     $array->add_rules('basis_of_record_id', 'integer');
     $fieldlist = $array->as_array();
+    $booleanFields = ['confidential', 'deleted', 'zero_abundance', 'training'];
+    $array->allow_empty_rules('bool');
+    foreach ($booleanFields as $field) {
+      if (array_key_exists($field, $fieldlist)) {
+        $array->add_rules($field, 'bool');
+      }
+    }
     if (!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
       $array->add_rules('taxa_taxon_list_id', 'required');
     }

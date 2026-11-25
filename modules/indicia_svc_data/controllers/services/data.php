@@ -932,6 +932,9 @@ class Data_Controller extends Data_Service_Base_Controller {
       $model = ORM::factory($this->entity);
       $model->submission = $s;
       $model->setIdentifiers(['service_auth_user_id' => $this->getAuthenticatedUserId()]);
+      if ($this->entity === 'scratchpad_list') {
+        ORM::$authorisedWebsiteId = $this->website_id;
+      }
       $result = $model->submit();
       kohana::log('debug', "Model submit: $model->object_name $model->id");
       $id = $model->id;

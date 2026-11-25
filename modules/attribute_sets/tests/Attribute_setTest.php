@@ -2,6 +2,7 @@
 
 use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 
+require_once 'client_helpers/autoload.php';
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
@@ -345,9 +346,16 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
       'restrict_occurrence_attribute_to_single_value' => 't',
     );
     $s = submission_builder::build_submission($array, array('model' => 'occurrence_attributes_taxa_taxon_list_attribute'));
-    $r = data_entry_helper::forward_post_to('occurrence_attributes_taxa_taxon_list_attribute', $s, $this->auth['write_tokens']);
-    $this->assertTrue(isset($r['error']), 'Submitting an occurrence_attributes_taxa_taxon_list_attribute should fail ' .
-      'if the taxon attribute is a range percentile other than 95%.');
+    try {
+      data_entry_helper::forward_post_to('occurrence_attributes_taxa_taxon_list_attribute', $s, $this->auth['write_tokens']);
+      $this->fail('Submitting an occurrence_attributes_taxa_taxon_list_attribute should fail if the taxon attribute is a range percentile other than 95%.');
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus);
+      $error = json_decode($e->responseBody, TRUE);
+      $this->assertIsArray($error);
+      $this->assertArrayHasKey('error', $error);
+    }
 
     // Now, same again for the 95% attribute.
     // Create a taxa taxon list attribute to add to the set.

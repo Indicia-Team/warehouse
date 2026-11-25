@@ -178,6 +178,13 @@ class Sample_Model extends ORM_Tree {
       'training',
       'forced_spatial_indexer_location_ids',
     ];
+    $booleanFields = ['deleted', 'training'];
+    $array->allow_empty_rules('bool');
+    foreach ($booleanFields as $field) {
+      if (array_key_exists($field, $orig_values)) {
+        $array->add_rules($field, 'bool');
+      }
+    }
     $array->add_rules('survey_id', 'required');
     // When deleting a sample, only need the id and the deleted flag, don't
     // need the date or location details, but copy over if they are there.
