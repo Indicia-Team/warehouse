@@ -716,10 +716,14 @@ class import2ChunkHandler {
         // This will only get specified on initial save.
         $import->description = $importInfo->description;
       }
-      if (!empty($importInfo->training)) {
-        $import->training = 't';
-      }
-
+    }
+    // The client sends training metadata alongside the description, so it
+    // can be absent when no description was provided. The fixed values are
+    // persisted in the import config and provide a reliable fallback.
+    if (!empty($importInfo->training)
+        || ($config['global-values']['sample:training'] ?? NULL) === 't'
+        || ($config['global-values']['occurrence:training'] ?? NULL) === 't') {
+      $import->training = 't';
     }
     $import->import_guid = $config['importGuid'];
     $import->save();

@@ -51,6 +51,15 @@ class ImportRecoveryTest extends TestCase {
     $this->assertTrue($new['response']['reversible']);
   }
 
+  public function testSavingTrainingImportMetadataUsesTrainingGlobalValue(): void {
+    $result = $this->runScenario([
+      'action' => 'save-import',
+      'global-values' => ['sample:training' => 't'],
+    ]);
+
+    $this->assertSame('t', $result['response']['training']);
+  }
+
   public function testRecoveryDownloadIncludesImportedAndUnimportedRowsWithMatchingHeaders(): void {
     $result = $this->runScenario(['action' => 'export', 'options' => ['include-all-rows' => 'true']]);
 
