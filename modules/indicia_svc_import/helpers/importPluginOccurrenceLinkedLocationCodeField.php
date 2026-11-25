@@ -139,6 +139,7 @@ class importPluginOccurrenceLinkedLocationCodeField {
 SQL;
       $db->query($sql);
       // Switch the import field in the config to the new mapped one.
+      $config['columns'][$importColumnLabel]['errorFileTempDbField'] = $config['columns'][$importColumnLabel]['tempDbField'];
       $config['columns'][$importColumnLabel]['tempDbField'] = "smpattr_$params[0]_location_id";
       // Remember the original field though as needed for correct label
       // generation on client summary page.

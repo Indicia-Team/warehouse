@@ -60,6 +60,22 @@ class ImportRecoveryTest extends TestCase {
     $this->assertSame('t', $result['response']['training']);
   }
 
+  public function testImportConfigPreservesDuplicateHeadingsAndLastColumn(): void {
+    $result = $this->runScenario([
+      'action' => 'tidy-columns',
+      'headings' => ['External record ID', 'External record ID', 'Vice County'],
+    ]);
+
+    $columns = $result['response'];
+    $this->assertSame([
+      'External record ID',
+      'External record ID (2)',
+      'Vice County',
+    ], array_keys($columns));
+    $this->assertCount(3, array_unique(array_column($columns, 'tempDbField')));
+    $this->assertSame('vice_county', $columns['Vice County']['tempDbField']);
+  }
+
   public function testRecoveryDownloadIncludesImportedAndUnimportedRowsWithMatchingHeaders(): void {
     $result = $this->runScenario(['action' => 'export', 'options' => ['include-all-rows' => 'true']]);
 
@@ -79,6 +95,29 @@ class ImportRecoveryTest extends TestCase {
       ['Comment', '[Row no.]', '[Errors]'],
       ['invalid', '4', '{"comment":"invalid"}'],
     ], $result['response']);
+  }
+
+  public function testErrorDownloadReturnsOriginalSourceForPluginMappedColumn(): void {
+    $result = $this->runScenario([
+      'action' => 'export',
+      'columns' => [
+        'Vice county' => [
+          'tempDbField' => 'smpattr_22_location_id',
+          'errorFileTempDbField' => 'vice_county_code',
+        ],
+      ],
+      'exportRows' => [
+        ['VC 12', 2, NULL, 'yes'],
+        ['VC 13', 4, '{"comment":"invalid"}', 'no'],
+      ],
+    ]);
+
+    $this->assertSame([
+      ['Vice county', '[Row no.]', '[Errors]'],
+      ['VC 13', '4', '{"comment":"invalid"}'],
+    ], $result['response']);
+    $this->assertStringContainsString('"vice_county_code"', $result['queries'][0]);
+    $this->assertStringNotContainsString('"smpattr_22_location_id"', $result['queries'][0]);
   }
 
   public function testExistingCrashDownloadStillIncludesPendingRowsAndImportStatus(): void {

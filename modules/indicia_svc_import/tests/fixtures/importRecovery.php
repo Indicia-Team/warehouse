@@ -86,6 +86,7 @@ class Database {
   }
 
   public function query($sql) {
+    global $scenario;
     self::$queries[] = $sql;
     if (str_contains($sql, 'COUNT(*)')) {
       return new ImportRecoveryResult([(object) self::$counts]);
@@ -93,7 +94,7 @@ class Database {
     if (str_contains($sql, 'DROP TABLE')) {
       return new ImportRecoveryResult();
     }
-    $rows = [
+    $rows = $scenario['exportRows'] ?? [
       ['saved', 2, NULL, 'yes'],
       ['pending', 3, NULL, 'no'],
       ['invalid', 4, '{"comment":"invalid"}', 'no'],
@@ -120,7 +121,7 @@ $config = [
   'entity' => 'occurrence',
   'parentEntity' => 'sample',
   'global-values' => ['website_id' => 1] + ($scenario['global-values'] ?? []),
-  'columns' => ['Comment' => ['tempDbField' => 'comment']],
+  'columns' => $scenario['columns'] ?? ['Comment' => ['tempDbField' => 'comment']],
   'isExcel' => FALSE,
   'totalRows' => 249,
   'rowsProcessed' => $scenario['processed'] ?? 200,
@@ -135,6 +136,11 @@ import2ChunkHandler::saveConfig('recovery', $config);
 if ($scenario['action'] === 'save-import') {
   import2ChunkHandler::saveImportRecord($config);
   $response = ORM::$import;
+}
+elseif ($scenario['action'] === 'tidy-columns') {
+  $method = new ReflectionMethod(Import_2_Controller::class, 'tidyUpColumnsList');
+  $method->setAccessible(TRUE);
+  $response = $method->invoke(new Import_2_Controller(), $scenario['headings']);
 }
 elseif ($scenario['action'] === 'export') {
   $_GET = ['config-id' => 'recovery'] + ($scenario['options'] ?? []);
