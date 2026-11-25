@@ -2,6 +2,7 @@
 
 use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 
+require_once 'client_helpers/autoload.php';
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
