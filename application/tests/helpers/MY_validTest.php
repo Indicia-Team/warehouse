@@ -9,7 +9,7 @@ class Helper_MY_Valid_Test extends TestCase {
    */
   public function testBoolAcceptsBooleanRepresentations(): void {
     foreach ([TRUE, FALSE, 't', 'f', 'true', 'false', '1', '0', 'yes', 'no', 'on', 'off'] as $value) {
-      $this->assertTrue(Valid::bool($value), 'Expected a valid boolean representation.');
+      $this->assertTrue(valid::bool($value), 'Expected a valid boolean representation.');
     }
   }
 
@@ -18,7 +18,7 @@ class Helper_MY_Valid_Test extends TestCase {
    */
   public function testBoolRejectsBlankAndInvalidValues(): void {
     foreach (['', NULL, 'not a boolean'] as $value) {
-      $this->assertFalse(Valid::bool($value), 'Expected an invalid boolean representation.');
+      $this->assertFalse(valid::bool($value), 'Expected an invalid boolean representation.');
     }
   }
 

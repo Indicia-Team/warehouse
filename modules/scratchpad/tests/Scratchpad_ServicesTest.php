@@ -24,7 +24,15 @@ class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
       );
     }
     $s = submission_builder::build_submission($array, $structure);
-    return data_entry_helper::forward_post_to('scratchpad_list', $s, $this->auth['write_tokens']);
+    try {
+      return data_entry_helper::forward_post_to('scratchpad_list', $s, $this->auth['write_tokens']);
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertSame(400, $e->httpStatus, $e->responseBody);
+      $response = json_decode($e->responseBody, TRUE);
+      $this->assertIsArray($response);
+      return $response;
+    }
   }
 
   private function doTestCreate($array) {

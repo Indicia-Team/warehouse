@@ -45,9 +45,9 @@ class Scratchpad_list_Model extends ORM {
     $array->add_rules('website_id', 'integer');
     $array->add_rules('scratchpad_type_id', 'integer');
     // The authenticated website context must match the submitted owner.
-    if ($this->identifiers['website_id'] !== NULL &&
+    if (!empty(ORM::$authorisedWebsiteId) &&
         isset($array['website_id']) &&
-        (int) $array['website_id'] !== (int) $this->identifiers['website_id']) {
+        (int) $array['website_id'] !== (int) ORM::$authorisedWebsiteId) {
       $array->add_error('website_id', 'default');
     }
     $this->unvalidatedFields = [

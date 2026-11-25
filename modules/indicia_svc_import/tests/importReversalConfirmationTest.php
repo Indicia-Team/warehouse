@@ -113,7 +113,7 @@ class ImportReversalConfirmationTest extends TestCase {
       $this->assertStringContainsString('<dd>&lt;b&gt;import&lt;/b&gt;</dd>', $html);
       $this->assertStringContainsString('<dd>&lt;i&gt;date &amp; time&lt;/i&gt;</dd>', $html);
       $this->assertStringContainsString("name=\"reverse-guid\" value=\"$guid\"", $html);
-      $this->assertStringContainsString('name="reverse-mode" value="do_not_reverse_updated">Queue reversal</button>', $html);
+      $this->assertStringContainsString('name="reverse-mode" value="do_not_reverse_updated">Continue</button>', $html);
       $requests = ReversalConfirmationReportStub::$requests;
       $this->assertSame('library/imports/reversible_imports_list', $requests[0]['dataSource']);
       $this->assertSame(['currentUser' => 7, 'website_id' => 1], $requests[0]['extraParams']);

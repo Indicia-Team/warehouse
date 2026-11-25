@@ -116,6 +116,19 @@ SQL;
     }
   }
 
+  private function forwardPostToWithHttpErrorHandling(string $entity, array $submission, array $tokens): array {
+    try {
+      return data_entry_helper::forward_post_to($entity, $submission, $tokens);
+    }
+    catch (\IForm\WarehouseRequestException $e) {
+      $this->assertGreaterThanOrEqual(400, $e->httpStatus);
+      $this->assertLessThan(500, $e->httpStatus);
+      $response = json_decode($e->responseBody, TRUE);
+      $this->assertIsArray($response);
+      return $response;
+    }
+  }
+
   /**
    * Exercise authentication, role lookups and result filtering over HTTP.
    *
@@ -609,7 +622,7 @@ SQL;
       'locAttr:3' => 'not an int',
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('location', $s, self::$auth['write_tokens']);
     Kohana::log('debug', "Submission response to invalid location attribute save " . print_r($r, TRUE));
 
     // check we got the required output - showing an error on the int field
@@ -736,12 +749,19 @@ SQL;
       ];
     }
     try {
-      $httpResponse = data_entry_helper::http_post(
-        data_entry_helper::$base_url . "index.php/services/data/$entity",
-        http_build_query(['submission' => json_encode($submission)] + $auth),
-        FALSE
-      );
-      $response = json_decode($httpResponse['output'], TRUE);
+      try {
+        $httpResponse = data_entry_helper::http_post(
+          data_entry_helper::$base_url . "index.php/services/data/$entity",
+          http_build_query(['submission' => json_encode($submission)] + $auth),
+          FALSE
+        );
+        $response = json_decode($httpResponse['output'], TRUE);
+      }
+      catch (\IForm\WarehouseRequestException $e) {
+        $this->assertGreaterThanOrEqual(400, $e->httpStatus);
+        $this->assertLessThan(500, $e->httpStatus);
+        $response = json_decode($e->responseBody, TRUE);
+      }
       $allowed = $signed && $ownUser && !$forbiddenField;
       $this->assertIsArray($response);
       $this->assertArrayHasKey($allowed ? 'success' : 'error', $response);
@@ -879,7 +899,7 @@ SQL;
       'sample:date_type' => 'Y'
     );
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('sample', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to sample 3 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
@@ -1229,7 +1249,7 @@ SQL;
     ];
     $array['occurrence:machine_involvement'] = -1;
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['error']), 'Adding an occurrence with machine involvement=-1 worked');
     $array['occurrence:machine_involvement'] = 0;
     $s = submission_builder::build_submission($array, $structure);
@@ -1241,7 +1261,7 @@ SQL;
     $this->assertTrue(isset($r['success']), 'Adding an occurrence with machine involvement=5 failed');
     $array['occurrence:machine_involvement'] = 6;
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['error']), 'Adding an occurrence with machine involvement=6 worked');
   }
 
@@ -1390,7 +1410,7 @@ SQL;
       'model' => 'sample',
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('sample', $s, self::$auth['write_tokens']);
     $this->assertFalse(isset($r['success']), 'Creating a sample with a bad date passed validation incorrectly');
     $this->assertArrayHasKey('errors', $r, 'Submission with bad sample date did not return field errors list');
     // Check error attached to correct field.
@@ -1450,7 +1470,7 @@ SQL;
       ),
     );
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = $this->forwardPostToWithHttpErrorHandling('sample', $s, self::$auth['write_tokens']);
     // Check an error exists on the attribute field.
     $this->assertArrayHasKey('errors', $r);
     $this->assertArrayHasKey("occAttr:$attr->id", $r['errors']);
