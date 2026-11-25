@@ -7,6 +7,7 @@ $lang = [
   'default_validation_message' => 'Invalid input.',
   // Default fallback validation message for specific rules.
   'required' => 'This field is required.',
+  'bool' => 'This must be a valid boolean value.',
   // Validation messages for specific form fields.
   'address' => [
     'length' => 'The address must be a maximum of 200 characters in length.',
