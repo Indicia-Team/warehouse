@@ -64,6 +64,13 @@ class ORM extends ORM_Core {
   private static $surveyValidationRules = [];
 
   /**
+   * Request-local pool of attribute value models used for precheck validation.
+   *
+   * @var array
+   */
+  private static $precheckAttributeValueModels = [];
+
+  /**
    * Values before any changes applied.
    *
    * @var array
@@ -1191,7 +1198,14 @@ class ORM extends ORM_Core {
       $allAttributes = $this->getAttributes(FALSE);
       foreach ($vArray as $field => $value) {
         if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
-          $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $attrModelName = $this->object_name . '_attribute_value';
+          if (!isset(self::$precheckAttributeValueModels[$attrModelName])) {
+            self::$precheckAttributeValueModels[$attrModelName] = ORM::factory($attrModelName);
+          }
+          $attrObj = self::$precheckAttributeValueModels[$attrModelName];
+          $attrObj->clear();
+          $attrObj->unvalidatedFields = [];
+          $attrObj->wantToUpdateMetadata = TRUE;
           $attrObj->setIdentifiers($this->identifiers);
           $valueField = $this->getValueField($allAttributes, $matches['id']);
           $attrArray = [
