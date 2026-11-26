@@ -41,5 +41,7 @@ $config['chunk_size_background_import'] = 500;
 // Stop a chunk after this many seconds so progress can be saved before the
 // web server or PHP process timeout is reached. Checked between records.
 $config['chunk_time_limit'] = 20;
+// Background work queue imports can use a longer limit.
+$config['chunk_time_limit_background'] = 60;
 // Log per-import-chunk query counts, timings, and anonymised query signatures.
 $config['benchmark_import_chunks'] = FALSE;
