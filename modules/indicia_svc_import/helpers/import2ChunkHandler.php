@@ -77,6 +77,7 @@ class import2ChunkHandler {
     $deadline = $benchmarkStartedAt + ($moduleConfig['chunk_time_limit'] ?? 20);
     $benchmarkStartIndex = count(Database::$benchmarks);
     $benchmarkLogged = FALSE;
+    $timings = [];
     $workflowBulkModeEnabled = FALSE;
     try {
       $configId = $params['config-id'];
@@ -153,7 +154,8 @@ class import2ChunkHandler {
           $precheckRowIds,
           $occurrenceRowsProcessedThisRequest,
           $deadline,
-          $deadlineReached
+          $deadlineReached,
+          $timings
         )) {
           break;
         }
@@ -169,7 +171,8 @@ class import2ChunkHandler {
         $parentEntityDataRows,
         $benchmarkStartIndex,
         $benchmarkStartedAt,
-        $chunkContext
+        $chunkContext,
+        $timings
       );
       $benchmarkLogged = TRUE;
       return $response;
@@ -180,7 +183,8 @@ class import2ChunkHandler {
           $benchmarkStartIndex,
           $benchmarkStartedAt,
           $config ?? [],
-          $isPrecheck ?? FALSE
+          $isPrecheck ?? FALSE,
+          $timings
         );
       }
       if ($e instanceof RequestAbort) {
@@ -273,6 +277,8 @@ class import2ChunkHandler {
    *   Timestamp at which processing should yield.
    * @param bool $deadlineReached
    *   Whether the deadline has been reached, updated by reference.
+   * @param array $timings
+   *   Diagnostic timings, updated by reference.
    *
    * @return bool
    *   TRUE when processing of the outer parent loop should stop.
@@ -291,8 +297,10 @@ class import2ChunkHandler {
     array &$precheckRowIds,
     &$occurrenceRowsProcessedThisRequest,
     $deadline,
-    &$deadlineReached
+    &$deadlineReached,
+    array &$timings
   ) {
+    $timingStartedAt = microtime(TRUE);
     $isContinuingParent = !empty($activeParent)
       && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
     // Reuse the saved parent when continuing a group across requests. The
@@ -316,25 +324,32 @@ class import2ChunkHandler {
     if ($isContinuingParent) {
       $parent->set_submission_data($submission);
     }
-    elseif ($isPrecheck) {
-      try {
-        $parentErrors = $parent->precheck($identifiers);
-      } catch (Exception $e) {
-        // If the parent entity crashes on checking, record the error.
-        $parentErrors['sample:general'] = $e->getMessage();
+    self::recordTiming($timings, 'parentSetup', $timingStartedAt);
+    if (!$isContinuingParent) {
+      $timingStartedAt = microtime(TRUE);
+      if ($isPrecheck) {
+        try {
+          $parentErrors = $parent->precheck($identifiers);
+        } catch (Exception $e) {
+          // If the parent entity crashes on checking, record the error.
+          $parentErrors['sample:general'] = $e->getMessage();
+        }
+        self::recordTiming($timings, 'parentPrecheck', $timingStartedAt);
+        // A fake ID to allow check on children.
+        $parent->id = 1;
       }
-      // A fake ID to allow check on children.
-      $parent->id = 1;
-    }
-    else {
-      try {
-        $parent->submit();
-        $parentErrors = $parent->getAllErrors();
-      } catch (Exception $e) {
-        // If the parent entity fails to save, record the error.
-        $parentErrors['sample:general'] = $e->getMessage();
+      else {
+        try {
+          $parent->submit();
+          $parentErrors = $parent->getAllErrors();
+        } catch (Exception $e) {
+          // If the parent entity fails to save, record the error.
+          $parentErrors['sample:general'] = $e->getMessage();
+        }
+        self::recordTiming($timings, 'parentSubmit', $timingStartedAt);
       }
     }
+    $timingStartedAt = microtime(TRUE);
     $childEntityData = self::fetchChildEntityData(
       $db,
       $parentEntityColumns,
@@ -345,6 +360,7 @@ class import2ChunkHandler {
       // budget, regardless of how many parent groups it contains.
       max(1, self::$batchRowLimit - $occurrenceRowsProcessedThisRequest)
     );
+    self::recordTiming($timings, 'childFetch', $timingStartedAt);
     $childEntityDataRows = $childEntityData['rows'];
     $hasMoreChildRows = $childEntityData['hasMore'];
     $processedChildRows = 0;
@@ -363,6 +379,7 @@ class import2ChunkHandler {
     // occurrences.
     if (count($parentErrors) === 0 || $isPrecheck) {
       foreach ($childEntityDataRows as $childEntityDataRow) {
+        $timingStartedAt = microtime(TRUE);
         $child = ORM::factory($config['entity']);
         $submission = [
           'sample_id' => $parent->id,
@@ -374,7 +391,9 @@ class import2ChunkHandler {
         }
         $child->set_submission_data($submission);
         $child->setIdentifiers($identifiers);
+        self::recordTiming($timings, 'childSetup', $timingStartedAt);
         $errors = [];
+        $timingStartedAt = microtime(TRUE);
         if ($isPrecheck) {
           try {
             $errors = $child->precheck($identifiers);
@@ -392,6 +411,8 @@ class import2ChunkHandler {
             $errors['occurrence:general'] = $e->getMessage();
           }
         }
+        self::recordTiming($timings, $isPrecheck ? 'childPrecheck' : 'childSubmit', $timingStartedAt);
+        $timingStartedAt = microtime(TRUE);
         if (count($errors) > 0) {
           // Register additional error row, but only if not already
           // registered due to error in parent.
@@ -436,6 +457,7 @@ class import2ChunkHandler {
             }
           }
         }
+        self::recordTiming($timings, 'childResultHandling', $timingStartedAt);
         $config['rowsProcessed']++;
         $occurrenceRowsProcessedThisRequest++;
         $processedChildRows++;
@@ -499,7 +521,8 @@ class import2ChunkHandler {
     array $parentEntityDataRows,
     $benchmarkStartIndex,
     $benchmarkStartedAt,
-    array $chunkContext
+    array $chunkContext,
+    array $timings = []
   ) {
     $progress = $config['totalRows'] > 0
       ? 100 * $config['rowsProcessed'] / $config['totalRows']
@@ -553,7 +576,7 @@ class import2ChunkHandler {
     if (!$isPrecheck) {
       self::saveImportRecord($config);
     }
-    self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck);
+    self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck, $timings);
     return [
       // Additional check for count of parentDataEntityRows will apply if an
       // import is restarted by refreshing the browser page, as the
@@ -770,7 +793,7 @@ class import2ChunkHandler {
    * @param bool $isPrecheck
    *   Whether this is a precheck chunk.
    */
-  private static function logBenchmark($benchmarkStartIndex, $startedAt, array $config, $isPrecheck) {
+  private static function logBenchmark($benchmarkStartIndex, $startedAt, array $config, $isPrecheck, array $timings = []) {
     $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
     if (empty($moduleConfig['benchmark_import_chunks'])) {
       return;
@@ -808,18 +831,45 @@ class import2ChunkHandler {
       return $right['count'] <=> $left['count'];
     });
     $bySignature = array_slice($bySignature, 0, 20, TRUE);
+    $requestTime = microtime(TRUE) - $startedAt;
     $summary = [
       'configId' => $config['importGuid'] ?? NULL,
       'mode' => $isPrecheck ? 'precheck' : 'import',
       'rowsProcessed' => $config['rowsProcessed'] ?? NULL,
       'parentRowsProcessed' => $config['parentEntityRowsProcessed'] ?? NULL,
-      'requestTime' => microtime(TRUE) - $startedAt,
+      'requestTime' => $requestTime,
       'queryCount' => count($benchmarks),
       'queryTime' => $queryTime,
+      'nonQueryTime' => max(0, $requestTime - $queryTime),
       'queriesByCategory' => $byCategory,
       'topQuerySignatures' => $bySignature,
+      'phpTimings' => $timings,
     ];
     kohana::log('debug', 'Import chunk benchmark: ' . json_encode($summary));
+  }
+
+  /**
+   * Record a diagnostic timing for one processing phase.
+   *
+   * @param array $timings
+   *   Timing data, updated by reference.
+   * @param string $name
+   *   Timing group name.
+   * @param float $startedAt
+   *   Start time from microtime(TRUE).
+   */
+  private static function recordTiming(array &$timings, $name, $startedAt) {
+    $elapsed = microtime(TRUE) - $startedAt;
+    if (!isset($timings[$name])) {
+      $timings[$name] = [
+        'count' => 0,
+        'seconds' => 0,
+        'maxSeconds' => 0,
+      ];
+    }
+    $timings[$name]['count']++;
+    $timings[$name]['seconds'] += $elapsed;
+    $timings[$name]['maxSeconds'] = max($timings[$name]['maxSeconds'], $elapsed);
   }
 
   /**
