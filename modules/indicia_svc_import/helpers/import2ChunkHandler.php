@@ -74,7 +74,6 @@ class import2ChunkHandler {
   public static function importChunk($db, $params) {
     $benchmarkStartedAt = microtime(TRUE);
     $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
-    $deadline = $benchmarkStartedAt + ($moduleConfig['chunk_time_limit'] ?? 20);
     $benchmarkStartIndex = count(Database::$benchmarks);
     $benchmarkLogged = FALSE;
     $timings = [];
@@ -101,6 +100,10 @@ class import2ChunkHandler {
       ];
       kohana::log('info', 'Import chunk started: ' . json_encode($chunkContext));
       $isBackground = $config['processingMode'] === 'background';
+      $chunkTimeLimit = $isBackground
+        ? ($moduleConfig['chunk_time_limit_background'] ?? 60)
+        : ($moduleConfig['chunk_time_limit'] ?? 20);
+      $deadline = $benchmarkStartedAt + $chunkTimeLimit;
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         self::resetChunkProgress($db, $configId, $config, $isPrecheck);

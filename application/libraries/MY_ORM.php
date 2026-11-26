@@ -57,6 +57,20 @@ class ORM extends ORM_Core {
   private static $recordContexts = [];
 
   /**
+   * Request-local cache of survey validation rules keyed by survey ID.
+   *
+   * @var array
+   */
+  private static $surveyValidationRules = [];
+
+  /**
+   * Request-local pool of attribute value models used for precheck validation.
+   *
+   * @var array
+   */
+  private static $precheckAttributeValueModels = [];
+
+  /**
    * Values before any changes applied.
    *
    * @var array
@@ -413,18 +427,23 @@ class ORM extends ORM_Core {
    */
   public function validate(Validation $array, $save = FALSE) {
     if (!empty($this->identifiers['survey_id'])) {
-      $cache_key = 'survey_validation_rules_' . $this->identifiers['survey_id'];
-      $validationRules = $this->cache->get($cache_key);
-      if ($validationRules === NULL) {
-        $qry = $this->db
-          ->select('core_validation_rules')
-          ->from('surveys')
-          ->where('id', $this->identifiers['survey_id'])
-          ->get()
-          ->current();
-        $validationRules = $qry->core_validation_rules;
-        $this->cache->set($cache_key, $validationRules);
+      $surveyId = $this->identifiers['survey_id'];
+      if (!array_key_exists($surveyId, self::$surveyValidationRules)) {
+        $cache_key = 'survey_validation_rules_' . $surveyId;
+        $validationRules = $this->cache->get($cache_key);
+        if ($validationRules === NULL) {
+          $qry = $this->db
+            ->select('core_validation_rules')
+            ->from('surveys')
+            ->where('id', $surveyId)
+            ->get()
+            ->current();
+          $validationRules = $qry->core_validation_rules ?? '{}';
+          $this->cache->set($cache_key, $validationRules);
+        }
+        self::$surveyValidationRules[$surveyId] = $validationRules;
       }
+      $validationRules = self::$surveyValidationRules[$surveyId];
       if (!empty($validationRules)) {
         $rules = json_decode($validationRules, TRUE);
         if (isset($rules[$this->object_name])) {
@@ -1179,7 +1198,14 @@ class ORM extends ORM_Core {
       $allAttributes = $this->getAttributes(FALSE);
       foreach ($vArray as $field => $value) {
         if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
-          $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $attrModelName = $this->object_name . '_attribute_value';
+          if (!isset(self::$precheckAttributeValueModels[$attrModelName])) {
+            self::$precheckAttributeValueModels[$attrModelName] = ORM::factory($attrModelName);
+          }
+          $attrObj = self::$precheckAttributeValueModels[$attrModelName];
+          $attrObj->clear();
+          $attrObj->unvalidatedFields = [];
+          $attrObj->wantToUpdateMetadata = TRUE;
           $attrObj->setIdentifiers($this->identifiers);
           $valueField = $this->getValueField($allAttributes, $matches['id']);
           $attrArray = [
