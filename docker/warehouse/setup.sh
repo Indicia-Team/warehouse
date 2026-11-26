@@ -16,6 +16,15 @@ if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
     echo "Initialising the indicia schema."
     curl --verbose --fail-with-body --location --config warehouse/setup/01_database_init
 
+    echo "...Performing first log in."
+    curl --verbose --fail-with-body --location --config warehouse/setup/02_first_login
+
+    echo "...Setting the password for user 'admin' to 'password'."
+    curl --verbose --fail-with-body --location --config warehouse/setup/03_set_admin_password
+
+    echo "...Upgrading the indicia schema to the most recent version."
+    curl --verbose --fail-with-body --location --config warehouse/setup/database_upgrade
+
     # Now the indicia schema exists we can set permissions for it.
     echo "...Setting permissions on the indicia schema."
     export PGPASSWORD=password
@@ -32,15 +41,6 @@ ____EOF
     find="config\['apply_schema'\] = TRUE;"
     replace="config\['apply_schema'\] = false;"
     sed -i "s/$find/$replace/" ../application/config/indicia.php
-
-    echo "...Performing first log in."
-    curl --verbose --fail-with-body --location --config warehouse/setup/02_first_login
-
-    echo "...Setting the password for user 'admin' to 'password'."
-    curl --verbose --fail-with-body --location --config warehouse/setup/03_set_admin_password
-
-    echo "...Upgrading the indicia schema to the most recent version."
-    curl --verbose --fail-with-body --location --config warehouse/setup/database_upgrade
 
     echo "...Increase file maxUploadSize from 1M to 32M"
     sed -i "s/\$config\['maxUploadSize'\] = '1M';/\$config['maxUploadSize'] = '32M';/" "../application/config/indicia.php"
